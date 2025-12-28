@@ -1,0 +1,6 @@
+dom
+dist
+node_modules
+dist-electron
+dist-app
+.generated

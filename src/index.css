@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@import './styles/rete.css';
+
+@theme {
+    --color-border: #27272a;
+    /* zinc-800 */
+    --color-input: #27272a;
+    /* zinc-800 */
+    --color-ring: #3b82f6;
+    /* blue-500 */
+
+    --color-background: #131316;
+    /* zinc-950+ */
+    --color-foreground: #fafafa;
+    /* zinc-50 */
+
+    --color-primary: #3b82f6;
+    /* blue-500 */
+    --color-primary-foreground: #ffffff;
+
+    --color-secondary: #27272a;
+    /* zinc-800 */
+    --color-secondary-foreground: #fafafa;
+
+    --color-destructive: #ef4444;
+    /* red-500 */
+    --color-destructive-foreground: #fafafa;
+
+    --color-muted: #27272a;
+    /* zinc-800 */
+    --color-muted-foreground: #a1a1aa;
+    /* zinc-400 */
+
+    --color-accent: #27272a;
+    /* zinc-800 */
+    --color-accent-foreground: #fafafa;
+
+    --color-popover: #18181b;
+    /* zinc-900 */
+    --color-popover-foreground: #fafafa;
+
+    --color-card: #18181b;
+    /* zinc-900 */
+    --color-card-foreground: #fafafa;
+
+    --radius: 0.5rem;
+}
+
+:root {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    margin: 0;
+    display: flex;
+    place-items: center;
+    min-width: 320px;
+    min-height: 100vh;
+}
+
+#root {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Custom Scrollbar */
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* Window Drag Region */
+.titlebar-drag-region {
+    -webkit-app-region: drag;
+    user-select: none;
+}
+
+.titlebar-no-drag {
+    -webkit-app-region: no-drag;
+}

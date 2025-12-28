@@ -1,0 +1,21 @@
+{
+    "id": "discord-v14",
+    "name": "Discord.js v14 (JavaScript)",
+    "description": "A starter template for Discord.js v14 bots using JavaScript.",
+    "version": "1.0.0",
+    "entryPoint": "index.js",
+    "variables": {
+        "token": {
+            "type": "string",
+            "description": "Discord Bot Token",
+            "required": true
+        }
+    },
+    "config": {
+        "gatewayIntents:editable": [
+            "Guilds",
+            "GuildMessages",
+            "MessageContent"
+        ]
+    }
+}

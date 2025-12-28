@@ -1,0 +1,14 @@
+{
+    "id": "hello-world",
+    "name": "Hello World",
+    "version": "1.0.0",
+    "description": "A simple plugin to test the Plugin System.",
+    "requirements": {
+        "axios": "^1.7.9"
+    },
+    "main": "index.js",
+    "botm": {
+        "runtime": "runtime.js",
+        "permissions": []
+    }
+}
