@@ -4,7 +4,7 @@
 
 Railgun is a powerful desktop application that allows you to create fully-featured Discord bots without writing a single line of boilerplate code. Built with modern web technologies, it offers a visual node-based editor to design commands, events, and interactions.
 
-![Railgun Interface](docs/assets/screenshot.png)
+![Railgun Interface](https://github.com/repyh/railgun/blob/main/docs/assets/main.png?raw=true)
 
 > [DISCLAIMER]</br>
 > **Development Status: Pre-Alpha Preview**
