@@ -37,7 +37,7 @@ Railgun is a powerful desktop application that allows you to create fully-featur
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/railgun.git
+    git clone https://github.com/repyh/railgun.git
     cd railgun
     ```
 
