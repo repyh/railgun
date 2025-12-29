@@ -118,6 +118,29 @@ export class CodePrinter {
 
                 return `${arrowAsyncPrefix}(${arrowParams}) => ${arrowBody}`;
 
+            case 'NewExpression':
+                const newExpr = node as AST.NewExpression;
+                const newCallee = this.print(newExpr.callee, indentLevel);
+                const newArgs = newExpr.arguments.map(arg => this.print(arg, indentLevel)).join(', ');
+                return `new ${newCallee}(${newArgs})`;
+
+            case 'ForOfStatement': {
+                const forOf = node as AST.ForOfStatement;
+                const left = this.print(forOf.left, indentLevel);
+                // Clean up variable decl in for loop (remove semi-colon if VariableDeclaration printer adds it)
+                let leftStr = left.trim().replace(/;$/, '');
+                const right = this.print(forOf.right, indentLevel);
+                const body = this.print(forOf.body, indentLevel);
+                const awaitStr = forOf.await ? 'await ' : '';
+                return `${indent}for ${awaitStr}(${leftStr} of ${right}) ${body.trim()}`;
+            }
+
+            case 'BreakStatement':
+                return `${indent}break;`;
+
+            case 'ContinueStatement':
+                return `${indent}continue;`;
+
             case 'CommentStatement':
                 return `${indent}// ${(node as AST.CommentStatement).text}`;
 

@@ -13,6 +13,9 @@ import { IfParser } from './logic/If';
 import { WhileLoopParser } from './logic/WhileLoop';
 import { DeclareVariableParser } from './variables/DeclareVariable';
 import { SetVariableParser } from './variables/SetVariable';
+import { WaitParser } from './logic/Wait';
+import { ForLoopParser } from './logic/ForLoop';
+import { BreakParser, ContinueParser } from './logic/LoopControl';
 import { ArrayBuilderParser } from './data/ArrayBuilder';
 import { ConsoleLogParser } from './actions/ConsoleLog';
 import { SendMessageParser } from './actions/SendMessage';
@@ -66,6 +69,10 @@ export class ParserRegistry {
         this.register('Not', new NotParser());
         this.register('If', new IfParser());
         this.register('While Loop', new WhileLoopParser());
+        this.register('Wait', new WaitParser());
+        this.register('For Loop', new ForLoopParser());
+        this.register('Break', new BreakParser());
+        this.register('Continue', new ContinueParser());
 
         // --- Variables ---
         this.register('Declare Variable', new DeclareVariableParser());

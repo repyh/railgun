@@ -21,7 +21,11 @@ export type ASTNodeType =
     | 'ObjectExpression'
     | 'CommentStatement'
     | 'AwaitExpression'
-    | 'ArrowFunctionExpression';
+    | 'ArrowFunctionExpression'
+    | 'NewExpression'
+    | 'ForOfStatement'
+    | 'BreakStatement'
+    | 'ContinueStatement';
 
 export interface BaseNode {
     type: ASTNodeType;
@@ -42,7 +46,9 @@ export type Statement =
     | IfStatement
     | WhileStatement
     | DoWhileStatement
-    // | ForStatement 
+    | ForOfStatement
+    | BreakStatement
+    | ContinueStatement
     | VariableDeclaration
     | CommentStatement; // Added for QoL
 
@@ -62,7 +68,8 @@ export type Expression =
     | ArrayExpression
     | ObjectExpression
     | AwaitExpression
-    | ArrowFunctionExpression;
+    | ArrowFunctionExpression
+    | NewExpression;
 
 // --- Function & scopes ---
 
@@ -198,4 +205,28 @@ export interface UnaryExpression extends BaseNode {
     operator: string; // !, -, +, typeof, void, delete
     argument: Expression;
     prefix: boolean;
+}
+
+export interface NewExpression extends BaseNode {
+    type: 'NewExpression';
+    callee: Expression;
+    arguments: Expression[];
+}
+
+export interface ForOfStatement extends BaseNode {
+    type: 'ForOfStatement';
+    left: VariableDeclaration | Identifier; // for (const item of...) or for (item of...)
+    right: Expression;
+    body: BlockStatement;
+    await: boolean; // for await (const x of y)
+}
+
+export interface BreakStatement extends BaseNode {
+    type: 'BreakStatement';
+    label?: Identifier | null;
+}
+
+export interface ContinueStatement extends BaseNode {
+    type: 'ContinueStatement';
+    label?: Identifier | null;
 }
