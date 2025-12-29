@@ -44,12 +44,13 @@ const ActivityBarItem = ({
 };
 
 import { PluginManager } from '@/lib/plugins/PluginManager';
-
+import { ConsolePanel } from '@/components/console/ConsolePanel';
 
 export const MainLayout = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [appVersion, setAppVersion] = useState<string>('0.0.0');
     const [status, setStatus] = useState('Ready');
+    const [isConsoleOpen, setIsConsoleOpen] = useState(false);
 
     useEffect(() => {
         // Init Plugins
@@ -125,14 +126,27 @@ export const MainLayout = () => {
                         <Outlet context={{ setStatus }} />
                     </main>
 
+                    {/* Console Panel (Resizable/Toggleable in future, fixed height for now) */}
+                    {isConsoleOpen && (
+                        <div className="h-48 shrink-0">
+                            <ConsolePanel />
+                        </div>
+                    )}
+
                     {/* Status Bar */}
                     <div className="h-6 bg-blue-600/10 border-t border-blue-500/20 flex items-center px-3 text-xs justify-between select-none">
                         <div className="flex items-center gap-4 text-blue-200">
+                            <button
+                                onClick={() => setIsConsoleOpen(!isConsoleOpen)}
+                                className={`flex items-center gap-1 hover:text-white transition-colors ${isConsoleOpen ? 'text-white' : 'text-blue-200/50'}`}
+                            >
+                                <SquareTerminal size={12} />
+                                <span>Console</span>
+                            </button>
                             <div className="flex items-center gap-1">
                                 <Command size={12} />
                                 <span>{status}</span>
                             </div>
-                            <span>master*</span>
                         </div>
                         <div className="flex items-center gap-4 text-zinc-400">
                             <span>TypeScript React</span>
