@@ -31,6 +31,11 @@ export class CodePrinter {
             case 'ExpressionStatement':
                 return `${indent}${this.print((node as AST.ExpressionStatement).expression, 0)};`;
 
+            case 'ReturnStatement':
+                const ret = node as AST.ReturnStatement;
+                const arg = ret.argument ? ` ${this.print(ret.argument, 0)}` : '';
+                return `${indent}return${arg};`;
+
             case 'IfStatement':
                 const ifStmt = node as AST.IfStatement;
                 let ifCode = `${indent}if (${this.print(ifStmt.test, 0)}) ${this.print(ifStmt.consequent, indentLevel)}`;

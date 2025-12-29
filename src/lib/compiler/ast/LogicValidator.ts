@@ -27,6 +27,9 @@ export class LogicValidator {
     private visitStatement(stmt: AST.Statement) {
         switch (stmt.type) {
             case 'FunctionDeclaration':
+                if (stmt.id) {
+                    this.scopeManager.define(stmt.id.name);
+                }
                 this.scopeManager.enter('function');
                 // register params
                 stmt.params.forEach(p => this.scopeManager.define(p.name));

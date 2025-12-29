@@ -25,19 +25,25 @@ export class GraphParser implements ParserContext {
     public parse(): AST.Program {
         const body: AST.Statement[] = [];
 
-        // 1. Find all Event nodes (Entry Points)
+        // 1. Find Global Functions (Custom Functions) - Process these FIRST so they are hoisted/available
+        const functionNodes = this.nodes.filter(n => n.label === 'Function Def');
+        for (const funcNode of functionNodes) {
+            const funcDecl = this.processEvent(funcNode);
+            if (funcDecl) {
+                body.push(funcDecl);
+            }
+        }
+
+        // 2. Find all Event nodes (Entry Points)
         const eventNodes = this.nodes.filter(n => n.category === 'Event' || n.codeType === 'On Command' || n.codeType === 'On Slash Command');
 
-        // 2. Process each event into a FunctionDeclaration (or equivalent structure)
+        // 3. Process each event into a FunctionDeclaration (or equivalent structure)
         for (const eventNode of eventNodes) {
             const funcDecl = this.processEvent(eventNode);
             if (funcDecl) {
                 body.push(funcDecl);
             }
         }
-
-        // 3. Find Global Functions (Custom Functions)
-        // TODO: Implement Custom Function parsing
 
         return {
             type: 'Program',
@@ -50,7 +56,22 @@ export class GraphParser implements ParserContext {
      * In the AST, we treat Events as functions that the system calls.
      */
     private processEvent(node: BotNode): AST.FunctionDeclaration | null {
-        const parser = registry.getEventParser(node.codeType, node.label);
+        let parser = registry.getEventParser(node.codeType, node.label);
+
+        // Fallback: Check standard parsers (e.g. for Function Def which is an "Event" in terms of entry point)
+        if (!parser) {
+            const stdParser = registry.getParser(node.codeType, node.label);
+            // Ensure it implements 'parse' compatible for top-level (which they do via the same interface really)
+            if (stdParser) {
+                // Cast to specific usage we need? ASTNodeParser and ASTEventParser both return AST Node.
+                // But ASTEventParser signature: parse(node, context) -> AST.FunctionDeclaration
+                // ASTNodeParser signature: parse(node, context, mode) -> AST.Statement | ...
+
+                // FunctionDefParser is an ASTNodeParser.
+                return (stdParser as any).parse(node, this, 'statement') as AST.FunctionDeclaration;
+            }
+        }
+
         if (parser) {
             return parser.parse(node, this);
         }
@@ -244,6 +265,20 @@ export class GraphParser implements ParserContext {
                 }
             }
         }
+
+        // 1b. Special Handling for Function Def (Arguments)
+        if (node.label === 'Function Def') {
+            // If outputKey is 'arg0', 'arg1', etc. -> Return Identifier
+            if (outputKey.startsWith('arg')) {
+                // e.g. "arg0" -> "arg0"
+                // The FunctionDefParser generates params named "arg0", "arg1"...
+                const ident: AST.Expression = { type: 'Identifier', name: outputKey };
+                this.cachedExpressions.set(cacheKey, ident);
+                return ident;
+            }
+            // If outputKey is 'ref' we let it fall through to the registry parser which returns the function name
+        }
+
 
         // 2. Registry Lookup (Handles Primitives, Variables, and regular Value nodes)
         const parser = registry.getParser(node.codeType, node.label);

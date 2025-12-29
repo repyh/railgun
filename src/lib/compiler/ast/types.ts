@@ -14,7 +14,6 @@ export type ASTNodeType =
     | 'BinaryExpression'
     | 'UnaryExpression'
     | 'AssignmentExpression' // Added for variable mutation
-    | 'AssignmentExpression' // Added for variable mutation
     | 'Identifier'
     | 'Literal'
     | 'ArrayExpression'

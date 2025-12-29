@@ -36,6 +36,10 @@ import { StringParser } from './primitives/String';
 import { NumberParser } from './primitives/Number';
 import { BooleanParser } from './primitives/Boolean';
 
+import { FunctionDefParser } from './functions/FunctionDef';
+import { CallFunctionParser } from './functions/CallFunction';
+import { ReturnParser } from './functions/Return';
+
 export class ParserRegistry {
     private parsers: Map<string, ASTNodeParser> = new Map();
     private eventParsers: Map<string, ASTEventParser> = new Map();
@@ -99,6 +103,11 @@ export class ParserRegistry {
         this.register('Ban Member', new MemberActionParser('ban'));
         this.register('Add Role', new MemberActionParser('addRole'));
         this.register('Remove Role', new MemberActionParser('removeRole'));
+
+        // --- Functions ---
+        this.register('Function Def', new FunctionDefParser());
+        this.register('Call Function', new CallFunctionParser());
+        this.register('Return', new ReturnParser());
     }
 
     register(key: string, parser: ASTNodeParser) {
