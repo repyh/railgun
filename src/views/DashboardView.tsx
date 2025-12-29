@@ -116,7 +116,11 @@ export const DashboardView: React.FC = () => {
                 />
 
                 <div className="mb-8">
-                    <h1 className="text-4xl font-bold bg-linear-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2 py-2">Railgun</h1>
+                    <img
+                        src="/resources/railgun-logo_full.svg"
+                        alt="Railgun"
+                        className="h-12 mb-2 w-auto"
+                    />
                     <p className="text-zinc-400 text-lg">Visual Discord Bot Editor. v0.0.1-alpha</p>
                 </div>
 
