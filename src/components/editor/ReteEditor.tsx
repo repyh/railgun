@@ -278,7 +278,15 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             }
 
             console.log("Generated Code:", code);
-            const jsFilePath = currentFilePathRef.current.replace('.botm.json', '.js');
+
+            let jsFilePath = currentFilePathRef.current;
+            if (jsFilePath.endsWith('.railgun.json')) {
+                jsFilePath = jsFilePath.replace('.railgun.json', '.js');
+            } else if (jsFilePath.endsWith('.botm.json')) {
+                jsFilePath = jsFilePath.replace('.botm.json', '.js');
+            } else {
+                jsFilePath = jsFilePath + '.js';
+            }
 
             // @ts-ignore
             const compiledSuccess = await window.electronAPI.saveFile(projectPathRef.current, jsFilePath, code);

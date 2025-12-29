@@ -56,6 +56,11 @@ export class GraphParser {
             params.push({ type: 'Identifier', name: 'message' });
         } else if (eventName === 'On Slash Command' || eventName === 'On Interaction Create') {
             params.push({ type: 'Identifier', name: 'interaction' });
+        } else if (eventName === 'On Slash Command' || eventName === 'On Interaction Create') {
+            params.push({ type: 'Identifier', name: 'interaction' });
+        } else if (eventName === 'On Command') {
+            params.push({ type: 'Identifier', name: 'message' });
+            params.push({ type: 'Identifier', name: 'args' });
         }
 
         // Build the body by following the 'exec' output
