@@ -7,7 +7,15 @@ export class ShowModalParser implements ASTNodeParser {
     parse(node: BotNode, context: ParserContext, mode: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
         if (mode !== 'statement') return null;
 
-        const target = context.resolveInput(node, 'target');
+        let target = context.resolveInput(node, 'target');
+
+        const isNullLiteral = (expr: AST.Expression) => expr.type === 'Literal' && expr.value === null;
+
+        if (isNullLiteral(target)) {
+            // Modals can only be shown on interactions
+            target = { type: 'Identifier', name: 'interaction' };
+        }
+
         const title = context.resolveInput(node, 'title');
         const customId = context.resolveInput(node, 'customId');
 
@@ -42,8 +50,6 @@ export class ShowModalParser implements ASTNodeParser {
                 ]
             };
         };
-
-        const isNullLiteral = (expr: AST.Expression) => expr.type === 'Literal' && expr.value === null;
 
         const l1 = context.resolveInput(node, 'input1_label');
         const i1 = context.resolveInput(node, 'input1_id');

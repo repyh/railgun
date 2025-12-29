@@ -48,6 +48,7 @@ export type Statement =
     | WhileStatement
     | DoWhileStatement
     | ForOfStatement
+    | ForStatement
     | BreakStatement
     | ContinueStatement
     | VariableDeclaration
@@ -64,6 +65,8 @@ export type Expression =
     | BinaryExpression
     | UnaryExpression
     | AssignmentExpression
+    | UpdateExpression
+    | LogicalExpression
     | Identifier
     | Literal
     | ArrayExpression

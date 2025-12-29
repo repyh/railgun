@@ -3,23 +3,35 @@ import * as AST from '../../types';
 import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
-export class SetVariableParser implements ASTNodeParser {
+export class MathAssignmentParser implements ASTNodeParser {
     parse(node: BotNode, context: ParserContext): AST.Statement {
+        // LHS: Variable
         let varName = context.getNodeValue(node, 'varName');
-        const variableInput = context.resolveInput(node, 'variable'); // Try resolving 'variable' input
-
-        // If input is an Identifier (e.g. from Declare Variable), use it
+        const variableInput = context.resolveInput(node, 'variable');
         if (variableInput && variableInput.type === 'Identifier') {
             varName = variableInput.name;
         }
 
-        const value = context.resolveInput(node, 'value');
+        // RHS: Value
+        const value = context.resolveInput(node, 'value') || { type: 'Literal', value: 1 };
+
+        // Operator
+        const opControl = context.getNodeValue(node, 'operator') || 'Add'; // Add, Subtract, Multiply, Divide
+        let operator = '+=';
+        switch (opControl) {
+            case 'Subtract': operator = '-='; break;
+            case 'Multiply': operator = '*='; break;
+            case 'Divide': operator = '/='; break;
+            case 'Add':
+            default:
+                operator = '+='; break;
+        }
 
         return {
             type: 'ExpressionStatement',
             expression: {
                 type: 'AssignmentExpression',
-                operator: '=',
+                operator: operator as AST.AssignmentOperator,
                 left: { type: 'Identifier', name: context.sanitizeName(varName) },
                 right: value,
                 sourceNodeId: node.id

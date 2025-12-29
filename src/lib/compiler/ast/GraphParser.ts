@@ -56,15 +56,13 @@ export class GraphParser implements ParserContext {
      * In the AST, we treat Events as functions that the system calls.
      */
     private processEvent(node: BotNode): AST.FunctionDeclaration | null {
-        let parser = registry.getEventParser(node.codeType, node.label);
+        let parser = registry.getEventParser(node.codeType || node.label);
 
         // Fallback: Check standard parsers (e.g. for Function Def which is an "Event" in terms of entry point)
         if (!parser) {
             const stdParser = registry.getParser(node.codeType, node.label);
             // Ensure it implements 'parse' compatible for top-level (which they do via the same interface really)
             if (stdParser) {
-                // Cast to specific usage we need? ASTNodeParser and ASTEventParser both return AST Node.
-                // But ASTEventParser signature: parse(node, context) -> AST.FunctionDeclaration
                 // ASTNodeParser signature: parse(node, context, mode) -> AST.Statement | ...
 
                 // FunctionDefParser is an ASTNodeParser.
@@ -152,7 +150,9 @@ export class GraphParser implements ParserContext {
                     'ExpressionStatement',
                     'IfStatement',
                     'WhileStatement',
+                    'DoWhileStatement',
                     'ForOfStatement',
+                    'ForStatement',
                     'BreakStatement',
                     'ContinueStatement',
                     'ReturnStatement',
@@ -196,8 +196,8 @@ export class GraphParser implements ParserContext {
             return { type: 'Literal', value: primaryVal };
         }
 
-        // 3. Check common fallbacks ('value', 'message', 'msg', 'val', 'text')
-        const fallbacks = ['value', 'message', 'msg', 'val', 'text'];
+        // 3. Check common fallbacks
+        const fallbacks = ['value', 'initial', 'init', 'message', 'msg', 'val', 'text'];
         for (const f of fallbacks) {
             if (f === key) continue; // Already checked
 
@@ -266,23 +266,18 @@ export class GraphParser implements ParserContext {
             }
         }
 
-        // 1b. Special Handling for Function Def (Arguments)
-        if (node.label === 'Function Def') {
-            // If outputKey is 'arg0', 'arg1', etc. -> Return Identifier
-            if (outputKey.startsWith('arg')) {
-                // e.g. "arg0" -> "arg0"
-                // The FunctionDefParser generates params named "arg0", "arg1"...
-                const ident: AST.Expression = { type: 'Identifier', name: outputKey };
-                this.cachedExpressions.set(cacheKey, ident);
-                return ident;
-            }
-            // If outputKey is 'ref' we let it fall through to the registry parser which returns the function name
-        }
-
-
         // 2. Registry Lookup (Handles Primitives, Variables, and regular Value nodes)
         const parser = registry.getParser(node.codeType, node.label);
         if (parser) {
+            // Check for custom output resolution (Modular Extensibility)
+            if (parser.resolveOutput) {
+                const customResolution = parser.resolveOutput(node, outputKey, this);
+                if (customResolution) {
+                    this.cachedExpressions.set(cacheKey, customResolution);
+                    return customResolution;
+                }
+            }
+
             const result = parser.parse(node, this, 'expression');
 
             if (result && (result as any).type) {
@@ -324,6 +319,7 @@ export class GraphParser implements ParserContext {
     }
 
     public sanitizeName(name: string): string {
+        if (!name) return 'variable';
         return name.replace(/[^a-zA-Z0-9_]/g, '_');
     }
 }

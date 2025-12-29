@@ -5,16 +5,35 @@ import type { ParserContext } from '../ParserContext';
 
 export class LogicOpParser implements ASTNodeParser {
     parse(node: BotNode, context: ParserContext): AST.Expression {
-        const left = context.resolveInput(node, 'inp1');
-        const right = context.resolveInput(node, 'inp2');
-        const op = context.getNodeValue(node, 'optim') || '&&';
+        let left = context.resolveInput(node, 'inp1');
+        if (left.type === 'Literal' && left.value === null) {
+            left = context.resolveInput(node, 'a');
+        }
+
+        let right = context.resolveInput(node, 'inp2');
+        if (right.type === 'Literal' && right.value === null) {
+            right = context.resolveInput(node, 'b');
+        }
+
+        let opValue = context.getNodeValue(node, 'optim') || context.getNodeValue(node, 'operator') || 'And';
+
+        const opMap: Record<string, '&&' | '||' | '??'> = {
+            'And': '&&',
+            'Or': '||',
+            'Nullish': '??',
+            '&&': '&&',
+            '||': '||',
+            '??': '??'
+        };
+
+        const op = opMap[opValue] || '&&';
 
         return {
-            type: 'BinaryExpression',
+            type: 'LogicalExpression',
             operator: op,
-            left,
-            right,
+            left: left || { type: 'Literal', value: null },
+            right: right || { type: 'Literal', value: null },
             sourceNodeId: node.id
-        };
+        } as AST.LogicalExpression;
     }
 }

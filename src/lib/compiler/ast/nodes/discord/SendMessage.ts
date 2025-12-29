@@ -8,12 +8,24 @@ export class SendMessageParser implements ASTNodeParser {
         // Send Message is usually a statement (action)
         if (mode !== 'statement') return null;
 
-        const target = context.resolveInput(node, 'target');
-        const content = context.resolveInput(node, 'content');
-        const embedsInput = context.resolveInput(node, 'embeds');
-        const componentsInput = context.resolveInput(node, 'components');
+        let target = context.resolveInput(node, 'target');
 
+        // Smart fallback for target if not connected
         const isNullLiteral = (expr: AST.Expression) => expr.type === 'Literal' && expr.value === null;
+        if (isNullLiteral(target)) {
+            // Heuristic names based on common entry points
+            target = { type: 'Identifier', name: 'message' }; // Default fallback
+        }
+        const content = context.resolveInput(node, 'content');
+        let embedsInput = context.resolveInput(node, 'embeds');
+        if (isNullLiteral(embedsInput)) {
+            embedsInput = context.resolveInput(node, 'embed');
+        }
+
+        let componentsInput = context.resolveInput(node, 'components');
+        if (isNullLiteral(componentsInput)) {
+            componentsInput = context.resolveInput(node, 'component');
+        }
 
         const optionsProps: AST.Property[] = [];
 

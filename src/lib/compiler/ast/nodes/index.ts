@@ -1,41 +1,59 @@
 import type { ASTNodeParser } from './NodeParser';
 import type { ASTEventParser } from './EventParser';
-import { AddParser } from './math/Add';
-import { SubtractParser } from './math/Subtract';
-import { MultiplyParser } from './math/Multiply';
-import { DivideParser } from './math/Divide';
-import { ModulusParser } from './math/Modulus';
-import { PowerParser } from './math/Power';
-import { ComparisonParser } from './logic/Comparison';
-import { LogicOpParser } from './logic/LogicOp';
-import { NotParser } from './logic/Not';
-import { IfParser } from './logic/If';
-import { WhileLoopParser } from './logic/WhileLoop';
-import { DeclareVariableParser } from './variables/DeclareVariable';
-import { SetVariableParser } from './variables/SetVariable';
-import { ObjectAccessorParser } from './variables/ObjectAccessor';
-import { WaitParser } from './logic/Wait';
-import { ForLoopParser } from './logic/ForLoop';
-import { BreakParser, ContinueParser } from './logic/LoopControl';
-import { ArrayBuilderParser } from './data/ArrayBuilder';
-import { ConsoleLogParser } from './actions/ConsoleLog';
-import { SendMessageParser } from './discord/SendMessage';
-import { EmbedParser } from './discord/Embed';
-import { ButtonParser } from './discord/Button';
-import { ActionRowParser } from './discord/ActionRow';
-import { ShowModalParser } from './discord/ShowModal';
-import { MemberActionParser } from './discord/MemberActions';
 
+// Events
 import { OnReadyParser } from './events/OnReady';
 import { OnMessageCreateParser } from './events/OnMessageCreate';
 import { OnCommandParser } from './events/OnCommand';
 import { OnSlashCommandParser } from './events/OnSlashCommand';
 import { OnInteractionCreateParser } from './events/OnInteractionCreate';
 
+// Primitives
 import { StringParser } from './primitives/String';
 import { NumberParser } from './primitives/Number';
 import { BooleanParser } from './primitives/Boolean';
 
+// Logic
+import { IfParser } from './logic/If';
+import { WhileLoopParser } from './logic/WhileLoop';
+import { DoWhileLoopParser } from './logic/DoWhileLoop';
+import { ForLoopParser } from './logic/ForLoop';
+import { BreakParser, ContinueParser } from './logic/LoopControl';
+import { ComparisonParser } from './logic/Comparison';
+import { LogicOpParser } from './logic/LogicOp';
+import { NotParser } from './logic/Not';
+import { WaitParser } from './logic/Wait';
+
+// Variables
+import { DeclareVariableParser } from './variables/DeclareVariable';
+import { SetVariableParser } from './variables/SetVariable';
+import { IncrementParser } from './variables/Increment';
+import { ObjectAccessorParser } from './variables/ObjectAccessor';
+
+// Math
+import { AddParser } from './math/Add';
+import { SubtractParser } from './math/Subtract';
+import { MultiplyParser } from './math/Multiply';
+import { DivideParser } from './math/Divide';
+import { PowerParser } from './math/Power';
+import { ModulusParser } from './math/Modulus';
+import { MathAssignmentParser } from './math/MathAssignment';
+
+// Data
+import { ArrayBuilderParser } from './data/ArrayBuilder';
+import { SplitterParser } from './data/Splitter';
+
+// Actions & Discord
+import { ConsoleLogParser } from './actions/ConsoleLog';
+import { SendMessageParser } from './discord/SendMessage';
+import { EmbedParser } from './discord/Embed';
+import { EmbedFieldParser } from './discord/EmbedField';
+import { ButtonParser } from './discord/Button';
+import { ActionRowParser } from './discord/ActionRow';
+import { ShowModalParser } from './discord/ShowModal';
+import { MemberActionParser } from './discord/MemberActions';
+
+// Functions
 import { FunctionDefParser } from './functions/FunctionDef';
 import { CallFunctionParser } from './functions/CallFunction';
 import { ReturnParser } from './functions/Return';
@@ -72,6 +90,7 @@ export class ParserRegistry {
         this.register('Divide', new DivideParser());
         this.register('Modulus', new ModulusParser());
         this.register('Power', new PowerParser());
+        this.register('Math Assignment', new MathAssignmentParser());
 
         // --- Logic ---
         this.register('Comparison', new ComparisonParser());
@@ -79,6 +98,7 @@ export class ParserRegistry {
         this.register('Not', new NotParser());
         this.register('If', new IfParser());
         this.register('While Loop', new WhileLoopParser());
+        this.register('Do-While Loop', new DoWhileLoopParser());
         this.register('Wait', new WaitParser());
         this.register('For Loop', new ForLoopParser());
         this.register('Break', new BreakParser());
@@ -87,22 +107,23 @@ export class ParserRegistry {
         // --- Variables ---
         this.register('Declare Variable', new DeclareVariableParser());
         this.register('Set Variable', new SetVariableParser());
+        this.register('Increment', new IncrementParser());
         this.register('Get Property', new ObjectAccessorParser());
 
         // --- Data ---
         this.register('Array Builder', new ArrayBuilderParser());
+        this.register('Splitter', new SplitterParser());
 
         // --- Actions ---
         this.register('Console Log', new ConsoleLogParser());
         this.register('Send Message', new SendMessageParser());
         this.register('Construct Embed', new EmbedParser());
+        this.register('Embed Field', new EmbedFieldParser());
         this.register('Create Button', new ButtonParser());
         this.register('Create Action Row', new ActionRowParser());
         this.register('Show Modal', new ShowModalParser());
         this.register('Kick Member', new MemberActionParser('kick'));
         this.register('Ban Member', new MemberActionParser('ban'));
-        this.register('Add Role', new MemberActionParser('addRole'));
-        this.register('Remove Role', new MemberActionParser('removeRole'));
 
         // --- Functions ---
         this.register('Function Def', new FunctionDefParser());
@@ -110,28 +131,20 @@ export class ParserRegistry {
         this.register('Return', new ReturnParser());
     }
 
-    register(key: string, parser: ASTNodeParser) {
-        this.parsers.set(key, parser);
+    register(nodeType: string, parser: ASTNodeParser) {
+        this.parsers.set(nodeType, parser);
     }
 
-    registerEvent(key: string, parser: ASTEventParser) {
-        this.eventParsers.set(key, parser);
+    getParser(codeType: string, label: string): ASTNodeParser | undefined {
+        return this.parsers.get(codeType) || this.parsers.get(label);
     }
 
-    // Node Parser Helper
-    getParser(nodeCodeType: string | undefined, nodeLabel: string): ASTNodeParser | undefined {
-        if (nodeCodeType && this.parsers.has(nodeCodeType)) {
-            return this.parsers.get(nodeCodeType);
-        }
-        return this.parsers.get(nodeLabel);
+    registerEvent(eventType: string, parser: ASTEventParser) {
+        this.eventParsers.set(eventType, parser);
     }
 
-    // Event Parser Helper
-    getEventParser(nodeCodeType: string | undefined, nodeLabel: string): ASTEventParser | undefined {
-        if (nodeCodeType && this.eventParsers.has(nodeCodeType)) {
-            return this.eventParsers.get(nodeCodeType);
-        }
-        return this.eventParsers.get(nodeLabel);
+    getEventParser(eventType: string): ASTEventParser | undefined {
+        return this.eventParsers.get(eventType);
     }
 }
 

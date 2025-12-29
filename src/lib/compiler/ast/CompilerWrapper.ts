@@ -1,16 +1,32 @@
+
 import { GraphParser } from './GraphParser';
 import { LogicValidator } from './LogicValidator';
 import { CodePrinter } from './CodePrinter';
 import { BotNode } from '../../railgun-rete';
 import * as AST from './types';
+import {
+    type FileType,
+    type WrapperStrategy,
+    LegacyCommandStrategy,
+    SlashCommandStrategy,
+    EventStrategy
+} from './strategies';
+
+export interface CompilerOptions {
+    nodes: BotNode[];
+    connections: any[];
+    fileType?: FileType; // Optional, defaults to auto-detect or 'command'
+}
 
 export class ASTCompiler {
     nodes: BotNode[];
     connections: any[];
+    fileType: FileType;
 
-    constructor(data: { nodes: BotNode[], connections: any[] }) {
+    constructor(data: CompilerOptions) {
         this.nodes = data.nodes;
         this.connections = data.connections;
+        this.fileType = data.fileType || 'command';
     }
 
     compile(): string {
@@ -30,51 +46,59 @@ export class ASTCompiler {
             return `/* DATA VALIDATION FAILED */\n\n${errorBlock}`;
         }
 
-        // 3. Print
+        // 3. Print Body Code
         const printer = new CodePrinter();
-        let code = printer.print(program);
-
-        // 4. Wrap in Module Exports (Post-Processing)
-        // Instead of regex matching, we now inspect the ASTProgram directly.
+        // We do NOT print the whole program directly if we want to extract the main event body.
+        // Instead, we separate global statements from the main event handler.
 
         let finalCode = '';
         const globalStmts: string[] = [];
         let eventFunctionBody = '';
         let eventName = 'default-cmd';
-        let eventParams = '';
+        let eventParams: string[] = [];
+        let description = '';
+        let isAsync = true;
+        let once = false;
 
-        // Separate Event Function from Global Functions
+        // Find the "EntryPoint" node (Event or Command) to extract metadata
+        // Priority: Explicit Event Logic > First Event Node > Default
         const eventNode = this.nodes.find(n => n.category === 'Event' || n.codeType === 'On Command' || n.codeType === 'On Slash Command');
         const eventNodeId = eventNode?.id;
 
+        // Process Statements
         for (const stmt of program.body) {
             // Check if this statement is the Main Event Function
             if (stmt.type === 'FunctionDeclaration' && (stmt as AST.FunctionDeclaration).isEvent) {
                 const func = stmt as AST.FunctionDeclaration;
 
                 // Only treat it as the entry point if it matches our detected event node
-                // (Or just take the first event function found if strict matching fails)
                 if (func.sourceNodeId === eventNodeId || !eventNodeId) {
                     // This is our Event Entry Point
-                    // 1. Get Params
-                    eventParams = func.params.map(p => p.name).join(', ');
 
-                    // 2. Get Body Code
-                    // Use printer to print valid JS for the body block
-                    // We strip the outer braces "{" and "}" manually or ask printer to print body internals
-                    const bodyCode = printer.print(func.body, 1); // Indent level 1
-                    // Remove first "{" and last "}"
+                    // 1. Get Params
+                    eventParams = func.params.map(p => p.name);
+
+                    // 2. Get Body Code (Strip outer braces)
+                    const bodyCode = printer.print(func.body, 1);
                     eventFunctionBody = bodyCode.trim().replace(/^{/, '').replace(/}$/, '').trim();
 
-                    // 3. Get Name (for On Command)
-                    if (func.eventName === 'On Command') {
-                        // The function ID name is sanitized, but we want the raw command name if possible?
-                        // Actually OnCommandParser sets ID name to sanitized cmdName.
-                        // We need the raw name for module.exports.name
-                        const nameControl = eventNode?.controls?.['name'] as any;
-                        eventName = nameControl?.value || 'my-cmd';
+                    // 3. Extract Metadata from Node
+                    if (eventNode) {
+                        // Extract Name
+                        const nameControl = eventNode.controls?.['name'] as any;
+                        eventName = nameControl?.value || func.eventName || 'my-cmd';
+
+                        // Extract Description (If available, e.g. for Slash)
+                        const descControl = eventNode.controls?.['description'] as any;
+                        description = descControl?.value || '';
+
+                        // Extract Once (If available, e.g. for Ready)
+                        const onceControl = eventNode.controls?.['once'] as any;
+                        if (onceControl && onceControl.value === true) {
+                            once = true;
+                        }
                     }
-                    continue; // Do NOT add to globalStmts
+                    continue; // Processed as entry point, do not print as global function
                 }
             }
 
@@ -82,29 +106,37 @@ export class ASTCompiler {
             globalStmts.push(printer.print(stmt));
         }
 
-        // Generate Final Output
         const globalCode = globalStmts.join('\n\n');
 
-        if (eventNode) {
-            const eventLabel = eventNode.codeType || eventNode.label;
-            if (eventLabel === 'On Command') {
-                finalCode = `${globalCode}\n\nmodule.exports = {
-    name: '${eventName}',
-    execute: async (${eventParams}) => {
-        const client = ${eventParams.split(',')[0].trim()}.client;
-        ${eventFunctionBody}
-    }
-};`;
-            } else {
-                // For other events or generic structure, just print everything?
-                // Or TODO: Handle On Ready, etc.
-                // For now, fallback to just printing the code if it's not On Command (or add support)
-                finalCode = code;
-            }
-        } else {
-            // No event node? Just return the code.
-            finalCode = code;
+        // 4. Wrap Code using Strategy
+        let strategy: WrapperStrategy;
+
+        // Logic to select strategy
+        // If fileType is explicitly set, use it.
+        // Otherwise try to infer? (For now rely on fileType)
+        switch (this.fileType) {
+            case 'slash_command':
+                strategy = new SlashCommandStrategy();
+                break;
+            case 'event':
+                strategy = new EventStrategy();
+                break;
+            case 'command':
+            default:
+                strategy = new LegacyCommandStrategy();
+                break;
         }
+
+        const wrappedMain = strategy.wrap(eventFunctionBody, {
+            eventName,
+            eventParams,
+            isAsync,
+            description,
+            once
+        });
+
+        // Combine Global + Wrapped
+        finalCode = `${globalCode}\n\n${wrappedMain}`;
 
         console.log('[AST Compiler] Compilation successful.');
         return finalCode;

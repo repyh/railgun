@@ -32,4 +32,17 @@ export class FunctionDefParser implements ASTNodeParser {
             sourceNodeId: node.id
         } as AST.FunctionDeclaration;
     }
+
+    resolveOutput(node: BotNode, outputKey: string, context: ParserContext): AST.Expression | null {
+        // Handle Argument Outputs
+        if (outputKey.startsWith('arg')) {
+            // e.g. "arg0" -> "arg0"
+            // The FunctionDefParser generates params named "arg0", "arg1"...
+            return { type: 'Identifier', name: outputKey };
+        }
+
+        // Return null to allow fallback to standard `parse(..., 'expression')`
+        // which returns the function reference (Identifier)
+        return null;
+    }
 }

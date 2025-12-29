@@ -48,6 +48,10 @@ export class CodePrinter {
                 const whileStmt = node as AST.WhileStatement;
                 return `${indent}while (${this.print(whileStmt.test, 0)}) ${this.print(whileStmt.body, indentLevel)}`;
 
+            case 'DoWhileStatement':
+                const doWhile = node as AST.DoWhileStatement;
+                return `${indent}do ${this.print(doWhile.body, indentLevel)} while (${this.print(doWhile.test, 0)});`;
+
             case 'VariableDeclaration':
                 const varDecl = node as AST.VariableDeclaration;
                 const decls = varDecl.declarations.map(d => {
@@ -86,12 +90,24 @@ export class CodePrinter {
                 const binary = node as AST.BinaryExpression;
                 return `(${this.print(binary.left, 0)} ${binary.operator} ${this.print(binary.right, 0)})`;
 
+            case 'LogicalExpression':
+                const logical = node as AST.LogicalExpression;
+                return `(${this.print(logical.left, 0)} ${logical.operator} ${this.print(logical.right, 0)})`;
+
             case 'UnaryExpression':
                 const unary = node as AST.UnaryExpression;
                 if (unary.prefix) {
                     return `${unary.operator}${this.print(unary.argument, 0)}`;
                 } else {
                     return `${this.print(unary.argument, 0)}${unary.operator}`;
+                }
+
+            case 'UpdateExpression':
+                const update = node as AST.UpdateExpression;
+                if (update.prefix) {
+                    return `${update.operator}${this.print(update.argument, 0)}`;
+                } else {
+                    return `${this.print(update.argument, 0)}${update.operator}`;
                 }
 
             case 'AssignmentExpression':
