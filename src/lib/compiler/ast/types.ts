@@ -152,6 +152,7 @@ export interface MemberExpression extends BaseNode {
     object: Expression;
     property: Identifier | Literal;
     computed: boolean; // true if object[property], false if object.property
+    optional?: boolean; // true if object?.property
 }
 
 export interface AssignmentExpression extends BaseNode {

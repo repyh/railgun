@@ -13,6 +13,7 @@ import { IfParser } from './logic/If';
 import { WhileLoopParser } from './logic/WhileLoop';
 import { DeclareVariableParser } from './variables/DeclareVariable';
 import { SetVariableParser } from './variables/SetVariable';
+import { ObjectAccessorParser } from './variables/ObjectAccessor';
 import { WaitParser } from './logic/Wait';
 import { ForLoopParser } from './logic/ForLoop';
 import { BreakParser, ContinueParser } from './logic/LoopControl';
@@ -77,6 +78,7 @@ export class ParserRegistry {
         // --- Variables ---
         this.register('Declare Variable', new DeclareVariableParser());
         this.register('Set Variable', new SetVariableParser());
+        this.register('Get Property', new ObjectAccessorParser());
 
         // --- Data ---
         this.register('Array Builder', new ArrayBuilderParser());

@@ -10,6 +10,9 @@ export class GraphParser implements ParserContext {
     // Map of Node ID to generated AST Node (for caching/reference)
     nodeMap: Map<string, AST.BaseNode> = new Map();
 
+    // Cache for processed expressions: "nodeId:outputKey" -> AST.Expression
+    private cachedExpressions: Map<string, AST.Expression> = new Map();
+
     constructor(nodes: BotNode[], connections: any[]) {
         this.nodes = nodes;
         this.connections = connections;
@@ -61,17 +64,13 @@ export class GraphParser implements ParserContext {
     public traverseBlock(startNode: BotNode, outputKey: string): AST.BlockStatement {
         const statements: AST.Statement[] = [];
 
-        let currentNode = this.getNextNode(startNode.id, outputKey);
+        // Try to find the first node in the chain
+        let currentNode = this.findNextExecutionNode(startNode.id, outputKey);
 
-        // Loop through the chain of connected nodes
-        // Prevent infinite loops with a visited set (though tree logic should prevent it normally, graphs can loop)
         const visited = new Set<string>();
 
         while (currentNode) {
-            if (visited.has(currentNode.id)) {
-                // Detected a cycle or re-entry in a linear block.
-                break;
-            }
+            if (visited.has(currentNode.id)) break;
             visited.add(currentNode.id);
 
             const stmt = this.processStatementNode(currentNode);
@@ -79,14 +78,30 @@ export class GraphParser implements ParserContext {
                 statements.push(stmt);
             }
 
-            // Move to next
-            currentNode = this.getNextNode(currentNode.id, 'exec');
+            // Move to next node in the chain
+            currentNode = this.findNextExecutionNode(currentNode.id, 'exec');
         }
 
         return {
             type: 'BlockStatement',
-            body: statements
+            body: statements,
+            sourceNodeId: startNode.id
         };
+    }
+
+    /**
+     * Finds the next node in the execution chain by trying common output labels.
+     */
+    private findNextExecutionNode(nodeId: string, preferredKey: string): BotNode | undefined {
+        // Try the preferred key first, then common execution output labels
+        const keysToTry = [preferredKey, 'exec', 'Exec', 'Then', 'Completed', 'completed', 'then', 'exec_out', 'execOut', 'output', 'out'];
+
+        for (const key of keysToTry) {
+            const next = this.getNextNode(nodeId, key);
+            if (next) return next;
+        }
+
+        return undefined;
     }
 
     /**
@@ -101,7 +116,17 @@ export class GraphParser implements ParserContext {
 
             // Check if result is a valid statement
             if (result && (result as any).type) {
-                if (['VariableDeclaration', 'ExpressionStatement', 'IfStatement', 'WhileStatement', 'ReturnStatement', 'BlockStatement'].includes(result.type)) {
+                if ([
+                    'VariableDeclaration',
+                    'ExpressionStatement',
+                    'IfStatement',
+                    'WhileStatement',
+                    'ForOfStatement',
+                    'BreakStatement',
+                    'ContinueStatement',
+                    'ReturnStatement',
+                    'BlockStatement'
+                ].includes(result.type)) {
                     return result as AST.Statement;
                 }
             }
@@ -130,34 +155,87 @@ export class GraphParser implements ParserContext {
             }
         }
 
-        // 2. Check Control value (Literal)
-        const control = node.controls?.[key] as any;
-        if (control && control.value !== undefined) {
+        // 2. Check primary value (Data or Control)
+        const primaryVal = this.getNodeValue(node, key);
+        if (primaryVal !== undefined && primaryVal !== null) {
             // Basic casting
-            if (!isNaN(Number(control.value)) && control.value !== '') {
-                return { type: 'Literal', value: Number(control.value) };
+            if (!isNaN(Number(primaryVal)) && primaryVal !== '' && typeof primaryVal !== 'boolean') {
+                return { type: 'Literal', value: Number(primaryVal) };
             }
-            return { type: 'Literal', value: control.value };
+            return { type: 'Literal', value: primaryVal };
         }
 
-        // 3. Check node.data (standard Rete persistence)
-        if (node.data && node.data[key] !== undefined) {
-            const val = node.data[key] as any;
-            if (val !== undefined && val !== '') {
-                // Basic casting for data
-                if (!isNaN(Number(val))) {
-                    return { type: 'Literal', value: Number(val) };
+        // 3. Check common fallbacks ('value', 'message', 'msg', 'val', 'text')
+        const fallbacks = ['value', 'message', 'msg', 'val', 'text'];
+        for (const f of fallbacks) {
+            if (f === key) continue; // Already checked
+
+            const fallbackVal = this.getNodeValue(node, f);
+            if (fallbackVal !== undefined && fallbackVal !== null) {
+                if (!isNaN(Number(fallbackVal)) && fallbackVal !== '' && typeof fallbackVal !== 'boolean') {
+                    return { type: 'Literal', value: Number(fallbackVal) };
                 }
-                return { type: 'Literal', value: val };
+                return { type: 'Literal', value: fallbackVal };
             }
         }
 
-        // 3. Default: Null or Undefined
-        return { type: 'Literal', value: null };
+        // 4. Default Fallback (Literal null)
+        return {
+            type: 'Literal',
+            value: null
+        };
     }
 
     private processValueNode(node: BotNode, outputKey: string): AST.Expression {
-        // Registry Lookup (Handles Primitives, Variables, and regular Value nodes)
+        const cacheKey = `${node.id}:${outputKey}`;
+        if (this.cachedExpressions.has(cacheKey)) {
+            return this.cachedExpressions.get(cacheKey)!;
+        }
+
+        // 1. Special Handling for Event-provided values (Entry Points)
+        if (node.category === 'Event' || node.codeType === 'On Command' || node.codeType === 'On Slash Command') {
+            const label = node.codeType || node.label;
+            if (label === 'On Message Create' && outputKey === 'message') {
+                const ident: AST.Expression = { type: 'Identifier', name: 'message' };
+                this.cachedExpressions.set(cacheKey, ident);
+                return ident;
+            }
+            if (label === 'On Ready' && outputKey === 'client') {
+                const ident: AST.Expression = { type: 'Identifier', name: 'client' };
+                this.cachedExpressions.set(cacheKey, ident);
+                return ident;
+            }
+            if ((label === 'On Slash Command' || label === 'On Interaction Create') && outputKey === 'interaction') {
+                const ident: AST.Expression = { type: 'Identifier', name: 'interaction' };
+                this.cachedExpressions.set(cacheKey, ident);
+                return ident;
+            }
+            if (label === 'On Command') {
+                if (outputKey === 'message') {
+                    const ident: AST.Expression = { type: 'Identifier', name: 'message' };
+                    this.cachedExpressions.set(cacheKey, ident);
+                    return ident;
+                }
+                if (outputKey === 'args') {
+                    const ident: AST.Expression = { type: 'Identifier', name: 'args' };
+                    this.cachedExpressions.set(cacheKey, ident);
+                    return ident;
+                }
+                if (outputKey.startsWith('arg_')) {
+                    const index = parseInt(outputKey.split('_')[1]);
+                    const expr: AST.Expression = {
+                        type: 'MemberExpression',
+                        object: { type: 'Identifier', name: 'args' },
+                        property: { type: 'Literal', value: index },
+                        computed: true
+                    };
+                    this.cachedExpressions.set(cacheKey, expr);
+                    return expr;
+                }
+            }
+        }
+
+        // 2. Registry Lookup (Handles Primitives, Variables, and regular Value nodes)
         const parser = registry.getParser(node.codeType, node.label);
         if (parser) {
             const result = parser.parse(node, this, 'expression');
@@ -165,16 +243,19 @@ export class GraphParser implements ParserContext {
             if (result && (result as any).type) {
                 // Ensure we got an Expression (not a Statement)
                 if (!['VariableDeclaration', 'IfStatement', 'WhileStatement', 'ReturnStatement', 'BlockStatement', 'ExpressionStatement'].includes(result.type)) {
+                    this.cachedExpressions.set(cacheKey, result as AST.Expression);
                     return result as AST.Expression;
                 }
             }
         }
 
         // Default Fallback
-        return {
+        const fallback: AST.Expression = {
             type: 'Identifier',
             name: `node_${node.id.replace(/-/g, '_')}_${outputKey}`
         };
+        this.cachedExpressions.set(cacheKey, fallback);
+        return fallback;
     }
 
     public getNodeValue(node: BotNode, key: string): any {

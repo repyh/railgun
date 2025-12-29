@@ -68,10 +68,11 @@ export class CodePrinter {
                 const member = node as AST.MemberExpression;
                 const obj = this.print(member.object, 0);
                 const prop = this.print(member.property, 0);
+                const op = member.optional ? '?.' : '.';
                 if (member.computed) {
-                    return `${obj}[${prop}]`;
+                    return `${obj}${member.optional ? '?.' : ''}[${prop}]`;
                 } else {
-                    return `${obj}.${prop}`;
+                    return `${obj}${op}${prop}`;
                 }
 
 
@@ -140,6 +141,9 @@ export class CodePrinter {
 
             case 'ContinueStatement':
                 return `${indent}continue;`;
+
+            case 'AwaitExpression':
+                return `await ${this.print((node as AST.AwaitExpression).argument, 0)}`;
 
             case 'CommentStatement':
                 return `${indent}// ${(node as AST.CommentStatement).text}`;
