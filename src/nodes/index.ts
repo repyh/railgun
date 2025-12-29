@@ -37,6 +37,7 @@ import { createOnButtonClickNode } from './events/OnButtonClick';
 import { createEmbedFieldNode } from './data/EmbedField';
 import { createArrayBuilderNode } from './data/ArrayBuilder';
 import { createSplitterNode } from './data/Splitter';
+import { KickMemberNode, BanMemberNode, AddRoleNode, RemoveRoleNode } from './discord/MemberActions';
 import { BotNode } from '@/lib/railgun-rete';
 
 export type NodeFactory = () => BotNode;
@@ -53,6 +54,10 @@ export const NODE_REGISTRY: NodeDefinition[] = [
     { label: 'Create Action Row', category: 'Discord', factory: createActionRowNode },
     { label: 'Send Message', category: 'Discord', factory: createSendMessageNode },
     { label: 'Show Modal', category: 'Discord', factory: createShowModalNode },
+    { label: 'Kick Member', category: 'Discord', factory: () => new KickMemberNode() },
+    { label: 'Ban Member', category: 'Discord', factory: () => new BanMemberNode() },
+    { label: 'Add Role', category: 'Discord', factory: () => new AddRoleNode() },
+    { label: 'Remove Role', category: 'Discord', factory: () => new RemoveRoleNode() },
     { label: 'On Slash Command', category: 'Event', factory: createOnSlashCommandNode },
     { label: 'On Modal Submit', category: 'Event', factory: createOnModalSubmitNode },
     { label: 'On Button Click', category: 'Event', factory: createOnButtonClickNode },

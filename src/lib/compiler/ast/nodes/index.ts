@@ -19,7 +19,12 @@ import { ForLoopParser } from './logic/ForLoop';
 import { BreakParser, ContinueParser } from './logic/LoopControl';
 import { ArrayBuilderParser } from './data/ArrayBuilder';
 import { ConsoleLogParser } from './actions/ConsoleLog';
-import { SendMessageParser } from './actions/SendMessage';
+import { SendMessageParser } from './discord/SendMessage';
+import { EmbedParser } from './discord/Embed';
+import { ButtonParser } from './discord/Button';
+import { ActionRowParser } from './discord/ActionRow';
+import { ShowModalParser } from './discord/ShowModal';
+import { MemberActionParser } from './discord/MemberActions';
 
 import { OnReadyParser } from './events/OnReady';
 import { OnMessageCreateParser } from './events/OnMessageCreate';
@@ -86,6 +91,14 @@ export class ParserRegistry {
         // --- Actions ---
         this.register('Console Log', new ConsoleLogParser());
         this.register('Send Message', new SendMessageParser());
+        this.register('Construct Embed', new EmbedParser());
+        this.register('Create Button', new ButtonParser());
+        this.register('Create Action Row', new ActionRowParser());
+        this.register('Show Modal', new ShowModalParser());
+        this.register('Kick Member', new MemberActionParser('kick'));
+        this.register('Ban Member', new MemberActionParser('ban'));
+        this.register('Add Role', new MemberActionParser('addRole'));
+        this.register('Remove Role', new MemberActionParser('removeRole'));
     }
 
     register(key: string, parser: ASTNodeParser) {

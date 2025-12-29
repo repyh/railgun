@@ -54,7 +54,7 @@ export class CodePrinter {
             case 'CallExpression':
                 const call = node as AST.CallExpression;
                 const args = call.arguments.map(arg => this.print(arg, 0)).join(', ');
-                return `${this.print(call.callee, 0)}(${args})`;
+                return `${this.print(call.callee, 0)}${call.optional ? '?.' : ''}(${args})`;
 
             case 'Identifier':
                 return (node as AST.Identifier).name;

@@ -145,6 +145,7 @@ export interface CallExpression extends BaseNode {
     type: 'CallExpression';
     callee: Expression; // e.g., Identifier(myFunc) or MemberExpression(msg.reply)
     arguments: Expression[];
+    optional?: boolean; // e.g., member.kick?.()
 }
 
 export interface MemberExpression extends BaseNode {
