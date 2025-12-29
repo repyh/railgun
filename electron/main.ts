@@ -6,6 +6,7 @@ import { FileSystemIPC } from './ipc/FileSystemIPC';
 
 import { PluginIPC } from './ipc/PluginIPC';
 import { DependencyIPC } from './ipc/DependencyIPC';
+import { BotProcessIPC } from './ipc/BotProcessIPC';
 import { ipcMain } from 'electron';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -108,6 +109,7 @@ app.whenReady().then(() => {
     new FileSystemIPC().register();
     new PluginIPC().register();
     new DependencyIPC().register();
+    new BotProcessIPC().register();
 
     createSplashWindow();
     createMainWindow();
