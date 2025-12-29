@@ -9,17 +9,20 @@ export type ASTNodeType =
     | 'DoWhileStatement'
     | 'ForStatement'
     | 'VariableDeclaration'
+    | 'VariableDeclarator' // Added
     | 'CallExpression'
     | 'MemberExpression'
     | 'BinaryExpression'
     | 'UnaryExpression'
-    | 'AssignmentExpression' // Added for variable mutation
-    | 'AssignmentExpression' // Added for variable mutation
+    | 'UpdateExpression' // Added
+    | 'AssignmentExpression'
     | 'Identifier'
     | 'Literal'
     | 'ArrayExpression'
     | 'ObjectExpression'
-    | 'AwaitExpression'; // For async ops
+    | 'AwaitExpression'
+    | 'NewExpression' // Added
+    | 'ArrowFunctionExpression'; // Added
 
 export interface BaseNode {
     type: ASTNodeType;
@@ -40,7 +43,7 @@ export type Statement =
     | IfStatement
     | WhileStatement
     | DoWhileStatement
-    // | ForStatement 
+    | ForStatement
     | VariableDeclaration;
 
 export type Expression =
@@ -49,15 +52,14 @@ export type Expression =
     | BinaryExpression
     | UnaryExpression
     | AssignmentExpression
-    | AssignmentExpression
-    | UnaryExpression
-    | AssignmentExpression
-    | AssignmentExpression
+    | UpdateExpression
     | Identifier
     | Literal
     | ArrayExpression
     | ObjectExpression
-    | AwaitExpression;
+    | AwaitExpression
+    | NewExpression
+    | ArrowFunctionExpression;
 
 // --- Function & scopes ---
 
@@ -69,6 +71,13 @@ export interface FunctionDeclaration extends BaseNode {
     async: boolean;
     isEvent?: boolean; // Metadata: is this an event handler?
     eventName?: string; // If event, what is the event name? (e.g. 'messageCreate')
+}
+
+export interface ArrowFunctionExpression extends BaseNode {
+    type: 'ArrowFunctionExpression';
+    params: Identifier[];
+    body: BlockStatement | Expression;
+    async: boolean;
 }
 
 export interface BlockStatement extends BaseNode {
@@ -102,6 +111,14 @@ export interface DoWhileStatement extends BaseNode {
     body: BlockStatement;
 }
 
+export interface ForStatement extends BaseNode {
+    type: 'ForStatement';
+    init: VariableDeclaration | Expression | null;
+    test: Expression | null;
+    update: Expression | null;
+    body: BlockStatement;
+}
+
 // --- Variables ---
 
 export interface VariableDeclaration extends BaseNode {
@@ -110,7 +127,8 @@ export interface VariableDeclaration extends BaseNode {
     declarations: VariableDeclarator[];
 }
 
-export interface VariableDeclarator {
+export interface VariableDeclarator extends BaseNode {
+    type: 'VariableDeclarator';
     id: Identifier;
     init: Expression | null;
 }
@@ -128,6 +146,12 @@ export interface CallExpression extends BaseNode {
     arguments: Expression[];
 }
 
+export interface NewExpression extends BaseNode {
+    type: 'NewExpression';
+    callee: Expression;
+    arguments: Expression[];
+}
+
 export interface MemberExpression extends BaseNode {
     type: 'MemberExpression';
     object: Expression;
@@ -140,6 +164,13 @@ export interface AssignmentExpression extends BaseNode {
     operator: '=' | '+=' | '-=' | '*=' | '/=';
     left: Identifier | MemberExpression;
     right: Expression;
+}
+
+export interface UpdateExpression extends BaseNode {
+    type: 'UpdateExpression';
+    operator: '++' | '--';
+    argument: Expression;
+    prefix: boolean;
 }
 
 export interface BinaryExpression extends BaseNode {
