@@ -93,6 +93,14 @@ export class InputResolver {
             return '0';
         }
 
+        // Check node.data (standard Rete persistence)
+        if (node.data && node.data[inputKey] !== undefined) {
+            const val = node.data[inputKey] as any;
+            if (val !== undefined && val !== '') {
+                return typeof val === 'string' ? `'${val.replace(/'/g, "\\'")}'` : val;
+            }
+        }
+
         return 'undefined';
     }
 }

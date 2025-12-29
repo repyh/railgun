@@ -12,6 +12,8 @@ export type ASTNodeType =
     | 'CallExpression'
     | 'MemberExpression'
     | 'BinaryExpression'
+    | 'UnaryExpression'
+    | 'AssignmentExpression' // Added for variable mutation
     | 'AssignmentExpression' // Added for variable mutation
     | 'Identifier'
     | 'Literal'
@@ -45,6 +47,11 @@ export type Expression =
     | CallExpression
     | MemberExpression
     | BinaryExpression
+    | UnaryExpression
+    | AssignmentExpression
+    | AssignmentExpression
+    | UnaryExpression
+    | AssignmentExpression
     | AssignmentExpression
     | Identifier
     | Literal
@@ -172,4 +179,11 @@ export interface Property {
 export interface AwaitExpression extends BaseNode {
     type: 'AwaitExpression';
     argument: Expression;
+}
+
+export interface UnaryExpression extends BaseNode {
+    type: 'UnaryExpression';
+    operator: string; // !, -, +, typeof, void, delete
+    argument: Expression;
+    prefix: boolean;
 }

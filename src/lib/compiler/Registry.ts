@@ -20,6 +20,7 @@ import { SplitterValueGenerator } from './generators/values/Splitter';
 import { WhileLoopGenerator } from './generators/statements/WhileLoop';
 import { DoWhileLoopGenerator } from './generators/statements/DoWhileLoop';
 import { WaitGenerator } from './generators/statements/Wait';
+import { ConsoleLogGenerator } from './generators/statements/ConsoleLog';
 
 /**
  * The Registry serves as the central directory for all code generators.
@@ -38,6 +39,7 @@ export class Registry {
         'Math Assignment': MathAssignmentGenerator,
         'Send Message': SendMessageGenerator,
         'Show Modal': ShowModalGenerator,
+        'Console Log': ConsoleLogGenerator,
     };
     private static values: Record<string, ValueGenerator> = {
         // Values (Keyed by Label or Category)

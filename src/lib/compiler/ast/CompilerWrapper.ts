@@ -31,7 +31,38 @@ export class ASTCompiler {
 
         // 3. Print
         const printer = new CodePrinter();
-        const code = printer.print(program);
+        let code = printer.print(program);
+
+        // 4. Wrap in Module Exports (Post-Processing)
+        // The AST currently produces raw functions like "async function On_Command(...)".
+
+        const eventNode = this.nodes.find(n => n.category === 'Event' || n.codeType === 'On Command' || n.codeType === 'On Slash Command');
+        if (eventNode) {
+            const eventLabel = eventNode.codeType || eventNode.label;
+
+            // Extract the body of the generated function (hacky but effective for now)
+            // ideally we would generate the module.exports AST directly, but this bridges the gap
+            const bodyMatch = code.match(/async function \w+\(([^)]*)\)\s*\{([\s\S]*)\}/);
+
+            if (bodyMatch) {
+                const params = bodyMatch[1]; // e.g. "message, args"
+                const body = bodyMatch[2];   // function body
+
+                if (eventLabel === 'On Command') {
+                    const nameControl = eventNode.controls?.['name'] as any;
+                    const cmdName = nameControl?.value || 'my-cmd';
+
+                    code = `module.exports = {
+    name: '${cmdName}',
+    execute: async (${params}) => {
+        const client = ${params.split(',')[0].trim()}.client;
+${body}
+    }
+};`;
+                }
+                // TODO: Add other event types here similar to Compiler.ts
+            }
+        }
 
         console.log('[AST Compiler] Compilation successful.');
         return code;

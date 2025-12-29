@@ -262,8 +262,8 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             try {
                 // @ts-ignore
                 const configData = await window.electronAPI.readProjectConfig(projectPathRef.current);
-                useAST = configData?.config?.compilerVersion === 'v2';
-                console.log(`[ReteEditor] Compiling using ${useAST ? 'AST (v2)' : 'Legacy (v1)'} compiler`);
+                useAST = configData?.compilerVersion === 'v2' || configData?.config?.compilerVersion === 'v2';
+                console.log(`[ReteEditor] Config loaded. Version: ${configData?.compilerVersion}. Compiling using ${useAST ? 'AST (v2)' : 'Legacy (v1)'} compiler`);
             } catch (err) {
                 console.warn('[ReteEditor] Failed to read config, defaulting to Legacy compiler', err);
             }

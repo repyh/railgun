@@ -19,7 +19,7 @@ export class CodePrinter {
                 const asyncPrefix = func.async ? 'async ' : '';
                 const params = func.params.map(p => p.name).join(', ');
 
-                // If it's an event handler (anonymous or module method), we might format it differently,
+                // If it's an event handler (anonymous or module method), might format it differently,
                 // but for internal functions:
                 return `${indent}${asyncPrefix}function ${func.id?.name}(${params}) ${this.print(func.body, indentLevel)}`;
 
@@ -64,7 +64,29 @@ export class CodePrinter {
                 if (typeof lit.value === 'string') return `'${lit.value}'`;
                 return String(lit.value);
 
-            // TODO: MemberExpression, BinaryExpression, etc.
+            case 'MemberExpression':
+                const member = node as AST.MemberExpression;
+                const obj = this.print(member.object, 0);
+                const prop = this.print(member.property, 0);
+                if (member.computed) {
+                    return `${obj}[${prop}]`;
+                } else {
+                    return `${obj}.${prop}`;
+                }
+
+
+
+            case 'BinaryExpression':
+                const binary = node as AST.BinaryExpression;
+                return `(${this.print(binary.left, 0)} ${binary.operator} ${this.print(binary.right, 0)})`;
+
+            case 'UnaryExpression':
+                const unary = node as AST.UnaryExpression;
+                if (unary.prefix) {
+                    return `${unary.operator}${this.print(unary.argument, 0)}`;
+                } else {
+                    return `${this.print(unary.argument, 0)}${unary.operator}`;
+                }
 
             default:
                 console.warn(`Unknown node type: ${node.type}`);

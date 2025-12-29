@@ -170,8 +170,26 @@ export class GraphParser {
 
     private processActionNode(node: BotNode): AST.ExpressionStatement {
         // Actions are typically funtion calls, e.g. msg.reply()
-        // For now, we return a Generic CallExpression placeholder
-        // In reality, this needs a registry of Action Generators -> AST
+
+        // --- Specific Action Handlers ---
+        if (node.label === 'Console Log') {
+            const message = this.resolveInput(node, 'msg');
+            return {
+                type: 'ExpressionStatement',
+                expression: {
+                    type: 'CallExpression',
+                    callee: {
+                        type: 'MemberExpression',
+                        object: { type: 'Identifier', name: 'console' },
+                        property: { type: 'Identifier', name: 'log' },
+                        computed: false
+                    } as AST.MemberExpression,
+                    arguments: [message],
+                    sourceNodeId: node.id
+                },
+                sourceNodeId: node.id
+            };
+        }
 
         const args: AST.Expression[] = [];
         // TODO: Resolve actual inputs dynamically based on node definition
@@ -216,17 +234,115 @@ export class GraphParser {
             return { type: 'Literal', value: control.value };
         }
 
+        // 3. Check node.data (standard Rete persistence)
+        if (node.data && node.data[key] !== undefined) {
+            const val = node.data[key] as any;
+            if (val !== undefined && val !== '') {
+                // Basic casting for data
+                if (!isNaN(Number(val))) {
+                    return { type: 'Literal', value: Number(val) };
+                }
+                return { type: 'Literal', value: val };
+            }
+        }
+
         // 3. Default: Null or Undefined
         return { type: 'Literal', value: null };
     }
 
     private processValueNode(node: BotNode, outputKey: string): AST.Expression {
         // Handle Variable Nodes, Math Nodes, etc.
-        // For now, returning implicit Identifier
+
+        // 1. Primitives (String, Number, Boolean)
+        if (node.label === 'String' || node.codeType === 'String') {
+            const val = this.getNodeValue(node, 'value');
+            return { type: 'Literal', value: String(val) };
+        }
+        if (node.label === 'Number' || node.codeType === 'Number') {
+            const val = this.getNodeValue(node, 'value');
+            return { type: 'Literal', value: Number(val) };
+        }
+        if (node.label === 'Boolean' || node.codeType === 'Boolean') {
+            const val = this.getNodeValue(node, 'value');
+            return { type: 'Literal', value: val === 'true' || val === true };
+        }
+
+        // 2. Math Operations
+        if (['Add', 'Subtract', 'Multiply', 'Divide', 'Modulus', 'Power'].includes(node.codeType || node.label)) {
+            // Inputs are named 'a' and 'b' in the node definitions
+            const left = this.resolveInput(node, 'a');
+            const right = this.resolveInput(node, 'b');
+            let op = '+';
+            switch (node.codeType || node.label) {
+                case 'Add': op = '+'; break;
+                case 'Subtract': op = '-'; break;
+                case 'Multiply': op = '*'; break;
+                case 'Divide': op = '/'; break;
+                case 'Modulus': op = '%'; break;
+                case 'Power': op = '**'; break;
+            }
+            return {
+                type: 'BinaryExpression',
+                operator: op,
+                left,
+                right,
+                sourceNodeId: node.id
+            };
+        }
+
+        // 3. Logic Operations
+        if ((node.codeType || node.label) === 'Comparison') {
+            const left = this.resolveInput(node, 'inp1');
+            const right = this.resolveInput(node, 'inp2');
+            const op = this.getNodeValue(node, 'optim') || '==';
+            return {
+                type: 'BinaryExpression',
+                operator: op,
+                left,
+                right,
+                sourceNodeId: node.id
+            };
+        }
+        if ((node.codeType || node.label) === 'Logic Op') {
+            const left = this.resolveInput(node, 'inp1');
+            const right = this.resolveInput(node, 'inp2');
+            const op = this.getNodeValue(node, 'optim') || '&&';
+            return {
+                type: 'BinaryExpression',
+                operator: op,
+                left,
+                right,
+                sourceNodeId: node.id
+            };
+        }
+        if ((node.codeType || node.label) === 'Not') {
+            const arg = this.resolveInput(node, 'inp');
+            return {
+                type: 'UnaryExpression',
+                operator: '!',
+                argument: arg,
+                prefix: true,
+                sourceNodeId: node.id
+            };
+        }
+
+        // For now, fallback to implicit Identifier for unknown nodes (like Math results calculated elsewhere)
         return {
             type: 'Identifier',
             name: `node_${node.id.replace(/-/g, '_')}_${outputKey}`
         };
+    }
+
+    private getNodeValue(node: BotNode, key: string): any {
+        // Prioritize node.data (persistence)
+        if (node.data && node.data[key] !== undefined) {
+            return node.data[key];
+        }
+        // Fallback to controls
+        if (node.controls && node.controls[key]) {
+            return (node.controls[key] as any).value;
+        }
+        return undefined;
     }
 
     // --- Helpers ---
