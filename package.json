@@ -22,7 +22,7 @@
     "dev:react": "vite",
     "dev:electron": "nodemon --watch electron --ext ts,tsx,json --exec \"cross-env NODE_ENV=development bun run build:electron && electron .\"",
     "build": "tsc -b && vite build && bun run build:electron",
-    "build:electron": "tsc -p tsconfig.electron.json",
+    "build:electron": "tsc -p tsconfig.electron.json && node scripts/copy-assets.js",
     "dist": "bun run build && electron-builder",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -45,7 +45,6 @@
     "rete-connection-plugin": "^2.0.5",
     "rete-react-plugin": "^2.1.0",
     "rete-render-utils": "^2.0.3",
-    "rete-std-plugin": "^2.0.2",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

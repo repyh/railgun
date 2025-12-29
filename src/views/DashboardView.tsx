@@ -120,7 +120,7 @@ export const DashboardView: React.FC = () => {
                     <p className="text-zinc-400 text-lg">Visual Discord Bot Editor. v0.0.1-alpha</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
                     <ActionCard
                         icon={Plus}
                         title="New Project"

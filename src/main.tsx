@@ -4,8 +4,12 @@ import './index.css'
 import './lib/electron-setup'; // Patch Electron API
 import App from '@/App.tsx'
 
+import { AppLoader } from '@/components/system/AppLoader';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AppLoader>
+      <App />
+    </AppLoader>
   </StrictMode>,
 )
