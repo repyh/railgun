@@ -9,20 +9,19 @@ export type ASTNodeType =
     | 'DoWhileStatement'
     | 'ForStatement'
     | 'VariableDeclaration'
-    | 'VariableDeclarator' // Added
     | 'CallExpression'
     | 'MemberExpression'
     | 'BinaryExpression'
     | 'UnaryExpression'
-    | 'UpdateExpression' // Added
-    | 'AssignmentExpression'
+    | 'AssignmentExpression' // Added for variable mutation
+    | 'AssignmentExpression' // Added for variable mutation
     | 'Identifier'
     | 'Literal'
     | 'ArrayExpression'
     | 'ObjectExpression'
+    | 'CommentStatement'
     | 'AwaitExpression'
-    | 'NewExpression' // Added
-    | 'ArrowFunctionExpression'; // Added
+    | 'ArrowFunctionExpression';
 
 export interface BaseNode {
     type: ASTNodeType;
@@ -43,8 +42,14 @@ export type Statement =
     | IfStatement
     | WhileStatement
     | DoWhileStatement
-    | ForStatement
-    | VariableDeclaration;
+    // | ForStatement 
+    | VariableDeclaration
+    | CommentStatement; // Added for QoL
+
+export interface CommentStatement extends BaseNode {
+    type: 'CommentStatement';
+    text: string;
+}
 
 export type Expression =
     | CallExpression
@@ -52,13 +57,11 @@ export type Expression =
     | BinaryExpression
     | UnaryExpression
     | AssignmentExpression
-    | UpdateExpression
     | Identifier
     | Literal
     | ArrayExpression
     | ObjectExpression
     | AwaitExpression
-    | NewExpression
     | ArrowFunctionExpression;
 
 // --- Function & scopes ---
@@ -76,7 +79,7 @@ export interface FunctionDeclaration extends BaseNode {
 export interface ArrowFunctionExpression extends BaseNode {
     type: 'ArrowFunctionExpression';
     params: Identifier[];
-    body: BlockStatement | Expression;
+    body: BlockStatement | Expression; // Arrow functions can have expression body
     async: boolean;
 }
 
@@ -111,14 +114,6 @@ export interface DoWhileStatement extends BaseNode {
     body: BlockStatement;
 }
 
-export interface ForStatement extends BaseNode {
-    type: 'ForStatement';
-    init: VariableDeclaration | Expression | null;
-    test: Expression | null;
-    update: Expression | null;
-    body: BlockStatement;
-}
-
 // --- Variables ---
 
 export interface VariableDeclaration extends BaseNode {
@@ -127,8 +122,7 @@ export interface VariableDeclaration extends BaseNode {
     declarations: VariableDeclarator[];
 }
 
-export interface VariableDeclarator extends BaseNode {
-    type: 'VariableDeclarator';
+export interface VariableDeclarator {
     id: Identifier;
     init: Expression | null;
 }
@@ -146,12 +140,6 @@ export interface CallExpression extends BaseNode {
     arguments: Expression[];
 }
 
-export interface NewExpression extends BaseNode {
-    type: 'NewExpression';
-    callee: Expression;
-    arguments: Expression[];
-}
-
 export interface MemberExpression extends BaseNode {
     type: 'MemberExpression';
     object: Expression;
@@ -164,13 +152,6 @@ export interface AssignmentExpression extends BaseNode {
     operator: '=' | '+=' | '-=' | '*=' | '/=';
     left: Identifier | MemberExpression;
     right: Expression;
-}
-
-export interface UpdateExpression extends BaseNode {
-    type: 'UpdateExpression';
-    operator: '++' | '--';
-    argument: Expression;
-    prefix: boolean;
 }
 
 export interface BinaryExpression extends BaseNode {

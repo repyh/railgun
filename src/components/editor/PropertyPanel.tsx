@@ -304,9 +304,9 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-(--border-primary) text-xs text-(--text-secondary) text-center">
+                {/* <div className="p-4 border-t border-(--border-primary) text-xs text-(--text-secondary) text-center">
                     Railgun v0.0.1-alpha
-                </div>
+                </div> */}
             </div>
         </>
     );

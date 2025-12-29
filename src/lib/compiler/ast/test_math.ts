@@ -47,8 +47,8 @@ const nodes: BotNode[] = [
         codeType: 'Add',
         category: 'Math',
         inputs: {
-            num1: { socket: { name: 'Number' } },
-            num2: { socket: { name: 'Number' } }
+            a: { socket: { name: 'Number' } },
+            b: { socket: { name: 'Number' } }
         },
         outputs: { num: { socket: { name: 'Number' } } },
         controls: {}
@@ -59,11 +59,11 @@ const connections = [
     // Event -> Log
     { source: 'event-1', sourceOutput: 'exec', target: 'log-1', targetInput: 'exec' },
 
-    // 10 -> Add.num1
-    { source: 'num-10', sourceOutput: 'value', target: 'add-1', targetInput: 'num1' },
+    // 10 -> Add.a
+    { source: 'num-10', sourceOutput: 'value', target: 'add-1', targetInput: 'a' },
 
-    // 20 -> Add.num2
-    { source: 'num-20', sourceOutput: 'value', target: 'add-1', targetInput: 'num2' },
+    // 20 -> Add.b
+    { source: 'num-20', sourceOutput: 'value', target: 'add-1', targetInput: 'b' },
 
     // Add.num -> Log.msg
     { source: 'add-1', sourceOutput: 'num', target: 'log-1', targetInput: 'msg' }

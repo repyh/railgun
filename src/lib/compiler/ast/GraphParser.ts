@@ -1,12 +1,11 @@
 import { BotNode } from '../../railgun-rete';
 import * as AST from './types';
-import type { NodeParser } from './parsers';
-import { MathParser, LogicParser, VariableParser, ActionParser } from './parsers';
+import { registry } from './nodes';
+import type { ParserContext } from './nodes/ParserContext';
 
-export class GraphParser {
+export class GraphParser implements ParserContext {
     nodes: BotNode[];
     connections: any[];
-    parsers: NodeParser[];
 
     // Map of Node ID to generated AST Node (for caching/reference)
     nodeMap: Map<string, AST.BaseNode> = new Map();
@@ -14,14 +13,6 @@ export class GraphParser {
     constructor(nodes: BotNode[], connections: any[]) {
         this.nodes = nodes;
         this.connections = connections;
-
-        // Initialize parsers
-        this.parsers = [
-            new VariableParser(),
-            new MathParser(),
-            new LogicParser(),
-            new ActionParser()
-        ];
     }
 
     /**
@@ -56,35 +47,11 @@ export class GraphParser {
      * In the AST, we treat Events as functions that the system calls.
      */
     private processEvent(node: BotNode): AST.FunctionDeclaration | null {
-        const eventName = node.codeType || node.label;
-
-        // Determine arguments based on event type
-        const params: AST.Identifier[] = [];
-
-        if (eventName === 'On Ready') {
-            params.push({ type: 'Identifier', name: 'client' });
-        } else if (eventName === 'On Message Create') {
-            params.push({ type: 'Identifier', name: 'message' });
-        } else if (eventName === 'On Slash Command' || eventName === 'On Interaction Create') {
-            params.push({ type: 'Identifier', name: 'interaction' });
-        } else if (eventName === 'On Command') {
-            params.push({ type: 'Identifier', name: 'message' });
-            params.push({ type: 'Identifier', name: 'args' });
+        const parser = registry.getEventParser(node.codeType, node.label);
+        if (parser) {
+            return parser.parse(node, this);
         }
-
-        // Build the body by following the 'exec' output
-        const body = this.traverseBlock(node, 'exec');
-
-        return {
-            type: 'FunctionDeclaration',
-            id: { type: 'Identifier', name: this.sanitizeName(eventName) },
-            params: params,
-            body: body,
-            async: true,
-            sourceNodeId: node.id,
-            isEvent: true,
-            eventName: eventName
-        };
+        return null;
     }
 
     /**
@@ -103,8 +70,6 @@ export class GraphParser {
         while (currentNode) {
             if (visited.has(currentNode.id)) {
                 // Detected a cycle or re-entry in a linear block.
-                // In a real compiler, we might want a Goto or Loop structure, 
-                // but for now, we stop to prevent overflow.
                 break;
             }
             visited.add(currentNode.id);
@@ -126,25 +91,28 @@ export class GraphParser {
 
     /**
      * Processes a single node into a Statement.
-     * Delegates to registered parsers.
+     * Handles Control Flow (If, While) and Actions.
      */
     private processStatementNode(node: BotNode): AST.Statement | null {
-        for (const parser of this.parsers) {
+        // Try to find a parser in the registry
+        const parser = registry.getParser(node.codeType, node.label);
+        if (parser) {
             const result = parser.parse(node, this, 'statement');
-            if (result) {
-                // Ensure result is a Statement
-                // Parsers might return Expression if called with 'statement' context if they wrap it?
-                // Our parsers strictly return generic types, so we assume type safety is handled by the parser logic.
-                // In TS, we can assert or check type property if needed.
-                // Basic check:
-                if ((result as AST.Statement).type.endsWith('Statement') || (result as AST.Statement).type === 'VariableDeclaration') {
+
+            // Check if result is a valid statement
+            if (result && (result as any).type) {
+                if (['VariableDeclaration', 'ExpressionStatement', 'IfStatement', 'WhileStatement', 'ReturnStatement', 'BlockStatement'].includes(result.type)) {
                     return result as AST.Statement;
                 }
-                // If it returned an expression, wrap it?
-                // ActionParser wraps in ExpressionStatement. LogicParser If/While are Statements.
             }
         }
-        return null;
+
+        // Fallback for unknown nodes
+        const label = node.label || node.codeType || 'Unknown Node';
+        return {
+            type: 'CommentStatement',
+            text: `Unknown or Unsupported Node: ${label} (ID: ${node.id})`
+        };
     }
 
     /**
@@ -189,18 +157,20 @@ export class GraphParser {
     }
 
     private processValueNode(node: BotNode, outputKey: string): AST.Expression {
-        // Delegate to parsers
-        for (const parser of this.parsers) {
+        // Registry Lookup (Handles Primitives, Variables, and regular Value nodes)
+        const parser = registry.getParser(node.codeType, node.label);
+        if (parser) {
             const result = parser.parse(node, this, 'expression');
-            if (result) {
-                // Check if it's an expression
-                if (!(result as any).type.endsWith('Statement')) {
+
+            if (result && (result as any).type) {
+                // Ensure we got an Expression (not a Statement)
+                if (!['VariableDeclaration', 'IfStatement', 'WhileStatement', 'ReturnStatement', 'BlockStatement', 'ExpressionStatement'].includes(result.type)) {
                     return result as AST.Expression;
                 }
             }
         }
 
-        // Fallback to implicit Identifier for unknown nodes (like Math results calculated elsewhere)
+        // Default Fallback
         return {
             type: 'Identifier',
             name: `node_${node.id.replace(/-/g, '_')}_${outputKey}`

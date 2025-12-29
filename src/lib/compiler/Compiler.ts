@@ -1,35 +1,31 @@
 import { BotNode } from '../railgun-rete';
-import { InputResolver } from './InputResolver';
-import { NodeProcessor } from './NodeProcessor';
 import { PluginManager } from '../plugins/PluginManager';
-import type { CompilerContext } from './interfaces';
+import { GraphParser } from './ast/GraphParser';
+import { CodePrinter } from './ast/CodePrinter';
+import * as AST from './ast/types';
 
 /**
- * The Compiler class orchestrates the entire compilation process.
- * It takes a list of nodes and connections, effectively a graph, and converts it into a JavaScript file.
- * It handles:
- * 1. Entry point detection (Event nodes).
- * 2. Plugin runtime injection.
- * 3. Function definition compilation.
- * 4. Main Event compilation (generating the export structure).
+ * The Compiler class orchestrates the entire compilation process using the AST Pipeline.
+ * 1. GraphParser -> Converts Graph to AST Helper
+ * 2. Compiler -> Wraps logic into CommonJS Module Exports
+ * 3. CodePrinter -> Generates JS Code
  */
 export class Compiler {
     nodes: BotNode[];
     connections: any[];
-    inputResolver: InputResolver;
-    nodeProcessor: NodeProcessor;
     imports: Set<string> = new Set();
+    parser: GraphParser;
+    printer: CodePrinter;
 
     constructor(data: { nodes: BotNode[], connections: any[] }) {
         this.nodes = data.nodes;
         this.connections = data.connections;
-        this.inputResolver = new InputResolver(this.nodes, this.connections);
-        this.nodeProcessor = new NodeProcessor(this.nodes, this.connections, this.inputResolver);
+        this.parser = new GraphParser(this.nodes, this.connections);
+        this.printer = new CodePrinter();
     }
 
     /**
      * Adds an import statement to the list of required imports.
-     * @param statement Full import entry, e.g. "const fs = require('fs');"
      */
     addImport(statement: string) {
         this.imports.add(statement);
@@ -40,7 +36,7 @@ export class Compiler {
      */
     compile(): string {
         // 1. Find the Event Node (Entry Point)
-        const eventNode = this.nodes.find(n => n.category === 'Event');
+        const eventNode = this.nodes.find(n => n.category === 'Event' || n.codeType === 'On Command' || n.codeType === 'On Slash Command');
         if (!eventNode) {
             throw new Error('No Event node found. A valid graph must have an Event node.');
         }
@@ -50,126 +46,147 @@ export class Compiler {
         // 2. Inject Plugin Runtimes
         PluginManager.plugins.forEach((plugin: any) => {
             if (plugin.runtimePath) {
-                // Windows backslashes need escaping or forward slashes
                 const safePath = plugin.runtimePath.replace(/\\/g, '/');
                 const varName = `plugin_${plugin.manifest.id.replace(/-/g, '_')}`;
                 this.addImport(`const ${varName} = require("${safePath}");`);
             }
         });
 
-        // 3. Compile Functions First
-        const functionNodes = this.nodes.filter(n => (n.codeType || n.label) === 'Function Def');
-        let functionsCode = '';
-        for (const fnNode of functionNodes) {
-            functionsCode += this.processFunctionNode(fnNode);
-        }
+        // 3. Process the Event Logic using GraphParser
+        // We bypass the generic tokenizer so we can structure the AST manually around it.
+        const bodyBlock = this.parser.traverseBlock(eventNode, 'exec');
 
-        // 4. Determine Output Format based on Event Type
-        let code = '';
-        const isSlashCommand = eventLabel === 'On Slash Command';
+        // 4. Construct the wrapper AST based on Event Type
+        let program: AST.Program;
+        let moduleExportsValue: AST.ObjectExpression;
 
-        const ctx: CompilerContext = {
-            clientVar: 'client',
-            mainVar: 'message', // Default
-            interactionVar: 'interaction',
-            imports: this.imports,
-            addImport: this.addImport.bind(this),
-            declaredVariables: new Set()
-        };
+        if (eventLabel === 'On Slash Command') {
+            // --- SLASH COMMAND ---
+            this.addImport("const { SlashCommandBuilder } = require('discord.js');");
 
-        if (isSlashCommand) {
-            // --- SLASH COMMAND FORMAT ---
-            const commandName = 'my-command'; // TODO: Get from graph properties if available
-
-            code += `const { SlashCommandBuilder } = require('discord.js');\n\n`;
-            code += functionsCode + '\n';
-            code += `module.exports = {\n`;
-            code += `    data: new SlashCommandBuilder()\n`;
-            code += `        .setName("${commandName}")\n`;
-            code += `        .setDescription("Auto-generated command"),\n`;
-            code += `    run: async (client, interaction) => {\n`;
-
-            ctx.interactionVar = 'interaction';
-            ctx.mainVar = 'interaction';
-
-            code += this.nodeProcessor.process(eventNode, '        ', ctx);
-            code += `    }\n`;
-            code += `};\n`;
+            moduleExportsValue = {
+                type: 'ObjectExpression',
+                properties: [
+                    {
+                        kind: 'init',
+                        key: { type: 'Identifier', name: 'data' },
+                        value: { type: 'Identifier', name: 'new SlashCommandBuilder().setName("my-command").setDescription("Auto-generated")' } // Simplification for now, usually builder chain
+                    },
+                    {
+                        kind: 'init',
+                        key: { type: 'Identifier', name: 'run' },
+                        value: {
+                            type: 'ArrowFunctionExpression',
+                            async: true,
+                            params: [
+                                { type: 'Identifier', name: 'client' },
+                                { type: 'Identifier', name: 'interaction' }
+                            ],
+                            body: bodyBlock
+                        }
+                    }
+                ]
+            };
 
         } else if (eventLabel === 'On Command') {
-            // --- LEGACY COMMAND FORMAT ---
+            // --- LEGACY COMMAND ---
             const nameControl = eventNode.controls?.['name'] as any;
             const cmdName = nameControl?.value || 'my-cmd';
 
-            code += functionsCode + '\n';
-            code += `module.exports = {\n`;
-            code += `    name: '${cmdName}',\n`;
-            code += `    execute: async (message, args) => {\n`;
-            code += `        const client = message.client;\n`;
-
-            ctx.mainVar = 'message';
-
-            code += this.nodeProcessor.process(eventNode, '        ', ctx);
-            code += `    }\n`;
-            code += `};\n`;
+            moduleExportsValue = {
+                type: 'ObjectExpression',
+                properties: [
+                    {
+                        kind: 'init',
+                        key: { type: 'Identifier', name: 'name' },
+                        value: { type: 'Literal', value: cmdName }
+                    },
+                    {
+                        kind: 'init',
+                        key: { type: 'Identifier', name: 'execute' },
+                        value: {
+                            type: 'ArrowFunctionExpression',
+                            async: true,
+                            params: [
+                                { type: 'Identifier', name: 'message' },
+                                { type: 'Identifier', name: 'args' }
+                            ],
+                            body: bodyBlock
+                        }
+                    }
+                ]
+            };
 
         } else {
-            // --- EVENT FORMAT ---
+            // --- EVENT ---
             let eventName = eventLabel;
             let once = false;
-            let args = '...args';
+            let argsParams: AST.Identifier[] = [];
 
             if (eventLabel === 'On Ready') {
                 eventName = 'ready';
                 once = true;
-                args = 'client';
+                argsParams = [{ type: 'Identifier', name: 'client' }];
             } else if (eventLabel === 'On Message Create') {
                 eventName = 'messageCreate';
-                args = 'message';
-            } else if (eventLabel === 'On Interaction Create') {
+                argsParams = [{ type: 'Identifier', name: 'message' }];
+            } else if (eventLabel === 'On Interaction Create' || eventLabel === 'On Button Click' || eventLabel === 'On Modal Submit') {
                 eventName = 'interactionCreate';
-                args = 'interaction';
-            } else if (eventLabel === 'On Modal Submit') {
-                eventName = 'interactionCreate';
-                args = 'interaction';
-            } else if (eventLabel === 'On Button Click') {
-                eventName = 'interactionCreate';
-                args = 'interaction';
+                argsParams = [{ type: 'Identifier', name: 'interaction' }];
             }
 
-            code += functionsCode + '\n';
-            code += `module.exports = {\n`;
-            code += `    name: '${eventName}',\n`;
-            code += `    once: ${once},\n`;
-            code += `    execute: async (${args}) => {\n`;
-
-            if (eventName !== 'ready') {
-                code += `        const client = ${args}.client;\n`;
-            }
-
-            // Specific Logic filters for Interaction Events
-            if (eventLabel === 'On Modal Submit') {
-                code += `        if (!${args}.isModalSubmit()) return;\n`;
-                const customIdCtrl = eventNode.controls?.['customId'] as any;
-                if (customIdCtrl && customIdCtrl.value) {
-                    code += `        if (${args}.customId !== '${customIdCtrl.value}') return;\n`;
-                }
-            } else if (eventLabel === 'On Button Click') {
-                code += `        if (!${args}.isButton()) return;\n`;
-                const customIdCtrl = eventNode.controls?.['customId'] as any;
-                if (customIdCtrl && customIdCtrl.value) {
-                    code += `        if (${args}.customId !== '${customIdCtrl.value}') return;\n`;
-                }
-            }
-
-            ctx.mainVar = args;
-
-            code += this.nodeProcessor.process(eventNode, '        ', ctx);
-            code += `    }\n`;
-            code += `};\n`;
+            moduleExportsValue = {
+                type: 'ObjectExpression',
+                properties: [
+                    {
+                        kind: 'init',
+                        key: { type: 'Identifier', name: 'name' },
+                        value: { type: 'Literal', value: eventName }
+                    },
+                    {
+                        kind: 'init',
+                        key: { type: 'Identifier', name: 'once' },
+                        value: { type: 'Literal', value: once }
+                    },
+                    {
+                        kind: 'init',
+                        key: { type: 'Identifier', name: 'execute' },
+                        value: {
+                            type: 'ArrowFunctionExpression',
+                            async: true,
+                            params: argsParams,
+                            body: bodyBlock
+                        }
+                    }
+                ]
+            };
         }
 
-        // Prepend Imports
+        // 5. Create Program AST
+        program = {
+            type: 'Program',
+            body: [
+                {
+                    type: 'ExpressionStatement',
+                    expression: {
+                        type: 'AssignmentExpression',
+                        operator: '=',
+                        left: {
+                            type: 'MemberExpression',
+                            object: { type: 'Identifier', name: 'module' },
+                            property: { type: 'Identifier', name: 'exports' },
+                            computed: false
+                        },
+                        right: moduleExportsValue
+                    }
+                }
+            ]
+        };
+
+        // 6. Generate Code
+        let code = this.printer.print(program);
+
+        // 7. Prepend Imports
         let finalCode = '';
         this.imports.forEach(imp => {
             finalCode += imp + '\n';
@@ -177,36 +194,5 @@ export class Compiler {
 
         finalCode += code;
         return finalCode;
-    }
-
-    /**
-     * Processes 'Function Def' nodes which are separate from the main execution flow.
-     */
-    processFunctionNode(node: BotNode): string {
-        const nameControl = node.controls?.['name'] as any;
-        const funcName = nameControl?.value || 'myFunc_' + node.id.replace(/-/g, '_');
-
-        // Currently supports up to 3 args, should be made dynamic eventually
-        let code = `async function ${funcName}(arg0, arg1, arg2) {\n`;
-        code += `    let ret = 0;\n`; // Initialize mutable return variable
-
-        // Find start of execution for this function
-        const execOut = this.connections.find(c => c.source === node.id && c.sourceOutput === 'exec');
-        if (execOut) {
-            const firstNode = this.nodes.find(n => n.id === execOut.target);
-            if (firstNode) {
-                code += this.nodeProcessor.process(firstNode, '    ', {
-                    clientVar: 'client',
-                    mainVar: 'arg0',
-                    imports: this.imports,
-                    addImport: this.addImport.bind(this),
-                    declaredVariables: new Set()
-                });
-            }
-        }
-
-        code += `    return ret;\n`;
-        code += `}\n`;
-        return code;
     }
 }

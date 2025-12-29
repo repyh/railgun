@@ -5,7 +5,7 @@ import { BotNode } from '../../railgun-rete';
 // Mock Nodes
 const nodes: BotNode[] = [
     {
-        id: 'event-1', // On Ready
+        id: 'event-1',
         label: 'On Ready',
         category: 'Event',
         inputs: {},
@@ -13,32 +13,49 @@ const nodes: BotNode[] = [
         controls: {}
     } as any,
     {
-        id: 'decl-1', // Declare myVar = 10
+        id: 'declare-1',
         label: 'Declare Variable',
-        category: 'Action',
+        category: 'Variable',
         inputs: {
             exec: { socket: { name: 'Exec' } },
             value: { socket: { name: 'Any' } }
         },
-        outputs: {
-            exec_out: { socket: { name: 'Exec' } },
-            variable: { socket: { name: 'Any' } }
-        },
-        controls: { varName: { value: 'myVar' }, value: { value: 10 } }
+        outputs: { exec: { socket: { name: 'Exec' } } },
+        data: { varName: 'myVar' },
+        controls: { varName: { value: 'myVar' } }
     } as any,
     {
-        id: 'set-1', // Set myVar = 20
+        id: 'val-100',
+        label: 'Number',
+        codeType: 'Number',
+        inputs: {},
+        outputs: { value: { socket: { name: 'Number' } } },
+        data: { value: 100 },
+        controls: { value: { value: 100 } }
+    } as any,
+    {
+        id: 'set-1',
         label: 'Set Variable',
-        category: 'Action',
+        category: 'Variable',
         inputs: {
             exec: { socket: { name: 'Exec' } },
-            value: { socket: { name: 'Any' } } // will use control 20
+            value: { socket: { name: 'Any' } }
         },
-        outputs: { exec_out: { socket: { name: 'Exec' } } },
-        controls: { varName: { value: 'myVar' }, value: { value: 20 } }
+        outputs: { exec: { socket: { name: 'Exec' } } },
+        data: { varName: 'myVar' },
+        controls: { varName: { value: 'myVar' } }
     } as any,
     {
-        id: 'log-1', // Log(myVar)
+        id: 'val-200',
+        label: 'Number',
+        codeType: 'Number',
+        inputs: {},
+        outputs: { value: { socket: { name: 'Number' } } },
+        data: { value: 200 },
+        controls: { value: { value: 200 } }
+    } as any,
+    {
+        id: 'log-1',
         label: 'Console Log',
         category: 'Action',
         inputs: {
@@ -47,22 +64,33 @@ const nodes: BotNode[] = [
         },
         outputs: {},
         controls: {}
+    } as any,
+    {
+        id: 'get-var-1',
+        label: 'Declare Variable', // Using Declare as Getter (Value Source)
+        category: 'Variable',
+        inputs: {},
+        outputs: { value: { socket: { name: 'Any' } } },
+        data: { varName: 'myVar' },
+        controls: { varName: { value: 'myVar' } }
     } as any
 ];
 
 const connections = [
     // Event -> Declare
-    { source: 'event-1', sourceOutput: 'exec', target: 'decl-1', targetInput: 'exec' },
+    { source: 'event-1', sourceOutput: 'exec', target: 'declare-1', targetInput: 'exec' },
+    // 100 -> Declare.value
+    { source: 'val-100', sourceOutput: 'value', target: 'declare-1', targetInput: 'value' },
 
     // Declare -> Set
-    { source: 'decl-1', sourceOutput: 'exec_out', target: 'set-1', targetInput: 'exec' },
+    { source: 'declare-1', sourceOutput: 'exec', target: 'set-1', targetInput: 'exec' },
+    // 200 -> Set.value
+    { source: 'val-200', sourceOutput: 'value', target: 'set-1', targetInput: 'value' },
 
     // Set -> Log
-    { source: 'set-1', sourceOutput: 'exec_out', target: 'log-1', targetInput: 'exec' },
-
-    // Declare (variable) -> Log (msg)
-    // This tests if 'Declare Variable' as a value source returns the Identifier 'myVar'
-    { source: 'decl-1', sourceOutput: 'variable', target: 'log-1', targetInput: 'msg' }
+    { source: 'set-1', sourceOutput: 'exec', target: 'log-1', targetInput: 'exec' },
+    // GetVar -> Log.msg
+    { source: 'get-var-1', sourceOutput: 'value', target: 'log-1', targetInput: 'msg' } // Note: GraphParser handles DeclareVariable as value specifically
 ];
 
 console.log('--- AST Variables Test ---');
@@ -73,10 +101,10 @@ const code = printer.print(ast);
 
 console.log(code);
 
-/* Expected:
+/* Expected output:
 async function On_Ready(client) {
-    let myVar = 10;
-    myVar = 20;
+    let myVar = 100;
+    myVar = 200;
     console.log(myVar);
 }
 */

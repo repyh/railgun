@@ -43,17 +43,6 @@ export class CodePrinter {
                 const whileStmt = node as AST.WhileStatement;
                 return `${indent}while (${this.print(whileStmt.test, 0)}) ${this.print(whileStmt.body, indentLevel)}`;
 
-            case 'DoWhileStatement':
-                const doWhile = node as AST.DoWhileStatement;
-                return `${indent}do ${this.print(doWhile.body, indentLevel)} while (${this.print(doWhile.test, 0)});`;
-
-            case 'ForStatement':
-                const forStmt = node as AST.ForStatement;
-                const forInit = forStmt.init ? (forStmt.init.type === 'VariableDeclaration' ? this.print(forStmt.init, 0).trim().replace(/;$/, '') : this.print(forStmt.init, 0)) : '';
-                const forTest = forStmt.test ? this.print(forStmt.test, 0) : '';
-                const forUpdate = forStmt.update ? this.print(forStmt.update, 0) : '';
-                return `${indent}for (${forInit}; ${forTest}; ${forUpdate}) ${this.print(forStmt.body, indentLevel)}`;
-
             case 'VariableDeclaration':
                 const varDecl = node as AST.VariableDeclaration;
                 const decls = varDecl.declarations.map(d => {
@@ -66,22 +55,6 @@ export class CodePrinter {
                 const call = node as AST.CallExpression;
                 const args = call.arguments.map(arg => this.print(arg, 0)).join(', ');
                 return `${this.print(call.callee, 0)}(${args})`;
-
-            case 'NewExpression':
-                const newExpr = node as AST.NewExpression;
-                const newArgs = newExpr.arguments.map(arg => this.print(arg, 0)).join(', ');
-                return `new ${this.print(newExpr.callee, 0)}(${newArgs})`;
-
-            case 'AwaitExpression':
-                const awaitExpr = node as AST.AwaitExpression;
-                return `await ${this.print(awaitExpr.argument, 0)}`;
-
-            case 'ArrowFunctionExpression':
-                const arrowFunc = node as AST.ArrowFunctionExpression;
-                const arrowParams = arrowFunc.params.map(p => p.name).join(', ');
-                const arrowBody = this.print(arrowFunc.body, indentLevel); // BlockStatement handles braces
-                const arrowAsync = arrowFunc.async ? 'async ' : '';
-                return `${arrowAsync}(${arrowParams}) => ${arrowBody}`;
 
             case 'Identifier':
                 return (node as AST.Identifier).name;
@@ -119,14 +92,6 @@ export class CodePrinter {
                 const assign = node as AST.AssignmentExpression;
                 return `${this.print(assign.left, 0)} ${assign.operator} ${this.print(assign.right, 0)}`;
 
-            case 'UpdateExpression':
-                const update = node as AST.UpdateExpression;
-                if (update.prefix) {
-                    return `${update.operator}${this.print(update.argument, 0)}`;
-                } else {
-                    return `${this.print(update.argument, 0)}${update.operator}`;
-                }
-
             case 'ArrayExpression':
                 const array = node as AST.ArrayExpression;
                 const elements = array.elements.map(e => this.print(e, 0)).join(', ');
@@ -141,6 +106,20 @@ export class CodePrinter {
                 // If empty, don't add newline
                 if (props.length === 0) return '{}';
                 return `{\n${indent}    ${props}\n${indent}}`;
+
+            case 'ArrowFunctionExpression':
+                const arrowFunc = node as AST.ArrowFunctionExpression;
+                const arrowParams = arrowFunc.params.map(p => p.name).join(', ');
+                const arrowAsyncPrefix = arrowFunc.async ? 'async ' : '';
+                // Handle Expression body vs Block body
+                const arrowBody = (arrowFunc.body.type === 'BlockStatement')
+                    ? this.print(arrowFunc.body, indentLevel)
+                    : this.print(arrowFunc.body, indentLevel);
+
+                return `${arrowAsyncPrefix}(${arrowParams}) => ${arrowBody}`;
+
+            case 'CommentStatement':
+                return `${indent}// ${(node as AST.CommentStatement).text}`;
 
             default:
                 console.warn(`Unknown node type: ${node.type}`);
