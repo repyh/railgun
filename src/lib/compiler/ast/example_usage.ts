@@ -1,9 +1,10 @@
 import { GraphParser } from './GraphParser';
 import { LogicValidator } from './LogicValidator';
+import { CodePrinter } from './CodePrinter';
 import { BotNode } from '../../railgun-rete';
 
 /**
- * Example usage of the Graph Parser & Validator.
+ * Example usage of the Full Compiler Pipeline.
  */
 
 // 1. Mock Data
@@ -17,7 +18,6 @@ const mockNodes: BotNode[] = [
         inputs: {},
         outputs: {},
         controls: {},
-        // ... (methods mocked as needed)
     } as unknown as BotNode,
     {
         id: 'action-1',
@@ -59,6 +59,14 @@ if (errors.length > 0) {
     console.log('Validation Passed!');
 }
 
-// 4. Output Results
-console.log('--- AST Output ---');
-console.log(JSON.stringify(programAST, null, 2));
+// 4. Generate Code
+console.log('--- Code Gen ---');
+const printer = new CodePrinter();
+const code = printer.print(programAST);
+console.log(code);
+
+/* Expected Output:
+async function On_Ready(client) {
+    Send_Message('Hello World');
+}
+*/
