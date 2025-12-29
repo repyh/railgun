@@ -1,12 +1,12 @@
 import { GraphParser } from './GraphParser';
+import { LogicValidator } from './LogicValidator';
 import { BotNode } from '../../railgun-rete';
 
 /**
- * Example usage of the Graph Parser.
- * This file demonstrates how to simulate a graph and parse it into an AST.
+ * Example usage of the Graph Parser & Validator.
  */
 
-// 1. Mock Data (Simulating Rete Editor State)
+// 1. Mock Data
 const mockNodes: BotNode[] = [
     {
         id: 'event-1',
@@ -17,18 +17,7 @@ const mockNodes: BotNode[] = [
         inputs: {},
         outputs: {},
         controls: {},
-        selected: false,
-        translate: (x, y) => { },
-        match: () => [],
-        unmatch: () => [],
-        addInput: () => { },
-        addOutput: () => { },
-        addControl: () => { },
-        hasInput: () => false,
-        hasOutput: () => true, // has 'exec'
-        removeInput: () => { },
-        removeOutput: () => { },
-        removeControl: () => { }
+        // ... (methods mocked as needed)
     } as unknown as BotNode,
     {
         id: 'action-1',
@@ -41,18 +30,6 @@ const mockNodes: BotNode[] = [
         controls: {
             content: { value: 'Hello World' }
         },
-        selected: false,
-        translate: (x, y) => { },
-        match: () => [],
-        unmatch: () => [],
-        addInput: () => { },
-        addOutput: () => { },
-        addControl: () => { },
-        hasInput: () => true, // has 'exec' and 'content'
-        hasOutput: () => true, // has 'exec'
-        removeInput: () => { },
-        removeOutput: () => { },
-        removeControl: () => { }
     } as unknown as BotNode
 ];
 
@@ -67,39 +44,21 @@ const mockConnections = [
 ];
 
 // 2. Instantiate Parser
+console.log('--- Parsing ---');
 const parser = new GraphParser(mockNodes, mockConnections);
-
-// 3. Parse to AST
 const programAST = parser.parse();
 
-// 4. Output Results
-console.log(JSON.stringify(programAST, null, 2));
+// 3. Validate
+console.log('--- Validating ---');
+const validator = new LogicValidator();
+const errors = validator.validate(programAST);
 
-/*
-Expected Output:
-{
-  "type": "Program",
-  "body": [
-    {
-      "type": "FunctionDeclaration",
-      "id": { "type": "Identifier", "name": "On_Ready" },
-      "params": [{ "type": "Identifier", "name": "client" }],
-      "body": {
-        "type": "BlockStatement",
-        "body": [
-          {
-            "type": "ExpressionStatement",
-            "expression": {
-              "type": "CallExpression",
-              "callee": { "type": "Identifier", "name": "Send_Message" },
-              "arguments": []
-            }
-          }
-        ]
-      },
-      "async": true,
-      "isEvent": true
-    }
-  ]
+if (errors.length > 0) {
+    console.error('Validation Errors:', errors);
+} else {
+    console.log('Validation Passed!');
 }
-*/
+
+// 4. Output Results
+console.log('--- AST Output ---');
+console.log(JSON.stringify(programAST, null, 2));
