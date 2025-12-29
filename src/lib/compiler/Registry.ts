@@ -17,6 +17,9 @@ import { ShowModalGenerator } from './generators/statements/ShowModal';
 import { EmbedFieldValueGenerator } from './generators/values/EmbedField';
 import { ArrayBuilderValueGenerator } from './generators/values/ArrayBuilder';
 import { SplitterValueGenerator } from './generators/values/Splitter';
+import { WhileLoopGenerator } from './generators/statements/WhileLoop';
+import { DoWhileLoopGenerator } from './generators/statements/DoWhileLoop';
+import { WaitGenerator } from './generators/statements/Wait';
 
 /**
  * The Registry serves as the central directory for all code generators.
@@ -27,6 +30,9 @@ export class Registry {
     private static statements: Record<string, StatementGenerator> = {
         'If': BranchGenerator,
         'For Loop': ForLoopGenerator,
+        'While Loop': WhileLoopGenerator,
+        'Do-While Loop': DoWhileLoopGenerator,
+        'Wait': WaitGenerator,
         'Call Function': CallFunctionStatement,
         'Increment': IncrementGenerator,
         'Math Assignment': MathAssignmentGenerator,
