@@ -458,7 +458,7 @@ export const ProjectView: React.FC = () => {
                     >
                         <FileKey size={16} />
                     </button>
-                    <div className="h-4 w-[1px] bg-zinc-800 mx-1" />
+                    <div className="h-4 w-px bg-zinc-800 mx-1" />
 
                     {botStatus === 'stopped' ? (
                         <button

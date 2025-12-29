@@ -93,12 +93,22 @@ export class GraphParser implements ParserContext {
      * Finds the next node in the execution chain by trying common output labels.
      */
     private findNextExecutionNode(nodeId: string, preferredKey: string): BotNode | undefined {
-        // Try the preferred key first, then common execution output labels
-        const keysToTry = [preferredKey, 'exec', 'Exec', 'Then', 'Completed', 'completed', 'then', 'exec_out', 'execOut', 'output', 'out'];
+        // ALWAYS try the preferred key first (Strict Match)
+        let next = this.getNextNode(nodeId, preferredKey);
+        if (next) return next;
 
-        for (const key of keysToTry) {
-            const next = this.getNextNode(nodeId, key);
-            if (next) return next;
+        // Only use strict matching for specific branch keys (loopBody, true, false, etc.)
+        // Only use fallbacks if the requested key is a generic flow key.
+        const genericKeys = ['exec', 'Exec', 'next', 'Next', 'out', 'output'];
+
+        // Also allow fallbacks if we are just looking for "next action" (default traversal)
+        if (genericKeys.includes(preferredKey)) {
+            const fallbacks = ['exec', 'Exec', 'Then', 'Completed', 'completed', 'then', 'exec_out', 'execOut', 'output', 'out'];
+            for (const key of fallbacks) {
+                if (key === preferredKey) continue;
+                next = this.getNextNode(nodeId, key);
+                if (next) return next;
+            }
         }
 
         return undefined;

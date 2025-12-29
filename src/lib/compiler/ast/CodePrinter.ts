@@ -136,6 +136,15 @@ export class CodePrinter {
                 return `${indent}for ${awaitStr}(${leftStr} of ${right}) ${body.trim()}`;
             }
 
+            case 'ForStatement': {
+                const forStmt = node as AST.ForStatement;
+                const init = forStmt.init ? this.print(forStmt.init, 0).trim().replace(/;$/, '') : '';
+                const test = forStmt.test ? this.print(forStmt.test, 0) : '';
+                const update = forStmt.update ? this.print(forStmt.update, 0) : '';
+                const body = this.print(forStmt.body, indentLevel);
+                return `${indent}for (${init}; ${test}; ${update}) ${body.trim()}`;
+            }
+
             case 'BreakStatement':
                 return `${indent}break;`;
 

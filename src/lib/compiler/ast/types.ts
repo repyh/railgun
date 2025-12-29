@@ -25,7 +25,9 @@ export type ASTNodeType =
     | 'NewExpression'
     | 'ForOfStatement'
     | 'BreakStatement'
-    | 'ContinueStatement';
+    | 'ContinueStatement'
+    | 'UpdateExpression'
+    | 'LogicalExpression';
 
 export interface BaseNode {
     type: ASTNodeType;
@@ -223,6 +225,21 @@ export interface ForOfStatement extends BaseNode {
     await: boolean; // for await (const x of y)
 }
 
+export interface ForStatement extends BaseNode {
+    type: 'ForStatement';
+    init: VariableDeclaration | Expression | null;
+    test: Expression | null;
+    update: Expression | null;
+    body: BlockStatement;
+}
+
+export interface UpdateExpression extends BaseNode {
+    type: 'UpdateExpression';
+    operator: '++' | '--';
+    argument: Expression;
+    prefix: boolean;
+}
+
 export interface BreakStatement extends BaseNode {
     type: 'BreakStatement';
     label?: Identifier | null;
@@ -231,4 +248,11 @@ export interface BreakStatement extends BaseNode {
 export interface ContinueStatement extends BaseNode {
     type: 'ContinueStatement';
     label?: Identifier | null;
+}
+
+export interface LogicalExpression extends BaseNode {
+    type: 'LogicalExpression';
+    operator: '||' | '&&' | '??';
+    left: Expression;
+    right: Expression;
 }

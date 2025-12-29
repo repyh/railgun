@@ -4,61 +4,97 @@ import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
 export class ForLoopParser implements ASTNodeParser {
-    parse(node: BotNode, context: ParserContext): AST.ForOfStatement {
+    parse(node: BotNode, context: ParserContext, mode: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
+        const isNullLiteral = (expr: AST.Expression) => expr.type === 'Literal' && expr.value === null;
+
+        const startExpr = context.resolveInput(node, 'start'); // 'Start Index' -> 'start'
+        const endExpr = context.resolveInput(node, 'end');     // 'End Index' -> 'end'
         const arrayExpr = context.resolveInput(node, 'array');
 
-        // Variable Name input from user control? Or implicit?
-        // Usually Rete node has 'item' output which acts as the variable.
-        // We need to DECLARE this variable in the loop head.
-        // Or if the user connects the 'item' output to something, we need a name for it.
-        // Let's assume the user enters a variable name or we generate one.
-        // Ideally: `const item_NODEID of array`
+        // Heuristic: If start or end are provided (not null), it's a Numeric Loop.
+        const isNumeric = !isNullLiteral(startExpr) || !isNullLiteral(endExpr);
 
-        // But if downstream nodes use "Get Variable", they expect a specific name.
-        // Or Rete handles scope?
-        // For simplicity: `const item = ...` is standard.
-        // Start simple: use `item` or `element` if not specified.
-        // Let's use `const item_${node.id}` to avoid collisions.
-        const varName = `item_${node.id.replace(/-/g, '_')}`;
+        // Deterministic variable names based on node ID
+        const indexVarName = `i_${node.id.replace(/-/g, '_')}`;
+        const itemVarName = `item_${node.id.replace(/-/g, '_')}`;
 
-        // IMPORTANT: We must register this variable in the context scope if we were tracking scope.
-        // Since we don't have deep scope tracking yet, downstream nodes might not know how to access it
-        // unless they use `item_${node.id}`?
-        // In Rete, typically the "Loop" node has an output called "Item".
-        // When downstream nodes connect to "Item", `resolveInput` follows the connection back to "Loop".
-        // We need to handle this in `GraphParser.resolveInput`. 
-        // IF a node connects to Loop's "Item" output, `processValueNode` should return Identifier `item_...`.
+        // 1. Handle Expression Mode (downstream node asks for "index" or "item")
+        if (mode === 'expression') {
+            // Depending on loop type, return the appropriate identifier
+            // Note: We don't know WHICH output socket was requested here easily unless we passed outputKey?
+            // But usually 'For Loop' exposes 'index' (numeric) or 'item' (foreach).
+            // A numeric loop might expose 'index'. A foreach might expose 'item' AND 'index'.
+            // For now, let's return the primary variable.
+            // TODO: If we want to support 'index' specifically from foreach, we need outputKey context.
+            // Assuming the requested value corresponds to the loop variable:
+            if (isNumeric) {
+                return { type: 'Identifier', name: indexVarName };
+            } else {
+                return { type: 'Identifier', name: itemVarName }; // The item
+            }
+        }
 
-        // But `ForLoopParser` is a STATEMENT parser.
-        // `processValueNode` handles EXPRESSIONS.
-        // We need to register this parser for BOTH?
-        // Or the Registry should map "Loop" -> ForLoopParser (Statement) AND "Loop" -> LoopValueParser (Expression)?
-        // Currently Registry maps 1:1.
+        // 2. Handle Statement Mode (Flow)
+        if (mode !== 'statement') return null;
 
-        // TEMPORARY SOLUTION:
-        // Use a fixed name `item`? No, collisions.
-        // We assume `GraphParser` handles variable reference resolution if we implemented "Data" flows correctly.
-        // Note: `GraphParser.processValueNode` currently calls `registry.getParser`.
-        // If we implement `parse(..., 'expression')` in THIS class, we can return the Identifier!
+        const bodyBlock = context.traverseBlock(node, 'loopBody');
 
-        const bodyBlock = context.traverseBlock(node, 'loopBody'); // Output 'loopBody' or 'exec'? Usually separate flow.
+        if (isNumeric) {
+            // Numeric Loop: for (let i = start; i < end; i++)
+            const start = isNullLiteral(startExpr) ? { type: 'Literal', value: 0 } as AST.Literal : startExpr;
+            const end = isNullLiteral(endExpr) ? { type: 'Literal', value: 0 } as AST.Literal : endExpr;
 
-        const loopVar: AST.VariableDeclaration = {
-            type: 'VariableDeclaration',
-            kind: 'const',
-            declarations: [{
-                id: { type: 'Identifier', name: varName },
-                init: null
-            }]
-        };
+            const initDecl: AST.VariableDeclaration = {
+                type: 'VariableDeclaration',
+                kind: 'let',
+                declarations: [{
+                    id: { type: 'Identifier', name: indexVarName },
+                    init: start
+                }]
+            };
 
-        return {
-            type: 'ForOfStatement',
-            left: loopVar,
-            right: arrayExpr,
-            body: bodyBlock,
-            await: false, // Optional: support 'for await' via checkbox?
-            sourceNodeId: node.id
-        };
+            const testExpr: AST.BinaryExpression = {
+                type: 'BinaryExpression',
+                operator: '<',
+                left: { type: 'Identifier', name: indexVarName },
+                right: end
+            };
+
+            const updateExpr: AST.UpdateExpression = {
+                type: 'UpdateExpression',
+                operator: '++',
+                argument: { type: 'Identifier', name: indexVarName },
+                prefix: false
+            };
+
+            return {
+                type: 'ForStatement',
+                init: initDecl,
+                test: testExpr,
+                update: updateExpr,
+                body: bodyBlock,
+                sourceNodeId: node.id
+            } as AST.ForStatement;
+
+        } else {
+            // For-Of Loop: for (const item of array)
+            const loopVar: AST.VariableDeclaration = {
+                type: 'VariableDeclaration',
+                kind: 'const',
+                declarations: [{
+                    id: { type: 'Identifier', name: itemVarName },
+                    init: null
+                }]
+            };
+
+            return {
+                type: 'ForOfStatement',
+                left: loopVar,
+                right: arrayExpr,
+                body: bodyBlock,
+                await: false,
+                sourceNodeId: node.id
+            } as AST.ForOfStatement;
+        }
     }
 }
