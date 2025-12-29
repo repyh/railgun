@@ -88,6 +88,25 @@ export class CodePrinter {
                     return `${this.print(unary.argument, 0)}${unary.operator}`;
                 }
 
+            case 'AssignmentExpression':
+                const assign = node as AST.AssignmentExpression;
+                return `${this.print(assign.left, 0)} ${assign.operator} ${this.print(assign.right, 0)}`;
+
+            case 'ArrayExpression':
+                const array = node as AST.ArrayExpression;
+                const elements = array.elements.map(e => this.print(e, 0)).join(', ');
+                return `[${elements}]`;
+
+            case 'ObjectExpression':
+                const objExpr = node as AST.ObjectExpression;
+                const props = objExpr.properties.map(p => {
+                    const key = (p.key.type === 'Identifier') ? p.key.name : this.print(p.key, 0);
+                    return `${key}: ${this.print(p.value, 0)}`;
+                }).join(',\n' + indent + '    '); // Formatting for readability
+                // If empty, don't add newline
+                if (props.length === 0) return '{}';
+                return `{\n${indent}    ${props}\n${indent}}`;
+
             default:
                 console.warn(`Unknown node type: ${node.type}`);
                 return `${indent}/* Unknown Node: ${node.type} */`;

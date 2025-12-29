@@ -168,7 +168,7 @@ export class GraphParser {
         };
     }
 
-    private processActionNode(node: BotNode): AST.ExpressionStatement {
+    private processActionNode(node: BotNode): AST.Statement {
         // Actions are typically funtion calls, e.g. msg.reply()
 
         // --- Specific Action Handlers ---
@@ -185,6 +185,96 @@ export class GraphParser {
                         computed: false
                     } as AST.MemberExpression,
                     arguments: [message],
+                    sourceNodeId: node.id
+                },
+                sourceNodeId: node.id
+            };
+        }
+
+        // --- Variable Actions ---
+
+        if (node.label === 'Declare Variable') {
+            const varName = this.getNodeValue(node, 'varName');
+            const initValue = this.resolveInput(node, 'value');
+
+            // Map to VariableDeclaration
+            return {
+                type: 'VariableDeclaration',
+                kind: 'let', // Default to let for bot variables
+                declarations: [{
+                    id: { type: 'Identifier', name: this.sanitizeName(varName) },
+                    init: initValue
+                }],
+                sourceNodeId: node.id
+            } as AST.VariableDeclaration;
+        }
+
+        if (node.label === 'Set Variable') {
+            const varName = this.getNodeValue(node, 'varName'); // Or resolve input 'variable' if it supports dynamic naming
+            const value = this.resolveInput(node, 'value');
+
+            return {
+                type: 'ExpressionStatement',
+                expression: {
+                    type: 'AssignmentExpression',
+                    operator: '=',
+                    left: { type: 'Identifier', name: this.sanitizeName(varName) },
+                    right: value,
+                    sourceNodeId: node.id
+                },
+                sourceNodeId: node.id
+            };
+        }
+
+        if (node.label === 'Math Assignment') {
+            // Inputs: 'variable' (name), 'value', control 'op'
+            const varNameInput = this.resolveInput(node, 'variable');
+            // 'variable' input is usually a string from a String node, or we might resort to a control if connected.
+            // But usually MathAssignment expects a variable NAME string. 
+            // In AST, we need an Identifier. 
+            // If the input resolves to a Literal string, use that as the name.
+            let varName = 'unknown_var';
+            if (varNameInput.type === 'Literal' && typeof varNameInput.value === 'string') {
+                varName = varNameInput.value;
+            } else if (varNameInput.type === 'Identifier') {
+                // Reuse identifier if passed directly (rare in Rete, usually simple string)
+                varName = varNameInput.name;
+            }
+
+            const value = this.resolveInput(node, 'value');
+            const op = this.getNodeValue(node, 'op') || '+=';
+
+            return {
+                type: 'ExpressionStatement',
+                expression: {
+                    type: 'AssignmentExpression',
+                    operator: op as any,
+                    left: { type: 'Identifier', name: this.sanitizeName(varName) },
+                    right: value,
+                    sourceNodeId: node.id
+                },
+                sourceNodeId: node.id
+            };
+        }
+
+        if (node.label === 'Increment') {
+            const varNameInput = this.resolveInput(node, 'variable');
+            let varName = 'unknown_var';
+            if (varNameInput.type === 'Literal' && typeof varNameInput.value === 'string') {
+                varName = varNameInput.value;
+            }
+
+            const op = this.getNodeValue(node, 'op') || '++';
+            // Desugar ++ to += 1, -- to -= 1
+            const assignmentOp = op === '++' ? '+=' : '-=';
+
+            return {
+                type: 'ExpressionStatement',
+                expression: {
+                    type: 'AssignmentExpression',
+                    operator: assignmentOp,
+                    left: { type: 'Identifier', name: this.sanitizeName(varName) },
+                    right: { type: 'Literal', value: 1 },
                     sourceNodeId: node.id
                 },
                 sourceNodeId: node.id
@@ -322,6 +412,57 @@ export class GraphParser {
                 operator: '!',
                 argument: arg,
                 prefix: true,
+                sourceNodeId: node.id
+            };
+        }
+
+        // 4. Variables & Data Structures
+
+        // Array Builder
+        if (node.label === 'Array Builder') {
+            // Inputs: item1, item2, item3, item4, item5
+            const elements: AST.Expression[] = [];
+            for (let i = 1; i <= 5; i++) {
+                // Check if connected
+                const item = this.resolveInput(node, `item${i}`);
+                // Only add if it's not the default null (unless explicitly null?)
+                // Actually, resolveInput returns Literal null if not connected/set.
+                // We should check connections directly or deciding if we want sparse arrays.
+                // Railgun Array Builder usually compacts or takes all. let's take all.
+                elements.push(item);
+            }
+            // Filter out trailing nulls or empty? For now, keep as is or maybe Rete behavior specific.
+            // Let's assume standard behavior: all 5 inputs.
+            // Optimization: Remove trailing nulls if that's the desired behavior.
+
+            return {
+                type: 'ArrayExpression',
+                elements,
+                sourceNodeId: node.id
+            };
+        }
+
+        // Object Accessor (Get Property)
+        if (node.label === 'Get Property' || node.codeType === 'Object Accessor') {
+            const object = this.resolveInput(node, 'object');
+            const propName = this.getNodeValue(node, 'property'); // Control value
+            // Can be dynamic? Usually controls are static strings in this node.
+
+            return {
+                type: 'MemberExpression',
+                object: object,
+                property: { type: 'Identifier', name: propName },
+                computed: false, // Start with dot notation. If propName has spaces, should be computed?
+                sourceNodeId: node.id
+            };
+        }
+
+        // Variable Reference (Declare Variable used as input)
+        if (node.label === 'Declare Variable') {
+            const varName = this.getNodeValue(node, 'varName');
+            return {
+                type: 'Identifier',
+                name: this.sanitizeName(varName),
                 sourceNodeId: node.id
             };
         }
