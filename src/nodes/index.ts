@@ -4,6 +4,9 @@ import { createComparisonNode } from './logic/Comparison';
 import { createLogicOpNode } from './logic/LogicOp';
 import { createNotNode } from './logic/Not';
 import { createBranchNode } from './logic/Branch';
+import { createDoWhileLoopNode } from './logic/DoWhileLoop';
+import { createWaitNode } from './logic/WaitNode';
+import { createWhileLoopNode } from './logic/WhileLoop';
 import { createOnSlashCommandNode } from './events/OnSlashCommand';
 import { createOnReadyNode } from './events/OnReady';
 import { createOnCommandNode } from './events/OnCommand'; // New
@@ -61,6 +64,10 @@ export const NODE_REGISTRY: NodeDefinition[] = [
     { label: 'Logic Op', category: 'Logic', factory: createLogicOpNode },
     { label: 'Not', category: 'Logic', factory: createNotNode },
     { label: 'If', category: 'Logic', factory: createBranchNode },
+    { label: 'While Loop', category: 'Logic', factory: createWhileLoopNode },
+    { label: 'Do-While Loop', category: 'Logic', factory: createDoWhileLoopNode },
+    { label: 'Wait', category: 'Logic', factory: createWaitNode },
+
     { label: 'String', category: 'Variable', factory: createStringNode },
     { label: 'Number', category: 'Variable', factory: createNumberNode },
     { label: 'Boolean', category: 'Variable', factory: createBooleanNode },
@@ -77,7 +84,6 @@ export const NODE_REGISTRY: NodeDefinition[] = [
     { label: 'Divide', category: 'Math', factory: createDivideNode },
     { label: 'Modulus', category: 'Math', factory: createModulusNode },
     { label: 'Power', category: 'Math', factory: createPowerNode },
-    { label: 'Increment', category: 'Variable', factory: createIncrementNode },
     { label: 'Increment', category: 'Variable', factory: createIncrementNode },
     { label: 'Math Assignment', category: 'Variable', factory: createMathAssignmentNode },
     // Data
