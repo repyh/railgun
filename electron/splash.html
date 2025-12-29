@@ -103,8 +103,8 @@
 <body>
     <div class="splash-container">
         <div class="logo-section">
-            <img src="../public/resources/railgun-logo_icon.svg" alt="Railgun"
-                style="height: 64px; margin-bottom: 4px;">
+            <img src="../public/resources/railgun-logo_full.svg" alt="Railgun"
+                style="height: 40px; margin-bottom: 4px;">
         </div>
 
         <div class="status-section">
@@ -114,11 +114,16 @@
             </div>
         </div>
 
-        <div class="footer">v0.0.1 Alpha</div>
+        <div class="footer">
+            <span id="copyright">© 2025 Repyh</span> • v0.0.1 Alpha
+        </div>
     </div>
 
     <script>
         const { ipcRenderer } = require('electron');
+
+        // Set dynamic year
+        document.getElementById('copyright').innerText = `© ${new Date().getFullYear()} Repyh`;
 
         ipcRenderer.on('splash-update', (event, data) => {
             if (data.status) {
