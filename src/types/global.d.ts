@@ -6,6 +6,9 @@ declare global {
             saveFile: (projectPath: string, filePath: string, content: string) => Promise<boolean>;
             readFile: (projectPath: string, filePath: string) => Promise<string | null>;
             listFiles: (projectPath: string, directory: string) => Promise<string[]>;
+            invoke: (channel: string, ...args: any[]) => Promise<any>;
+            onTermData: (callback: (data: string) => void) => () => void;
+            onBotStatus: (callback: (status: 'running' | 'stopped') => void) => () => void;
             // Add other methods as needed, or use 'any' for now if lazy
             [key: string]: any;
         };

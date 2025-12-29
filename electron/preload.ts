@@ -10,6 +10,15 @@ const api = {
         const handler = (_: any, data: string) => callback(data);
         ipcRenderer.on('terminal:data', handler);
         return () => ipcRenderer.removeListener('terminal:data', handler);
+    },
+
+    /**
+    * Listen for bot execution status changes
+    */
+    onBotStatus: (callback: (status: 'running' | 'stopped') => void) => {
+        const handler = (_: any, status: 'running' | 'stopped') => callback(status);
+        ipcRenderer.on('bot:status', handler);
+        return () => ipcRenderer.removeListener('bot:status', handler);
     }
 };
 

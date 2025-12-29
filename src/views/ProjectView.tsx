@@ -13,7 +13,9 @@ import {
     FileCode,
     Plus,
     Trash2,
-    Plug
+    Plug,
+    Play,
+    Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
@@ -27,6 +29,7 @@ import { CreateEventModal } from '@/components/modals/CreateEventModal';
 import { CreateCommandModal } from '@/components/modals/CreateCommandModal';
 import { useProject } from '@/contexts/ProjectContext';
 import { PluginManager } from '@/lib/plugins/PluginManager';
+import { RunConfigDialog } from '@/components/dialogs/RunConfigDialog';
 
 const TreeItem = ({ label, icon: Icon, children, onClick, active, action }: { label: string, icon?: any, children?: React.ReactNode, onClick?: () => void, active?: boolean, action?: React.ReactNode }) => {
     const [isOpen, setIsOpen] = useState(true);
@@ -80,6 +83,55 @@ export const ProjectView: React.FC = () => {
     // Get state from navigation
     const { name: projectName, path: projectPath, autoInstall } = location.state || {};
     const { setProject } = useProject();
+    const [botStatus, setBotStatus] = useState<'stopped' | 'running'>('stopped');
+    const [isRunConfigOpen, setIsRunConfigOpen] = useState(false);
+
+    // Listen for bot status
+    useEffect(() => {
+        if (window.electronAPI) {
+            window.electronAPI.onBotStatus((status: 'running' | 'stopped') => {
+                setBotStatus(status);
+            });
+        }
+    }, []);
+
+    const handleRunBot = async (secrets?: Record<string, string>) => {
+        if (!projectPath) return;
+
+        // If secrets not passed, try to get from storage
+        let env = secrets;
+        if (!env) {
+            const stored = localStorage.getItem('railgun_secrets');
+            if (stored) {
+                try {
+                    env = JSON.parse(stored);
+                } catch { }
+            }
+        }
+
+        // If still no tokens, open dialog
+        if (!env || !env.DISCORD_TOKEN) {
+            setIsRunConfigOpen(true);
+            setIsRunConfigOpen(true);
+            return;
+        }
+
+        if (window.electronAPI) {
+            const result = await window.electronAPI.invoke('bot:start', projectPath, env);
+            if (result.success) {
+                setStatus('Bot Started');
+            } else {
+                alert(`Failed to start bot: ${result.error}`);
+            }
+        }
+    };
+
+    const handleStopBot = async () => {
+        if (window.electronAPI) {
+            await window.electronAPI.invoke('bot:stop');
+            setStatus('Bot Stopped');
+        }
+    };
 
     useEffect(() => {
         if (!projectName || !projectPath) {
@@ -396,6 +448,36 @@ export const ProjectView: React.FC = () => {
                     </TabButton>
                 </div>
 
+                {/* Run Controls */}
+                <div className="flex items-center gap-2 px-4 h-12 border-b border-zinc-800 bg-zinc-900/50">
+                    <button
+                        onClick={() => setIsRunConfigOpen(true)}
+                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                        title="Run Configuration"
+                    >
+                        <Settings size={16} />
+                    </button>
+                    <div className="h-4 w-[1px] bg-zinc-800 mx-1" />
+
+                    {botStatus === 'stopped' ? (
+                        <button
+                            onClick={() => handleRunBot()}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded text-xs font-medium transition-colors"
+                        >
+                            <Play size={14} fill="currentColor" />
+                            <span>Run Bot</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleStopBot}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded text-xs font-medium transition-colors"
+                        >
+                            <Square size={14} fill="currentColor" />
+                            <span>Stop Bot</span>
+                        </button>
+                    )}
+                </div>
+
                 <div className="flex-1 relative overflow-hidden">
                     <div className={`absolute inset-0 ${activeTab === 'console' ? 'block' : 'hidden'}`}>
                         <ConsoleTab
@@ -438,6 +520,11 @@ export const ProjectView: React.FC = () => {
                 open={isCreateCommandModalOpen}
                 onOpenChange={setIsCreateCommandModalOpen}
                 onCreateCommand={handleCreateCommand}
+            />
+
+            <RunConfigDialog
+                open={isRunConfigOpen}
+                onOpenChange={setIsRunConfigOpen}
             />
         </div>
     );
