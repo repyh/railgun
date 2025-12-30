@@ -5,6 +5,7 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { BrowserWindow, app } from 'electron';
 import { ProjectGenerator } from '../lib/ProjectGenerator';
+import { HistoryManager, RecentProject } from '../lib/HistoryManager';
 
 interface ProjectData {
     name: string;
@@ -34,6 +35,9 @@ export class ProjectIPC extends BaseIPC {
                 template: data.template
             });
 
+            // Add to history
+            await HistoryManager.addToRecent(data.name, projectPath);
+
             return { success: true };
         } catch (error: any) {
             console.error('Project creation failed:', error);
@@ -62,11 +66,22 @@ export class ProjectIPC extends BaseIPC {
             return { canceled: false, error: 'Invalid project: railgun.json not found.' };
         }
 
+        const name = path.basename(projectPath);
+        await HistoryManager.addToRecent(name, projectPath);
+
         return {
             canceled: false,
             path: projectPath,
-            name: path.basename(projectPath) // Fallback name
+            name: name // Fallback name
         };
+    }
+
+    async getRecentProjects(): Promise<RecentProject[]> {
+        return await HistoryManager.getRecent();
+    }
+
+    async removeProjectFromHistory(projectPath: string): Promise<void> {
+        await HistoryManager.removeFromRecent(projectPath);
     }
 
     async readProjectConfig(projectPath: string): Promise<any> {

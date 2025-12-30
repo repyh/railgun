@@ -39,12 +39,14 @@ const ActionCard = ({
     </button>
 );
 
-const RecentItem = ({ name, path, time }: { name: string, path: string, time: string }) => (
-    <div className="flex items-center justify-between p-2.5 rounded-sm hover:bg-zinc-800/50 group cursor-pointer border border-transparent hover:border-zinc-800/50 border-b-zinc-800/30">
+const RecentItem = ({ name, path, time, onClick }: { name: string, path: string, time: string, onClick?: () => void }) => (
+    <div
+        onClick={onClick}
+        className="flex items-center justify-between p-2.5 rounded-sm hover:bg-zinc-800/50 group cursor-pointer border border-transparent hover:border-zinc-800/50 border-b-zinc-800/30"
+    >
         <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
                 <span className="text-sm text-zinc-300 font-medium truncate group-hover:text-blue-400 transition-colors">{name}</span>
-                {/* <span className="text-[10px] uppercase tracking-wider text-zinc-600 border border-zinc-800 px-1 rounded">Bot</span> */}
             </div>
             <span className="text-xs text-zinc-600 truncate font-mono">{path}</span>
         </div>
@@ -52,27 +54,55 @@ const RecentItem = ({ name, path, time }: { name: string, path: string, time: st
     </div>
 );
 
+const getRelativeTime = (timestamp: number) => {
+    const now = Date.now();
+    const diff = now - timestamp;
+
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    return new Date(timestamp).toLocaleDateString();
+};
+
 export const DashboardView: React.FC = () => {
     const [nodeVersion, setNodeVersion] = React.useState('Unknown');
     const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
+    const [recentProjects, setRecentProjects] = React.useState<any[]>([]);
     const navigate = useNavigate();
     const { setProject } = useProject();
+
+    const fetchRecentProjects = async () => {
+        if (window.electronAPI) {
+            try {
+                const projects = await window.electronAPI.invoke('project:getRecentProjects');
+                setRecentProjects(projects || []);
+            } catch (err) {
+                console.error('Failed to fetch recent projects:', err);
+            }
+        }
+    };
 
     React.useEffect(() => {
         if (window.electronAPI) {
             window.electronAPI.invoke('system:getNodeVersion')
                 .then(setNodeVersion)
                 .catch(() => setNodeVersion('Error'));
+
+            fetchRecentProjects();
         }
     }, []);
 
     const handleOpenProject = async () => {
         if (window.electronAPI) {
             try {
-                const result = await window.electronAPI.openProject();
+                const result = await window.electronAPI.invoke('project:openProject');
                 if (!result.canceled && result.path) {
-                    // Navigate to project view with state
-                    // name is optional from IPC, fallback to path name
                     const name = result.name || result.path.split(/[\\/]/).pop();
                     //@ts-ignore
                     setProject(result.path, name);
@@ -80,7 +110,7 @@ export const DashboardView: React.FC = () => {
                         state: {
                             name: name,
                             path: result.path,
-                            autoInstall: false // Existing projects don't need auto-install usually
+                            autoInstall: false
                         }
                     });
                 } else if (result.error) {
@@ -90,6 +120,18 @@ export const DashboardView: React.FC = () => {
                 console.error('Failed to open project:', error);
             }
         }
+    };
+
+    const handleOpenRecent = (project: any) => {
+        //@ts-ignore
+        setProject(project.path, project.name);
+        navigate('/project', {
+            state: {
+                name: project.name,
+                path: project.path,
+                autoInstall: false
+            }
+        });
     };
 
     const handleProjectCreated = (name: string, path: string) => {
@@ -165,14 +207,21 @@ export const DashboardView: React.FC = () => {
                         </div>
 
                         <div className="flex flex-col gap-1">
-                            <RecentItem name="ModerationBot" path="~/documents/bots/mod-bot" time="2 hours ago" />
-                            <RecentItem name="MusicPlayer" path="~/dev/discord/music-v2" time="Yesterday" />
-                            <RecentItem name="EconomySystem" path="~/work/freelance/eco-bot" time="3 days ago" />
-                            <RecentItem name="TestBot_v4" path="~/tmp/testing/v4" time="Last week" />
-                        </div>
-
-                        <div className="mt-8 p-4 rounded-md border border-dashed border-zinc-800 bg-zinc-900/20 text-center text-zinc-500 text-sm">
-                            No more recent projects found.
+                            {recentProjects.length > 0 ? (
+                                recentProjects.map((project) => (
+                                    <RecentItem
+                                        key={project.path}
+                                        name={project.name}
+                                        path={project.path}
+                                        time={getRelativeTime(project.lastOpened)}
+                                        onClick={() => handleOpenRecent(project)}
+                                    />
+                                ))
+                            ) : (
+                                <div className="mt-8 p-4 rounded-md border border-dashed border-zinc-800 bg-zinc-900/20 text-center text-zinc-500 text-sm">
+                                    No more recent projects found.
+                                </div>
+                            )}
                         </div>
                     </div>
 

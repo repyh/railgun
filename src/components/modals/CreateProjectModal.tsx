@@ -56,7 +56,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ open, on
             console.log('Creating project:', { name, path, runtime, template });
 
             if (window.electronAPI) {
-                const result = await window.electronAPI.createProject({
+                const result = await window.electronAPI.invoke('project:createProject', {
                     name,
                     path,
                     runtime,
