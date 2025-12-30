@@ -30,5 +30,10 @@ module.exports = {
         console.log("---------------- RESPONSE LOG ----------------");
         console.log(args.data);
         console.log("----------------------------------------------");
+    },
+
+    reverseString: async (args) => {
+        if (!args.text) return { reversed: '' };
+        return { reversed: args.text.split('').reverse().join('') };
     }
 };

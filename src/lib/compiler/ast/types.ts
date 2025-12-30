@@ -37,6 +37,7 @@ export interface BaseNode {
 export interface Program extends BaseNode {
     type: 'Program';
     body: Statement[];
+    usedPlugins?: string[];
 }
 
 export type Statement =

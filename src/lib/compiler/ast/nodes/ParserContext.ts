@@ -13,4 +13,7 @@ export interface ParserContext {
 
     // Helper to sanitize names (keep consistent with main parser)
     sanitizeName(name: string): string;
+
+    // Track used plugins for import generation
+    markPluginUsed(pluginId: string): void;
 }

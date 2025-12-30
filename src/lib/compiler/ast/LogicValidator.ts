@@ -17,6 +17,16 @@ export class LogicValidator {
 
     validate(program: AST.Program): ValidationError[] {
         this.errors = [];
+        this.scopeManager.enter('global'); // Ensure we are in global scope (though init does it usually)
+
+        // Whitelist Plugin Variables
+        if (program.usedPlugins) {
+            for (const pluginId of program.usedPlugins) {
+                const safeId = pluginId.replace(/[^a-zA-Z0-9_]/g, '_');
+                this.scopeManager.define(`plugin_${safeId}`);
+            }
+        }
+
         this.visitBlock(program.body);
         return this.errors;
     }

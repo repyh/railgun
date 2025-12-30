@@ -1,4 +1,6 @@
 import type { Plugin, PluginContext, PluginManifest, PluginNodeDefinition } from './interfaces';
+import { registry as ASTRegistry } from '../compiler/ast/nodes/index';
+import { DynamicASTNodeAdapter } from './DynamicASTNodeAdapter';
 // import { Registry } from '../compiler/Registry';
 // @ts-ignore
 import { registerNodeDefinition, unregisterNodeDefinition } from '../../nodes/index';
@@ -58,6 +60,15 @@ export class PluginManager {
             console.error('Failed to scan library:', e);
         }
         return results;
+    }
+
+    static getRuntimePath(pluginId: string): string | undefined {
+        const plugin = this.plugins.get(pluginId);
+        return plugin?.runtimePath;
+    }
+
+    static getManifest(pluginId: string): PluginManifest | undefined {
+        return this.plugins.get(pluginId)?.manifest;
     }
 
     static unloadAll() {
@@ -185,7 +196,7 @@ export class PluginManager {
         }
     }
 
-    static registerNode(_pluginId: string, def: PluginNodeDefinition) {
+    static registerNode(pluginId: string, def: PluginNodeDefinition) {
         const factory = () => this.createDynamicNode(def);
 
         registerNodeDefinition({
@@ -194,42 +205,13 @@ export class PluginManager {
             factory: factory
         });
 
-        // Register Compiler Logic
+        // Register AST Parser Logic
         if (def.execute) {
-            /*
-            Registry.registerStatement(def.label, (node, ctx, processor) => {
-                // Determine function name
-                const funcName = def.execute!;
-                // Generate variable name for the plugin runtime
-                const pluginVar = `plugin_${pluginId.replace(/-/g, '_')}`;
-
-                // Result Variable
-                const resVar = `res_${node.id.replace(/-/g, '_')}`;
-
-                let argsObj = '{';
-                if (def.inputs) {
-                    for (const key of Object.keys(def.inputs)) {
-                        if (def.inputs[key].type === 'exec') continue; // Flow input
-
-                        const val = processor.resolveInput(node, key, ctx);
-                        argsObj += ` ${key}: ${val},`;
-                    }
-                }
-                argsObj += ' }';
-
-                // Return assignment code
-                return `        const ${resVar} = await ${pluginVar}.${funcName}(${argsObj});\n`;
-            });
-
-            // Register Value Generator for Outputs
-            //@ts-ignore
-            Registry.registerValue(def.label, (node, outputKey, ctx, resolver) => {
-                const resVar = `res_${node.id.replace(/-/g, '_')}`;
-                // Outputs from runtime are expected to be properties of the returned object
-                return `${resVar}.${outputKey}`;
-            });
-            */
-            console.warn(`[PluginManager] Dynamic node ${def.label} registered but compilation logic is disabled in AST v2.`);
+            const adapter = new DynamicASTNodeAdapter(pluginId, def);
+            ASTRegistry.register(def.label, adapter);
+            console.log(`[PluginManager] Registered AST Adapter for ${def.label}`);
+        } else {
+            console.warn(`[PluginManager] Node ${def.label} has no execute function, AST generation will emit comments.`);
         }
     }
 

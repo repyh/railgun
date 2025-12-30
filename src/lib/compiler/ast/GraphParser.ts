@@ -12,10 +12,15 @@ export class GraphParser implements ParserContext {
 
     // Cache for processed expressions: "nodeId:outputKey" -> AST.Expression
     private cachedExpressions: Map<string, AST.Expression> = new Map();
+    private usedPlugins: Set<string> = new Set();
 
     constructor(nodes: BotNode[], connections: any[]) {
         this.nodes = nodes;
         this.connections = connections;
+    }
+
+    public markPluginUsed(pluginId: string): void {
+        this.usedPlugins.add(pluginId);
     }
 
     /**
@@ -47,7 +52,8 @@ export class GraphParser implements ParserContext {
 
         return {
             type: 'Program',
-            body: body
+            body: body,
+            usedPlugins: Array.from(this.usedPlugins)
         };
     }
 

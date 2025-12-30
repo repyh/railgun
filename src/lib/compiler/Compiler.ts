@@ -7,7 +7,8 @@ import {
     type WrapperStrategy,
     LegacyCommandStrategy,
     SlashCommandStrategy,
-    EventStrategy
+    EventStrategy,
+    PluginInjectionStrategy
 } from './ast/strategies';
 
 // Re-export common types for consumers
@@ -52,8 +53,8 @@ export class Compiler {
 
         if (errors.length > 0) {
             console.error('[Railgun Compiler] Validation Errors:', errors);
-            // In the future, we might want to throw here or return an error object.
-            // For now, we generate a file with the errors as comments to be safe.
+            // In the future, throw here or return an error object.
+            // For now, generate a file with the errors as comments to be safe.
             const errorBlock = errors.map(e => `// ERROR: ${e.message} (Node: ${e.nodeId})`).join('\n');
             return `/* COMPILATION FAILED - VALIDATION ERRORS */\n\n${errorBlock}`;
         }
@@ -62,6 +63,11 @@ export class Compiler {
         const printer = new CodePrinter();
 
         const globalStmts: string[] = [];
+        // 3a. Inject Plugin Imports
+        const pluginStrategy = new PluginInjectionStrategy();
+        const pluginStmts = pluginStrategy.execute(program);
+        globalStmts.push(...pluginStmts);
+
         let eventFunctionBody = '';
 
         // Metadata extraction

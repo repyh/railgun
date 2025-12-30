@@ -45,4 +45,17 @@ module.exports = (ctx) => {
         },
         execute: 'logResponse'
     });
+
+    // Reverse String
+    ctx.registerNode({
+        label: 'Reverse String',
+        category: 'Utils',
+        inputs: {
+            text: { type: 'string', label: 'Text' }
+        },
+        outputs: {
+            reversed: { type: 'string', label: 'Reversed Text' }
+        },
+        execute: 'reverseString'
+    });
 };
