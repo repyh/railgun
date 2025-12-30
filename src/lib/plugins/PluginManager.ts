@@ -130,6 +130,12 @@ export class PluginManager {
                 return;
             }
 
+            // Strict ID Validation: alphanumeric, dash, underscore only
+            if (!/^[a-zA-Z0-9\-_]+$/.test(manifest.id)) {
+                console.error(`[PluginManager] Invalid plugin ID "${manifest.id}" in ${dirPath}. Only alphanumeric, dashes, and underscores are allowed.`);
+                return;
+            }
+
             // Load Entry Point
             const entryPath = path.join(dirPath, manifest.main);
             if (!fs.existsSync(entryPath)) {

@@ -58,4 +58,20 @@ module.exports = (ctx) => {
         },
         execute: 'reverseString'
     });
+
+    // Test Complex Outputs
+    ctx.registerNode({
+        label: 'Get Complex User',
+        category: 'Test',
+        inputs: {
+            exec: { type: 'exec' }
+        },
+        outputs: {
+            exec: { type: 'exec' },
+            'user.name': { type: 'string', label: 'User Name' },
+            'user.address.city': { type: 'string', label: 'City' },
+            'meta-data': { type: 'string', label: 'Meta (Invalid ID)' }
+        },
+        execute: 'getComplexUser'
+    });
 };

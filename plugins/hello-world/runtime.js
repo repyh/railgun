@@ -35,5 +35,17 @@ module.exports = {
     reverseString: async (args) => {
         if (!args.text) return { reversed: '' };
         return { reversed: args.text.split('').reverse().join('') };
+    },
+
+    getComplexUser: async (args) => {
+        return {
+            user: {
+                name: 'Alice',
+                address: {
+                    city: 'Wonderland'
+                }
+            },
+            'meta-data': 'v1.0'
+        };
     }
 };

@@ -28,8 +28,10 @@ export interface Plugin {
 
 export interface PluginContext {
     registerNode(definition: PluginNodeDefinition): void;
-    registerStatement(label: string, generator: any): void; // TODO: Update to AST Compiler
-    registerValue(categoryOrLabel: string, generator: any): void; // TODO: Update to AST Compiler
+    /** @deprecated specific to legacy transpiler. Use registerNode with 'execute' property for AST support. */
+    registerStatement(label: string, generator: any): void;
+    /** @deprecated specific to legacy transpiler. Use registerNode with 'execute' property for AST support. */
+    registerValue(categoryOrLabel: string, generator: any): void;
 }
 
 export interface PluginNodeDefinition {

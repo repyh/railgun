@@ -71,20 +71,13 @@ export class DynamicASTNodeAdapter implements ASTNodeParser {
         // 3. Return based on expected type
         if (expectedType === 'statement') {
             // Check if it has outputs other than exec. If so, it might yield a value.
-            // But if requested as statement, we wrap in ExpressionStatement.
-            // If it returns a value, we might want to capture it? 
-            // For now, simple expression statement.
-
-            // If the plugin node is supposed to be "await"ed? 
-            // Most plugin ops (I/O) should probably be awaited.
+            // But if requested as statement, wrap in ExpressionStatement.
 
             const awaitExpr: AST.AwaitExpression = {
                 type: 'AwaitExpression',
                 argument: callExpr
             };
 
-            // If we have outputs (that are not flow), we might need to assign the result to a temp variable
-            // so subsequent nodes can access it via resolveInput -> resolveOutput logic.
             const hasDataOutputs = this.def.outputs && Object.values(this.def.outputs).some(o => o.type !== 'exec');
 
             if (hasDataOutputs) {
@@ -107,33 +100,11 @@ export class DynamicASTNodeAdapter implements ASTNodeParser {
                 expression: awaitExpr
             };
         } else {
-            // expected 'expression'. 
-            // Usually means this node is being pulled as an input for another node.
-            // We return the VARIABLE that holds the result, assuming it was executed in flow.
-            // OR, if this is a purely functional node (no side effects, no flow input), we return the call itself?
-
-            // If the node HAS 'exec' input, it MUST proceed via flow (Statement).
-            // Referring to it as an value means referring to its Result Variable.
-
             const hasExecInput = this.def.inputs && Object.values(this.def.inputs).some(i => i.type === 'exec');
             if (hasExecInput) {
                 const resultVar = `res_${node.id.replace(/-/g, '_')}`;
-                // Return member access if specific output key passed? 
-                // The parse() method doesn't know which output key is requested.
-                // resolveOutput does. 
-
-                // If parse() is called in expression mode for a Flow node, it's ambiguous.
-                // Usually resolveInput -> processValueNode -> resolveOutput (custom) OR parse(..., 'expression').
-
-                // If we return just the variable identifier, it assumes the whole object.
                 return { type: 'Identifier', name: resultVar };
             } else {
-                // Pure value node. Inline the call.
-                // e.g. Math, String Utils.
-                // Since these are likely async in the plugin system (everything is async there usually?), 
-                // we wrap in Await? But we can't await in non-async places easily.
-                // Assuming plugin runtime functions are async.
-
                 return {
                     type: 'AwaitExpression',
                     argument: callExpr
@@ -143,37 +114,54 @@ export class DynamicASTNodeAdapter implements ASTNodeParser {
     }
 
     resolveOutput(node: BotNode, outputKey: string, context: ParserContext): AST.Expression | null {
-        // If this is a flow node, the result is stored in res_NODEID.
-        // We probably need to return `res_NODEID.outputKey`.
+        // Prepare the base object expression
+        let baseObject: AST.Expression;
 
         const hasExecInput = this.def.inputs && Object.values(this.def.inputs).some(i => i.type === 'exec');
 
         if (hasExecInput) {
+            // Flow node result variable
             const resultVar = `res_${node.id.replace(/-/g, '_')}`;
-            return {
-                type: 'MemberExpression',
-                object: { type: 'Identifier', name: resultVar },
-                property: { type: 'Identifier', name: outputKey },
-                computed: false
-            };
+            baseObject = { type: 'Identifier', name: resultVar };
+        } else {
+            // Value node (inline execution)
+            // Re-call parse to get the call expr
+            const callExpr = this.parse(node, context, 'expression') as AST.Expression | null;
+            if (!callExpr) return null;
+            baseObject = callExpr;
         }
 
-        // If it's a value node (no flow), parse() returns the AwaitExpression(Call).
-        // If we want a specific property of that result...
-        // We can't easily append .property to an AwaitExpression in all AST specs without parentheses.
-        // (await call()).prop
+        return this.createMemberAccess(baseObject, outputKey);
+    }
 
-        // AST.MemberExpression supports object as any Expression.
+    /**
+     * Helper to create nested MemberExpressions from a dot-notation path.
+     * Handles invalid identifiers by using computed properties (obj["key-name"]).
+     */
+    private createMemberAccess(base: AST.Expression, path: string): AST.Expression {
+        const parts = path.split('.');
+        let currentExpr = base;
 
-        // Re-call parse to get the call expr
-        const callExpr = this.parse(node, context, 'expression') as AST.Expression | null;
-        if (!callExpr) return null;
+        for (const part of parts) {
+            const isValidId = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(part);
 
-        return {
-            type: 'MemberExpression',
-            object: callExpr,
-            property: { type: 'Identifier', name: outputKey },
-            computed: false
-        };
+            if (isValidId) {
+                currentExpr = {
+                    type: 'MemberExpression',
+                    object: currentExpr,
+                    property: { type: 'Identifier', name: part },
+                    computed: false
+                };
+            } else {
+                currentExpr = {
+                    type: 'MemberExpression',
+                    object: currentExpr,
+                    property: { type: 'Literal', value: part, raw: `'${part}'` },
+                    computed: true
+                };
+            }
+        }
+
+        return currentExpr;
     }
 }

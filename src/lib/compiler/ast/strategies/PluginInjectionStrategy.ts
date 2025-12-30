@@ -8,17 +8,22 @@ export class PluginInjectionStrategy {
         if (program.usedPlugins) {
             for (const pluginId of program.usedPlugins) {
                 const manifest = PluginManager.getManifest(pluginId);
-                const safeId = pluginId.replace(/[^a-zA-Z0-9_]/g, '_');
-                const varName = `plugin_${safeId}`;
+
+                // 1. Sanitize ID for variable naming
+                const safeVarId = pluginId.replace(/[^a-zA-Z0-9_]/g, '_');
+                const varName = `plugin_${safeVarId}`;
 
                 if (manifest && manifest.botm?.runtime) {
-                    // Normalize to forward slashes for require
-                    const relativeRuntime = manifest.botm.runtime.replace(/\\/g, '/');
-                    const requirePath = `./plugins/${pluginId}/${relativeRuntime}`;
+                    // 2. Sanitize ID and Runtime for path safety (prevent path traversal)
+                    const safePathId = pluginId.replace(/[^a-zA-Z0-9\-_]/g, '');
+                    const safeRuntime = manifest.botm.runtime.replace(/\\/g, '/').replace(/\.\.\//g, '');
+
+                    const requirePath = `./plugins/${safePathId}/${safeRuntime}`;
                     injectedStmts.push(`const ${varName} = require('${requirePath}');`);
                 } else {
-                    // Fallback/Warning if manifest or runtime not found
-                    injectedStmts.push(`// WARNING: Plugin ${pluginId} runtime not found or invalid manifest!`);
+                    // 3. Sanitize ID for comment safety
+                    const safeCommentId = pluginId.replace(/[^a-zA-Z0-9\-_]/g, '');
+                    injectedStmts.push(`// WARNING: Plugin ${safeCommentId} runtime not found or invalid manifest!`);
                 }
             }
         }
