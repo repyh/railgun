@@ -18,27 +18,6 @@ export class SystemIPC extends BaseIPC {
         return process.version;
     }
 
-    async echo(message: string): Promise<string> {
-        return `Echo: ${message}`;
-    }
-
-    async minimizeWindow(): Promise<void> {
-        BrowserWindow.getFocusedWindow()?.minimize();
-    }
-
-    async maximizeWindow(): Promise<void> {
-        const win = BrowserWindow.getFocusedWindow();
-        if (win?.isMaximized()) {
-            win.unmaximize();
-        } else {
-            win?.maximize();
-        }
-    }
-
-    async closeWindow(): Promise<void> {
-        BrowserWindow.getFocusedWindow()?.close();
-    }
-
     async selectDirectory(): Promise<string | null> {
         const result = await dialog.showOpenDialog({
             properties: ['openDirectory', 'createDirectory']

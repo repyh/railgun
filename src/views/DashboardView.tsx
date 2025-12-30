@@ -8,8 +8,8 @@ import {
     Clock,
     ArrowRight
 } from 'lucide-react';
-import { CreateProjectModal } from '@/components/modals/CreateProjectModal';
 import { useProject } from '@/contexts/ProjectContext';
+import { useModal } from '@/contexts/ModalContext';
 
 const ActionCard = ({
     icon: Icon,
@@ -72,10 +72,10 @@ const getRelativeTime = (timestamp: number) => {
 
 export const DashboardView: React.FC = () => {
     const [nodeVersion, setNodeVersion] = React.useState('Unknown');
-    const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
     const [recentProjects, setRecentProjects] = React.useState<any[]>([]);
     const navigate = useNavigate();
     const { setProject } = useProject();
+    const { openModal } = useModal();
 
     const fetchRecentProjects = async () => {
         if (window.electronAPI) {
@@ -151,12 +151,6 @@ export const DashboardView: React.FC = () => {
         <div className="flex h-full w-full bg-[#09090b]">
             {/* Main Area */}
             <div className="flex-1 p-12 overflow-auto mx-auto max-w-7xl">
-                <CreateProjectModal
-                    open={isCreateModalOpen}
-                    onOpenChange={setIsCreateModalOpen}
-                    onCreateProject={handleProjectCreated}
-                />
-
                 <div className="mb-8">
                     <img
                         src="/resources/railgun-logo_full.svg"
@@ -172,7 +166,7 @@ export const DashboardView: React.FC = () => {
                         title="New Project"
                         shortcut="Ctrl+N"
                         description="Create a new bot from scratch or template."
-                        onClick={() => setIsCreateModalOpen(true)}
+                        onClick={() => openModal('create-project')}
                     />
                     <ActionCard
                         icon={FolderOpen}
@@ -189,11 +183,6 @@ export const DashboardView: React.FC = () => {
                     />
                 </div>
 
-                <CreateProjectModal
-                    open={isCreateModalOpen}
-                    onOpenChange={setIsCreateModalOpen}
-                    onCreateProject={handleProjectCreated}
-                />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                     {/* Recent Projects */}

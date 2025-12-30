@@ -8,10 +8,7 @@ import {
     GitGraph,
     Settings,
     Command,
-    LayoutTemplate,
-    Minus,
-    Square,
-    X
+    LayoutTemplate
 } from 'lucide-react';
 
 // interface MainLayoutProps {
@@ -45,8 +42,25 @@ const ActivityBarItem = ({
 
 import { PluginManager } from '@/lib/plugins/PluginManager';
 import { ConsolePanel } from '@/components/console/ConsolePanel';
+import { Titlebar } from '@/components/layout/Titlebar';
+import { ModalProvider, useModal } from '@/contexts/ModalContext';
+import { CreateProjectModal } from '@/components/modals/CreateProjectModal';
 
-export const MainLayout = () => {
+const ModalContainer = () => {
+    const { activeModal, closeModal } = useModal();
+
+    return (
+        <>
+            <CreateProjectModal
+                open={activeModal === 'create-project'}
+                onOpenChange={(open) => !open && closeModal()}
+            />
+            {/* Add other modals here as they are implemented */}
+        </>
+    );
+};
+
+export const MainLayoutInner = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [appVersion, setAppVersion] = useState<string>('0.0.0');
     const [status, setStatus] = useState('Ready');
@@ -64,47 +78,7 @@ export const MainLayout = () => {
 
     return (
         <div className="flex flex-col h-screen w-full bg-background text-foreground overflow-hidden font-sans">
-            {/* Top Bar / Title Bar */}
-            <div className="h-[30px] shrink-0 flex items-center justify-between bg-zinc-900 border-b border-zinc-800 titlebar-drag-region select-none">
-                <div className="flex items-center px-2 h-full titlebar-no-drag">
-                    <div className="mr-3 text-blue-500">
-                        <SquareTerminal size={16} />
-                    </div>
-                    <div className="flex items-center text-[13px]">
-                        {['File', 'Edit', 'Plugins', 'View', 'Help'].map((item) => (
-                            <div key={item} className="px-2.5 py-1 hover:bg-zinc-800 rounded-sm cursor-pointer text-zinc-400 hover:text-zinc-100 transition-colors">
-                                {item}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="absolute left-1/2 -translate-x-1/2 text-[13px] text-zinc-400 font-medium">
-                    Railgun v0.0.1-alpha
-                </div>
-
-                {/* Custom Window Controls */}
-                <div className="flex h-full titlebar-no-drag">
-                    <button
-                        onClick={() => window.electronAPI?.minimizeWindow()}
-                        className="h-full px-4 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors flex items-center justify-center"
-                    >
-                        <Minus size={16} />
-                    </button>
-                    <button
-                        onClick={() => window.electronAPI?.toggleMaximizeWindow()}
-                        className="h-full px-4 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors flex items-center justify-center"
-                    >
-                        <Square size={14} />
-                    </button>
-                    <button
-                        onClick={() => window.electronAPI?.closeWindow()}
-                        className="h-full px-4 hover:bg-red-500 text-zinc-400 hover:text-white transition-colors flex items-center justify-center"
-                    >
-                        <X size={16} />
-                    </button>
-                </div>
-            </div>
+            <Titlebar />
 
             {/* Middle Area: Activity Bar + Main Content */}
             <div className="flex flex-1 overflow-hidden">
@@ -156,6 +130,13 @@ export const MainLayout = () => {
                     </div>
                 </div>
             </div>
+            <ModalContainer />
         </div>
     );
 };
+
+export const MainLayout = () => (
+    <ModalProvider>
+        <MainLayoutInner />
+    </ModalProvider>
+);
