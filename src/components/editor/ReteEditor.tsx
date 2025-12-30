@@ -6,7 +6,8 @@ import { Play } from 'lucide-react';
 import { BotNode, InputControl, Sockets } from '@/lib/railgun-rete';
 import { ClassicPreset } from 'rete';
 import { ContextMenu } from '@/components/editor/ContextMenu';
-import { createNode } from '@/nodes';
+
+import { nodeRegistry } from '@/lib/registries/NodeRegistry';
 import { AreaExtensions } from 'rete-area-plugin';
 import { PropertyPanel } from '@/components/editor/PropertyPanel';
 
@@ -176,8 +177,13 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                     const nodeMap = new Map<string, BotNode>();
 
                     for (const n of data.nodes) {
-                        let node = createNode(n.label);
-                        if (!node) {
+                        // Use Registry
+                        let node: BotNode | null = null;
+                        const def = nodeRegistry.get(n.label);
+                        if (def) {
+                            node = def.factory();
+                        } else {
+                            // Fallback for unknown nodes? Or generic handling
                             node = new BotNode(n.label, n.category || 'Action');
                         }
                         node.id = n.id;
@@ -310,7 +316,9 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
     const handleAddNode = async (label: string) => {
         if (!editorRef.current || !areaRef.current) return;
 
-        const node = createNode(label);
+        const def = nodeRegistry.get(label);
+        const node = def ? def.factory() : null;
+
         if (node) {
             const transform = areaRef.current.area.transform;
             const x = (clickPosition.x - transform.x) / transform.k;

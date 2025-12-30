@@ -48,7 +48,7 @@ export interface NodeDefinition {
     factory: NodeFactory;
 }
 
-export const NODE_REGISTRY: NodeDefinition[] = [
+export const DEFAULT_NODES: NodeDefinition[] = [
     { label: 'Construct Embed', category: 'Discord', factory: createConstructEmbedNode },
     { label: 'Create Button', category: 'Discord', factory: createCreateButtonNode },
     { label: 'Create Action Row', category: 'Discord', factory: createActionRowNode },
@@ -97,25 +97,10 @@ export const NODE_REGISTRY: NodeDefinition[] = [
     { label: 'Splitter', category: 'Data', factory: createSplitterNode },
 ];
 
-export function registerNodeDefinition(def: NodeDefinition) {
-    // Remove existing if any (override)
-    const existingIdx = NODE_REGISTRY.findIndex(n => n.label === def.label);
-    if (existingIdx >= 0) {
-        NODE_REGISTRY[existingIdx] = def;
-    } else {
-        NODE_REGISTRY.push(def);
-    }
-}
-
-export function unregisterNodeDefinition(label: string) {
-    const idx = NODE_REGISTRY.findIndex(n => n.label === label);
-    if (idx >= 0) {
-        NODE_REGISTRY.splice(idx, 1);
-    }
-}
-
+// Helper functions for direct usage (deprecated, use NodeRegistry instead)
 export function createNode(label: string): BotNode | null {
-    const def = NODE_REGISTRY.find(n => n.label === label);
+    const { nodeRegistry } = require('@/lib/registries/NodeRegistry'); // Lazy import to avoid circular dep
+    const def = nodeRegistry.get(label);
     if (def) return def.factory();
     return null;
 }

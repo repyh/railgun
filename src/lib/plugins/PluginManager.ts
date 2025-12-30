@@ -2,8 +2,7 @@ import type { Plugin, PluginContext, PluginManifest, PluginNodeDefinition } from
 import { registry as ASTRegistry } from '../compiler/ast/nodes/index';
 import { DynamicASTNodeAdapter } from './DynamicASTNodeAdapter';
 // import { Registry } from '../compiler/Registry';
-// @ts-ignore
-import { registerNodeDefinition, unregisterNodeDefinition } from '../../nodes/index';
+import { nodeRegistry } from '../registries/NodeRegistry';
 // @ts-ignore
 import { BotNode, Sockets, InputControl } from '../railgun-rete';
 // @ts-ignore
@@ -78,7 +77,7 @@ export class PluginManager {
             if (plugin.registeredItems) {
                 // Unregister Nodes
                 for (const label of plugin.registeredItems.nodes) {
-                    unregisterNodeDefinition(label);
+                    nodeRegistry.unregister(label);
                 }
                 // Unregister Statements
                 /*
@@ -205,7 +204,7 @@ export class PluginManager {
     static registerNode(pluginId: string, def: PluginNodeDefinition) {
         const factory = () => this.createDynamicNode(def);
 
-        registerNodeDefinition({
+        nodeRegistry.register({
             label: def.label,
             category: def.category,
             factory: factory

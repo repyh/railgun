@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NODE_REGISTRY } from '@/nodes';
+import { nodeRegistry } from '@/lib/registries/NodeRegistry';
 import { Search } from 'lucide-react';
 
 interface ContextMenuProps {
@@ -13,7 +13,7 @@ export function ContextMenu({ x, y, onClose, onSelect }: ContextMenuProps) {
     const [search, setSearch] = useState('');
 
     // Filter nodes first
-    const filteredNodes = NODE_REGISTRY.filter(n =>
+    const filteredNodes = nodeRegistry.getAll().filter(n =>
         n.category !== 'Event' && // Always exclude Events
         n.label.toLowerCase().includes(search.toLowerCase())
     );
