@@ -15,27 +15,27 @@ export const AppLoader: React.FC<{ children: React.ReactNode }> = ({ children })
     useEffect(() => {
         const runStartupSequence = async () => {
             let totalSteps = LOAD_STEPS.length;
-            
+
             for (let i = 0; i < totalSteps; i++) {
                 const step = LOAD_STEPS[i];
                 const progress = Math.round(((i + 1) / totalSteps) * 100);
 
                 // Send update to Backend (which forwards to Splash)
                 if (window.electronAPI) {
-                     // @ts-ignore - We need to expose this API effectively or use invoke if we added it to preload
-                     // Since we didn't update preload, we might need a direct IPC send mechanism or update preload.
-                     // IMPORTANT: 'window.electronAPI' is usually a bridge. We should check if we have a way to send arbitary IPC.
-                     // The current ProjectIPC doesn't expose a generic 'send'.
-                     // For now, let's assume we can use `window.electron` if available or we might need to patch preload.
+                    // @ts-ignore - We need to expose this API effectively or use invoke if we added it to preload
+                    // Since we didn't update preload, we might need a direct IPC send mechanism or update preload.
+                    // IMPORTANT: 'window.electronAPI' is usually a bridge. We should check if we have a way to send arbitary IPC.
+                    // The current ProjectIPC doesn't expose a generic 'send'.
+                    // For now, let's assume we can use `window.electron` if available or we might need to patch preload.
                 }
-                
+
                 // Fallback: Use direct ipcRenderer if available via nodeIntegration (which we enabled for MVP)
                 if (window.require) {
-                     const { ipcRenderer } = window.require('electron');
-                     ipcRenderer.send('system:update-status', { 
-                         status: step.message, 
-                         progress: progress 
-                     });
+                    const { ipcRenderer } = window.require('electron');
+                    ipcRenderer.send('system:update-status', {
+                        status: step.message,
+                        progress: progress
+                    });
                 }
 
                 await new Promise(resolve => setTimeout(resolve, step.duration));
@@ -46,7 +46,7 @@ export const AppLoader: React.FC<{ children: React.ReactNode }> = ({ children })
                 const { ipcRenderer } = window.require('electron');
                 ipcRenderer.send('system:app-ready');
             }
-            
+
             setIsReady(true);
         };
 
