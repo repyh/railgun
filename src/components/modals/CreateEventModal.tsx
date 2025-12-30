@@ -16,22 +16,20 @@ interface CreateEventModalProps {
     onOpenChange: (open: boolean) => void;
     onCreateEvent: (name: string, type: string) => void;
 }
+import { eventRegistry } from '@/lib/registries/EventRegistry';
 
-export const eventTypes = [
-    { label: 'On Ready', value: 'ClientReady', nodeLabel: 'On Ready' },
-    { label: 'On Message Create', value: 'MessageCreate', nodeLabel: 'On Message Create' },
-    { label: 'On Slash Command', value: 'InteractionCreate', nodeLabel: 'On Slash Command' },
-];
 
 export function CreateEventModal({ open, onOpenChange, onCreateEvent }: CreateEventModalProps) {
+    const eventTypes = eventRegistry.getAll();
     const [name, setName] = useState('');
-    const [type, setType] = useState(eventTypes[0].value);
+    const [type, setType] = useState(eventTypes[0]?.id || '');
 
     const handleCreate = () => {
         if (name) {
             onCreateEvent(name, type);
             setName('');
-            setType(eventTypes[0].value);
+            setName('');
+            setType(eventTypes[0]?.id || '');
             onOpenChange(false);
         }
     };
@@ -62,7 +60,7 @@ export function CreateEventModal({ open, onOpenChange, onCreateEvent }: CreateEv
                             </SelectTrigger>
                             <SelectContent>
                                 {eventTypes.map((t) => (
-                                    <SelectItem key={t.value} value={t.value}>
+                                    <SelectItem key={t.id} value={t.id}>
                                         {t.label}
                                     </SelectItem>
                                 ))}

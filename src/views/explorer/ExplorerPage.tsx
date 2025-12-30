@@ -32,6 +32,8 @@ import { CreateCommandModal } from '@/components/modals/CreateCommandModal';
 import { useProject } from '@/contexts/ProjectContext';
 import { PluginManager } from '@/lib/plugins/PluginManager';
 import { RunConfigDialog } from '@/components/dialogs/RunConfigDialog';
+import { eventRegistry } from '@/lib/registries/EventRegistry';
+import { commandRegistry } from '@/lib/registries/CommandRegistry';
 
 const TreeItem = ({ label, icon: Icon, children, onClick, active, action }: { label: string, icon?: any, children?: React.ReactNode, onClick?: () => void, active?: boolean, action?: React.ReactNode }) => {
     const [isOpen, setIsOpen] = useState(true);
@@ -179,35 +181,14 @@ const ExplorerPage: React.FC = () => {
         const fileName = name.endsWith('.railgun.json') ? name : `${name}.railgun.json`;
         const filePath = `events/${fileName}`;
 
-        let nodeLabel = 'On Message Create';
-        if (type === 'ClientReady') nodeLabel = 'On Ready';
-        if (type === 'InteractionCreate') nodeLabel = 'On Slash Command';
-        if (type === 'MessageCreate') nodeLabel = 'On Message Create';
-
-        const defaultContent = {
-            id: "event@" + Date.now(),
-            nodes: [
-                {
-                    id: "root",
-                    label: nodeLabel,
-                    category: "Event",
-                    inputs: {},
-                    outputs: {
-                        exec: { socket: { name: "Exec" } },
-                        ...(nodeLabel === 'On Ready' ? { client: { socket: { name: "Client" } } } : {}),
-                        ...(nodeLabel === 'On Message Create' ? {
-                            user: { socket: { name: "User" } },
-                            channel: { socket: { name: "Channel" } }
-                        } : {}),
-                        ...(nodeLabel === 'On Slash Command' ? {
-                            user: { socket: { name: "User" } },
-                            channel: { socket: { name: "Channel" } }
-                        } : {}),
-                    }
-                }
-            ],
-            connections: []
-        };
+        let defaultContent;
+        try {
+            defaultContent = eventRegistry.generateContent(type, "event@" + Date.now());
+        } catch (e) {
+            console.error(e);
+            alert("Failed to generate event content: " + e);
+            return;
+        }
 
         try {
             // @ts-ignore
@@ -227,39 +208,14 @@ const ExplorerPage: React.FC = () => {
         const fileName = name.endsWith('.railgun.json') ? name : `${name}.railgun.json`;
         const filePath = `commands/${fileName}`;
 
-        const dynamicOutputs: any = {};
-        args.forEach((arg, i) => {
-            dynamicOutputs[`arg_${i}`] = { socket: { name: arg } };
-        });
-
-        const defaultContent = {
-            id: "command@" + Date.now(),
-            nodes: [
-                {
-                    id: "root",
-                    label: "On Command",
-                    category: "Event",
-                    inputs: {},
-                    outputs: {
-                        exec: { socket: { name: "Exec" } },
-                        message: { socket: { name: "Message" } },
-                        args: { socket: { name: "Raw Args" } },
-                        ...dynamicOutputs
-                    },
-                    controls: {
-                        name: {
-                            id: 'name',
-                            value: name
-                        },
-                        args: {
-                            id: 'args',
-                            value: JSON.stringify(args)
-                        }
-                    }
-                }
-            ],
-            connections: []
-        };
+        let defaultContent;
+        try {
+            defaultContent = commandRegistry.generateContent('legacyCommand', "command@" + Date.now(), args);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to generate command content: " + e);
+            return;
+        }
 
         try {
             // @ts-ignore
