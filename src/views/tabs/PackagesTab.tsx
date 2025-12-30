@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { RefreshCw, Trash2 } from 'lucide-react';
+import { useElectron } from '@/hooks/useElectron';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -23,12 +24,13 @@ export const PackagesTab: React.FC<PackagesTabProps> = ({ projectPath }) => {
     const [newPackage, setNewPackage] = useState('');
     const [isDev, setIsDev] = useState(false);
     const [uninstalling, setUninstalling] = useState<string | null>(null);
+    const { isElectron, packages } = useElectron();
 
     const loadPackages = async () => {
-        if (!projectPath || !window.electronAPI) return;
+        if (!projectPath || !isElectron) return;
         setIsLoading(true);
         try {
-            const data = await window.electronAPI.readPackageJson(projectPath);
+            const data = await packages.readPackageJson(projectPath);
             setPackageJson(data);
         } catch (error) {
             console.error('Failed to load package.json', error);
@@ -42,12 +44,12 @@ export const PackagesTab: React.FC<PackagesTabProps> = ({ projectPath }) => {
     }, [projectPath]);
 
     const handleInstall = async () => {
-        if (!newPackage.trim() || !window.electronAPI) return;
+        if (!newPackage.trim() || !isElectron) return;
         setInstalling(true);
         try {
             // We assume successful return means started, but we might want to wait or listen to terminal
             // For now, we just trigger it and maybe refresh after a delay or rely on user refreshing
-            await window.electronAPI.installPackage(projectPath, newPackage, isDev);
+            await packages.installPackage(projectPath, newPackage, isDev);
             setNewPackage('');
             // Refresh after a delay to allow install to write to package.json (approximate)
             setTimeout(loadPackages, 5000);
@@ -59,10 +61,10 @@ export const PackagesTab: React.FC<PackagesTabProps> = ({ projectPath }) => {
     };
 
     const handleUninstall = async (packageName: string) => {
-        if (!window.electronAPI || uninstalling) return;
+        if (!isElectron || uninstalling) return;
         setUninstalling(packageName);
         try {
-            await window.electronAPI.uninstallPackage(projectPath, packageName);
+            await packages.uninstallPackage(projectPath, packageName);
             setTimeout(loadPackages, 5000);
         } catch (error) {
             console.error('Failed to uninstall package', error);

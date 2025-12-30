@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 
 import { PluginManager } from '@/lib/plugins/PluginManager';
+import { useElectron } from '@/hooks/useElectron';
 import { ConsolePanel } from '@/components/console/ConsolePanel';
 import { Titlebar } from '@/components/layout/Titlebar';
 import { ModalProvider, useModal } from '@/contexts/ModalContext';
@@ -59,6 +60,7 @@ export const MainLayoutInner = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { openModal } = useModal();
+    const { isElectron, invoke, system } = useElectron();
     const [appVersion, setAppVersion] = useState<string>('0.0.0');
     const [status, setStatus] = useState('Ready');
     const [isConsoleOpen, setIsConsoleOpen] = useState(false);
@@ -67,10 +69,10 @@ export const MainLayoutInner = () => {
         // Init Plugins
         PluginManager.init().catch(err => console.error("Plugin Init Failed:", err));
 
-        if (window.electronAPI) {
-            window.electronAPI.invoke('system:getAppVersion').then(setAppVersion).catch(() => { });
+        if (isElectron) {
+            system.getAppVersion().then(setAppVersion).catch(() => { });
         }
-    }, []);
+    }, [isElectron, system]);
 
     const handleSidebarClick = (item: SidebarItem) => {
         if (item.path) {
@@ -82,13 +84,13 @@ export const MainLayoutInner = () => {
                     openModal(action.target as any);
                     break;
                 case 'ipc':
-                    if (window.electronAPI) {
-                        window.electronAPI.invoke(action.target, ...(action.args || []));
+                    if (isElectron) {
+                        invoke(action.target, ...(action.args || []));
                     }
                     break;
                 case 'link':
-                    if (window.electronAPI) {
-                        window.electronAPI.invoke('titlebar:openExternalLink', action.target);
+                    if (isElectron) {
+                        system.openExternalLink(action.target);
                     }
                     break;
                 case 'command':

@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useProject } from '@/contexts/ProjectContext';
 import { useModal, type ModalType } from '@/contexts/ModalContext';
+import { useElectron } from '@/hooks/useElectron';
 import { MENU_CONFIG, type MenuItem, type MenuAction } from './menu';
 
 const MenuDropdown = ({ label, items, isOpen, onToggle, onAction }: { label: string, items: MenuItem[], isOpen: boolean, onToggle: () => void, onAction: (action: MenuAction) => void }) => {
@@ -59,6 +60,7 @@ const MenuDropdown = ({ label, items, isOpen, onToggle, onAction }: { label: str
 export const Titlebar = () => {
     const { projectName } = useProject();
     const { openModal } = useModal();
+    const { invoke, window: win, system } = useElectron();
     const [openMenu, setOpenMenu] = useState<string | null>(null);
 
     const toggleMenu = (menu: string) => {
@@ -68,9 +70,7 @@ export const Titlebar = () => {
     const handleAction = async (action: MenuAction) => {
         switch (action.type) {
             case 'ipc':
-                if (window.electronAPI) {
-                    await window.electronAPI.invoke(action.target, ...(action.args || []));
-                }
+                await invoke(action.target, ...(action.args || []));
                 break;
             case 'modal':
                 openModal(action.target as ModalType);
@@ -80,17 +80,15 @@ export const Titlebar = () => {
                 // TODO: Integrate with command palette or project bridge
                 break;
             case 'link':
-                if (window.electronAPI) {
-                    await window.electronAPI.invoke('titlebar:openExternalLink', action.target);
-                }
+                await system.openExternalLink(action.target);
                 break;
         }
     };
 
     const windowControls = {
-        minimize: () => window.electronAPI?.invoke('titlebar:minimizeWindow'),
-        toggleMaximize: () => window.electronAPI?.invoke('titlebar:toggleMaximizeWindow'),
-        close: () => window.electronAPI?.invoke('titlebar:closeWindow')
+        minimize: win.minimize,
+        toggleMaximize: win.toggleMaximize,
+        close: win.close
     };
 
     return (
