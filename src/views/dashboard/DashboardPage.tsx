@@ -103,7 +103,7 @@ const DashboardPage: React.FC = () => {
                 if (!result.canceled && result.path) {
                     const name = result.name || result.path.split(/[\\/]/).pop();
                     setProject(result.path, name);
-                    navigate('/project', { state: { name, path: result.path, autoInstall: false } });
+                    navigate('/explorer', { state: { name, path: result.path, autoInstall: false } });
                 }
             } catch (error) {
                 console.error('Failed to open project:', error);
@@ -145,7 +145,7 @@ const DashboardPage: React.FC = () => {
                                         time={getRelativeTime(project.lastOpened)}
                                         onClick={() => {
                                             setProject(project.path, project.name);
-                                            navigate('/project', { state: { name: project.name, path: project.path, autoInstall: false } });
+                                            navigate('/explorer', { state: { name: project.name, path: project.path, autoInstall: false } });
                                         }}
                                     />
                                 ))

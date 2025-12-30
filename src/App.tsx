@@ -7,6 +7,7 @@ import { ProjectProvider } from '@/contexts/ProjectContext';
 const DashboardPage = React.lazy(() => import('./views/dashboard/DashboardPage'));
 const ExplorerPage = React.lazy(() => import('./views/explorer/ExplorerPage'));
 const PluginsPage = React.lazy(() => import('./views/plugins/PluginsPage'));
+const CommunityPage = React.lazy(() => import('./views/community/CommunityPage'));
 const ProjectView = React.lazy(() => import('./views/ProjectView'));
 
 const Loading = () => (
@@ -25,6 +26,7 @@ function App() {
               <Route index element={<DashboardPage />} />
               <Route path="explorer" element={<ExplorerPage />} />
               <Route path="plugins" element={<PluginsPage />} />
+              <Route path="community" element={<CommunityPage />} />
               <Route path="project" element={<ProjectView />} />
             </Route>
           </Routes>

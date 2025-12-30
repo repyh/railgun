@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutTemplate, Files, Package, Zap, type LucideIcon } from 'lucide-react';
+import { LayoutTemplate, Files, Package, Globe, type LucideIcon } from 'lucide-react';
 
 export interface ViewModule {
     id: string;
@@ -14,7 +14,7 @@ export interface ViewModule {
 const DashboardPage = React.lazy(() => import('./dashboard/DashboardPage'));
 const ExplorerPage = React.lazy(() => import('./explorer/ExplorerPage'));
 const PluginsPage = React.lazy(() => import('./plugins/PluginsPage'));
-const ProjectView = React.lazy(() => import('./ProjectView'));
+const CommunityPage = React.lazy(() => import('./community/CommunityPage'));
 
 export const VIEW_REGISTRY: ViewModule[] = [
     {
@@ -39,10 +39,10 @@ export const VIEW_REGISTRY: ViewModule[] = [
         path: '/plugins'
     },
     {
-        id: 'project',
-        label: 'Node Editor',
-        icon: Zap,
-        component: ProjectView,
-        path: '/project'
+        id: 'community',
+        label: 'Community',
+        icon: Globe,
+        component: CommunityPage,
+        path: '/community'
     }
 ];

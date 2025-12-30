@@ -29,7 +29,7 @@ const ActivityBarItem = ({
             onClick={onClick}
             title={item.label}
             className={cn(
-                "p-3 w-full flex justify-center text-zinc-400 hover:text-white transition-colors relative group",
+                "p-3 w-full flex justify-center text-zinc-400 hover:text-white hover:cursor-pointer transition-colors relative group",
                 active && "text-white"
             )}
         >
