@@ -160,9 +160,11 @@ export interface MemberExpression extends BaseNode {
     optional?: boolean; // true if object?.property
 }
 
+export type AssignmentOperator = '=' | '+=' | '-=' | '*=' | '/=';
+
 export interface AssignmentExpression extends BaseNode {
     type: 'AssignmentExpression';
-    operator: '=' | '+=' | '-=' | '*=' | '/=';
+    operator: AssignmentOperator;
     left: Identifier | MemberExpression;
     right: Expression;
 }

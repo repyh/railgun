@@ -17,19 +17,16 @@ export class EmbedFieldParser implements ASTNodeParser {
             type: 'ObjectExpression',
             properties: [
                 {
-                    type: 'Property',
                     key: { type: 'Identifier', name: 'name' },
                     value: name,
                     kind: 'init'
                 },
                 {
-                    type: 'Property',
                     key: { type: 'Identifier', name: 'value' },
                     value: value,
                     kind: 'init'
                 },
                 {
-                    type: 'Property',
                     key: { type: 'Identifier', name: 'inline' },
                     value: inline as AST.Literal,
                     kind: 'init'

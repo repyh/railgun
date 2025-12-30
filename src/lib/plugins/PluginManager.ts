@@ -1,5 +1,5 @@
 import type { Plugin, PluginContext, PluginManifest, PluginNodeDefinition } from './interfaces';
-import { Registry } from '../compiler/Registry';
+// import { Registry } from '../compiler/Registry';
 // @ts-ignore
 import { registerNodeDefinition, unregisterNodeDefinition } from '../../nodes/index';
 // @ts-ignore
@@ -70,13 +70,15 @@ export class PluginManager {
                     unregisterNodeDefinition(label);
                 }
                 // Unregister Statements
+                /*
                 for (const label of plugin.registeredItems.statements) {
-                    Registry.unregisterStatement(label);
+                    // Registry.unregisterStatement(label);
                 }
                 // Unregister Values
                 for (const cat of plugin.registeredItems.values) {
-                    Registry.unregisterValue(cat);
+                    // Registry.unregisterValue(cat);
                 }
+                */
             }
         }
         this.plugins.clear();
@@ -140,12 +142,14 @@ export class PluginManager {
                     this.registerNode(manifest.id, def);
                     registeredItems.nodes.push(def.label);
                 },
-                registerStatement: (label, gen) => {
-                    Registry.registerStatement(label, gen);
+                registerStatement: (label, _gen) => {
+                    // Registry.registerStatement(label, gen);
+                    console.warn('[PluginManager] registerStatement not supported in AST compiler yet');
                     registeredItems.statements.push(label);
                 },
-                registerValue: (cat, gen) => {
-                    Registry.registerValue(cat, gen);
+                registerValue: (cat, _gen) => {
+                    // Registry.registerValue(cat, gen);
+                    console.warn('[PluginManager] registerValue not supported in AST compiler yet');
                     registeredItems.values.push(cat);
                 }
             };
@@ -181,7 +185,7 @@ export class PluginManager {
         }
     }
 
-    static registerNode(pluginId: string, def: PluginNodeDefinition) {
+    static registerNode(_pluginId: string, def: PluginNodeDefinition) {
         const factory = () => this.createDynamicNode(def);
 
         registerNodeDefinition({
@@ -192,9 +196,10 @@ export class PluginManager {
 
         // Register Compiler Logic
         if (def.execute) {
+            /*
             Registry.registerStatement(def.label, (node, ctx, processor) => {
                 // Determine function name
-                const funcName = def.execute;
+                const funcName = def.execute!;
                 // Generate variable name for the plugin runtime
                 const pluginVar = `plugin_${pluginId.replace(/-/g, '_')}`;
 
@@ -223,6 +228,8 @@ export class PluginManager {
                 // Outputs from runtime are expected to be properties of the returned object
                 return `${resVar}.${outputKey}`;
             });
+            */
+            console.warn(`[PluginManager] Dynamic node ${def.label} registered but compilation logic is disabled in AST v2.`);
         }
     }
 

@@ -425,63 +425,16 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
 
                     {/* Compiler Settings Section */}
                     <div className="p-4 rounded-lg border bg-zinc-900/30 border-zinc-800">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-sm font-medium text-zinc-200">Compiler Settings</h3>
-                                <p className="text-xs text-zinc-500">Choose the strategy used to generate bot code</p>
+                                <h3 className="text-sm font-medium text-zinc-200">Compiler Engine</h3>
+                                <p className="text-xs text-zinc-500">The underlying technology used to build your bot</p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${(config.compilerVersion === 'v2')
-                                        ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                                        : 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20'
-                                    }`}>
-                                    {(config.compilerVersion === 'v2') ? 'Experimental (AST)' : 'Legacy (Stable)'}
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                    AST Pipeline
                                 </span>
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <button
-                                onClick={() => {
-                                    setConfig((prev: any) => ({ ...prev, compilerVersion: 'v1' }));
-                                }}
-                                className={`flex flex-col items-start p-3 rounded border text-left transition-all ${(!config.compilerVersion || config.compilerVersion === 'v1')
-                                        ? 'bg-blue-600/10 border-blue-500/50 ring-1 ring-blue-500/20'
-                                        : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${(!config.compilerVersion || config.compilerVersion === 'v1') ? 'border-blue-500' : 'border-zinc-600'
-                                        }`}>
-                                        {(!config.compilerVersion || config.compilerVersion === 'v1') && <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                                    </div>
-                                    <span className="text-sm font-medium text-zinc-200">Legacy Transpiler</span>
-                                </div>
-                                <p className="text-xs text-zinc-500 pl-5">
-                                    Direct string concatenation. Fast but less validation. Recommended for production.
-                                </p>
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setConfig((prev: any) => ({ ...prev, compilerVersion: 'v2' }));
-                                }}
-                                className={`flex flex-col items-start p-3 rounded border text-left transition-all ${(config.compilerVersion === 'v2')
-                                        ? 'bg-blue-600/10 border-blue-500/50 ring-1 ring-blue-500/20'
-                                        : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900'
-                                    }`}
-                            >
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${(config.compilerVersion === 'v2') ? 'border-blue-500' : 'border-zinc-600'
-                                        }`}>
-                                        {(config.compilerVersion === 'v2') && <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
-                                    </div>
-                                    <span className="text-sm font-medium text-zinc-200">AST Pipeline (Beta)</span>
-                                </div>
-                                <p className="text-xs text-zinc-500 pl-5">
-                                    Uses Abstract Syntax Tree for semantic validation and optimized code generation.
-                                </p>
-                            </button>
                         </div>
                     </div>
 

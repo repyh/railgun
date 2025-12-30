@@ -1,198 +1,149 @@
-import { BotNode } from '../railgun-rete';
-import { PluginManager } from '../plugins/PluginManager';
 import { GraphParser } from './ast/GraphParser';
+import { LogicValidator } from './ast/LogicValidator';
 import { CodePrinter } from './ast/CodePrinter';
 import * as AST from './ast/types';
+import {
+    type FileType,
+    type WrapperStrategy,
+    LegacyCommandStrategy,
+    SlashCommandStrategy,
+    EventStrategy
+} from './ast/strategies';
+
+// Re-export common types for consumers
+export type { FileType };
+
+export interface CompilerOptions {
+    nodes: any[]; // Using any[] to be compatible with Rete export format
+    connections: any[];
+    fileType?: FileType;
+}
 
 /**
- * The Compiler class orchestrates the entire compilation process using the AST Pipeline.
- * 1. GraphParser -> Converts Graph to AST Helper
- * 2. Compiler -> Wraps logic into CommonJS Module Exports
- * 3. CodePrinter -> Generates JS Code
+ * The Railgun AST Compiler
+ * 
+ * Transforming Rete.js data graphs into executable JavaScript code.
+ * Pipeline: Graph -> AST -> Validation -> Code Generation -> Wrapping
  */
 export class Compiler {
-    nodes: BotNode[];
-    connections: any[];
-    imports: Set<string> = new Set();
-    parser: GraphParser;
-    printer: CodePrinter;
+    private nodes: any[];
+    private connections: any[];
+    private fileType: FileType;
 
-    constructor(data: { nodes: BotNode[], connections: any[] }) {
+    constructor(data: CompilerOptions) {
         this.nodes = data.nodes;
         this.connections = data.connections;
-        this.parser = new GraphParser(this.nodes, this.connections);
-        this.printer = new CodePrinter();
+        this.fileType = data.fileType || 'command';
     }
 
     /**
-     * Adds an import statement to the list of required imports.
+     * Compiles the graph into a JavaScript string.
      */
-    addImport(statement: string) {
-        this.imports.add(statement);
-    }
+    public compile(): string {
+        console.log('[Railgun Compiler] Starting compilation...');
 
-    /**
-     * Main compile method. Generates the full file content.
-     */
-    compile(): string {
-        // 1. Find the Event Node (Entry Point)
-        const eventNode = this.nodes.find(n => n.category === 'Event' || n.codeType === 'On Command' || n.codeType === 'On Slash Command');
-        if (!eventNode) {
-            throw new Error('No Event node found. A valid graph must have an Event node.');
+        // 1. Parsing: Graph -> AST
+        const parser = new GraphParser(this.nodes, this.connections);
+        const program = parser.parse();
+
+        // 2. Validation: AST Analysis
+        const validator = new LogicValidator();
+        const errors = validator.validate(program);
+
+        if (errors.length > 0) {
+            console.error('[Railgun Compiler] Validation Errors:', errors);
+            // In the future, we might want to throw here or return an error object.
+            // For now, we generate a file with the errors as comments to be safe.
+            const errorBlock = errors.map(e => `// ERROR: ${e.message} (Node: ${e.nodeId})`).join('\n');
+            return `/* COMPILATION FAILED - VALIDATION ERRORS */\n\n${errorBlock}`;
         }
 
-        const eventLabel = eventNode.codeType || eventNode.label;
+        // 3. Code Generation: AST -> Code Strings
+        const printer = new CodePrinter();
 
-        // 2. Inject Plugin Runtimes
-        PluginManager.plugins.forEach((plugin: any) => {
-            if (plugin.runtimePath) {
-                const safePath = plugin.runtimePath.replace(/\\/g, '/');
-                const varName = `plugin_${plugin.manifest.id.replace(/-/g, '_')}`;
-                this.addImport(`const ${varName} = require("${safePath}");`);
-            }
-        });
+        const globalStmts: string[] = [];
+        let eventFunctionBody = '';
 
-        // 3. Process the Event Logic using GraphParser
-        // We bypass the generic tokenizer so we can structure the AST manually around it.
-        const bodyBlock = this.parser.traverseBlock(eventNode, 'exec');
+        // Metadata extraction
+        let eventName = 'default-cmd';
+        let eventParams: string[] = [];
+        let description = '';
+        let isAsync = true;
+        let once = false;
 
-        // 4. Construct the wrapper AST based on Event Type
-        let program: AST.Program;
-        let moduleExportsValue: AST.ObjectExpression;
+        // Find the "EntryPoint" node to determine metadata
+        const eventNode = this.nodes.find(n => n.category === 'Event' || n.codeType?.startsWith('On '));
+        const eventNodeId = eventNode?.id;
 
-        if (eventLabel === 'On Slash Command') {
-            // --- SLASH COMMAND ---
-            this.addImport("const { SlashCommandBuilder } = require('discord.js');");
+        for (const stmt of program.body) {
+            // Check if this statement is the Main Event Function Declaration
+            if (stmt.type === 'FunctionDeclaration' && (stmt as AST.FunctionDeclaration).isEvent) {
+                const func = stmt as AST.FunctionDeclaration;
 
-            moduleExportsValue = {
-                type: 'ObjectExpression',
-                properties: [
-                    {
-                        kind: 'init',
-                        key: { type: 'Identifier', name: 'data' },
-                        value: { type: 'Identifier', name: 'new SlashCommandBuilder().setName("my-command").setDescription("Auto-generated")' } // Simplification for now, usually builder chain
-                    },
-                    {
-                        kind: 'init',
-                        key: { type: 'Identifier', name: 'run' },
-                        value: {
-                            type: 'ArrowFunctionExpression',
-                            async: true,
-                            params: [
-                                { type: 'Identifier', name: 'client' },
-                                { type: 'Identifier', name: 'interaction' }
-                            ],
-                            body: bodyBlock
-                        }
+                // Match strictly against the detected event node to avoid confusion
+                if (func.sourceNodeId === eventNodeId || !eventNodeId) {
+
+                    // A. Extract Parameters
+                    eventParams = func.params.map(p => p.name);
+
+                    // B. Extract Body Code
+                    // We print the body block " { ... } " and strip the braces to get the inner content
+                    const bodyCode = printer.print(func.body, 1);
+                    eventFunctionBody = bodyCode.trim().replace(/^{/, '').replace(/}$/, '').trim();
+
+                    // C. Extract Metadata
+                    if (eventNode) {
+                        const getVal = (key: string) => (eventNode.data?.[key] || eventNode.controls?.[key]?.value);
+
+                        eventName = getVal('name') || func.eventName || 'my-cmd';
+                        description = getVal('description') || '';
+
+                        // Handle "Once" for events
+                        const onceVal = getVal('once');
+                        if (onceVal === true) once = true;
                     }
-                ]
-            };
-
-        } else if (eventLabel === 'On Command') {
-            // --- LEGACY COMMAND ---
-            const nameControl = eventNode.controls?.['name'] as any;
-            const cmdName = nameControl?.value || 'my-cmd';
-
-            moduleExportsValue = {
-                type: 'ObjectExpression',
-                properties: [
-                    {
-                        kind: 'init',
-                        key: { type: 'Identifier', name: 'name' },
-                        value: { type: 'Literal', value: cmdName }
-                    },
-                    {
-                        kind: 'init',
-                        key: { type: 'Identifier', name: 'execute' },
-                        value: {
-                            type: 'ArrowFunctionExpression',
-                            async: true,
-                            params: [
-                                { type: 'Identifier', name: 'message' },
-                                { type: 'Identifier', name: 'args' }
-                            ],
-                            body: bodyBlock
-                        }
-                    }
-                ]
-            };
-
-        } else {
-            // --- EVENT ---
-            let eventName = eventLabel;
-            let once = false;
-            let argsParams: AST.Identifier[] = [];
-
-            if (eventLabel === 'On Ready') {
-                eventName = 'ready';
-                once = true;
-                argsParams = [{ type: 'Identifier', name: 'client' }];
-            } else if (eventLabel === 'On Message Create') {
-                eventName = 'messageCreate';
-                argsParams = [{ type: 'Identifier', name: 'message' }];
-            } else if (eventLabel === 'On Interaction Create' || eventLabel === 'On Button Click' || eventLabel === 'On Modal Submit') {
-                eventName = 'interactionCreate';
-                argsParams = [{ type: 'Identifier', name: 'interaction' }];
-            }
-
-            moduleExportsValue = {
-                type: 'ObjectExpression',
-                properties: [
-                    {
-                        kind: 'init',
-                        key: { type: 'Identifier', name: 'name' },
-                        value: { type: 'Literal', value: eventName }
-                    },
-                    {
-                        kind: 'init',
-                        key: { type: 'Identifier', name: 'once' },
-                        value: { type: 'Literal', value: once }
-                    },
-                    {
-                        kind: 'init',
-                        key: { type: 'Identifier', name: 'execute' },
-                        value: {
-                            type: 'ArrowFunctionExpression',
-                            async: true,
-                            params: argsParams,
-                            body: bodyBlock
-                        }
-                    }
-                ]
-            };
-        }
-
-        // 5. Create Program AST
-        program = {
-            type: 'Program',
-            body: [
-                {
-                    type: 'ExpressionStatement',
-                    expression: {
-                        type: 'AssignmentExpression',
-                        operator: '=',
-                        left: {
-                            type: 'MemberExpression',
-                            object: { type: 'Identifier', name: 'module' },
-                            property: { type: 'Identifier', name: 'exports' },
-                            computed: false
-                        },
-                        right: moduleExportsValue
-                    }
+                    continue; // Do not print this as a global function
                 }
-            ]
-        };
+            }
 
-        // 6. Generate Code
-        let code = this.printer.print(program);
+            // Regular global statement
+            globalStmts.push(printer.print(stmt));
+        }
 
-        // 7. Prepend Imports
-        let finalCode = '';
-        this.imports.forEach(imp => {
-            finalCode += imp + '\n';
+        const globalCode = globalStmts.join('\n\n');
+
+        // 4. Transform: Wrap code in the specific strategy (Slash vs Legacy vs Event)
+        let strategy: WrapperStrategy;
+
+        switch (this.fileType as string) {
+            case 'slash_command':
+                strategy = new SlashCommandStrategy();
+                break;
+            case 'event':
+                strategy = new EventStrategy();
+                break;
+            case 'command':
+            default:
+                strategy = new LegacyCommandStrategy();
+                break;
+        }
+
+        const wrappedMain = strategy.wrap(eventFunctionBody, {
+            eventName,
+            eventParams,
+            isAsync,
+            description,
+            once
         });
 
-        finalCode += code;
+        // 5. Final Assembly
+        const finalCode = [
+            '// Generated by Railgun AST Compiler',
+            globalCode,
+            wrappedMain
+        ].filter(s => s.trim()).join('\n\n');
+
+        console.log('[Railgun Compiler] Compilation successful.');
         return finalCode;
     }
 }

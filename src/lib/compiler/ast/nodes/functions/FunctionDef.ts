@@ -33,7 +33,7 @@ export class FunctionDefParser implements ASTNodeParser {
         } as AST.FunctionDeclaration;
     }
 
-    resolveOutput(node: BotNode, outputKey: string, context: ParserContext): AST.Expression | null {
+    resolveOutput(_node: BotNode, outputKey: string, _context: ParserContext): AST.Expression | null {
         // Handle Argument Outputs
         if (outputKey.startsWith('arg')) {
             // e.g. "arg0" -> "arg0"

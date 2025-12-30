@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createEditor } from '@/lib/defaultEditor';
 import { Compiler } from '@/lib/compiler';
-import { ASTCompiler } from '@/lib/compiler/ast/CompilerWrapper';
 import { Button } from '@/components/ui/Button';
 import { Play } from 'lucide-react';
 import { BotNode, InputControl, Sockets } from '@/lib/railgun-rete';
@@ -257,25 +256,15 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             const nodes = editorRef.current.getNodes();
             const connections = editorRef.current.getConnections();
 
-            // Read config to determine compiler version
-            let useAST = false;
-            try {
-                // @ts-ignore
-                const configData = await window.electronAPI.readProjectConfig(projectPathRef.current);
-                useAST = configData?.compilerVersion === 'v2' || configData?.config?.compilerVersion === 'v2';
-                console.log(`[ReteEditor] Config loaded. Version: ${configData?.compilerVersion}. Compiling using ${useAST ? 'AST (v2)' : 'Legacy (v1)'} compiler`);
-            } catch (err) {
-                console.warn('[ReteEditor] Failed to read config, defaulting to Legacy compiler', err);
-            }
-
             let code = '';
-            if (useAST) {
-                const compiler = new ASTCompiler({ nodes, connections });
-                code = compiler.compile();
-            } else {
-                const compiler = new Compiler({ nodes, connections });
-                code = compiler.compile();
-            }
+            // Force usage of new AST Compiler
+            const compiler = new Compiler({
+                nodes,
+                connections,
+                // Determine file type based on file path or content if possible, defaults to command
+                fileType: filePath.includes('slash') ? 'slash_command' : 'command'
+            });
+            code = compiler.compile();
 
             console.log("Generated Code:", code);
 
