@@ -26,7 +26,7 @@ const ActionCard = ({
 }) => (
     <button
         onClick={onClick}
-        className="group hover:cursor-pointer flex flex-col items-start hover:cursor-pointer p-4 border border-border rounded-md bg-zinc-900/40 hover:bg-zinc-800/60 hover:border-zinc-700 transition-all text-left w-full h-full select-none"
+        className="group hover:cursor-pointer flex flex-col items-start p-4 border border-border rounded-md bg-zinc-900/40 hover:bg-zinc-800/60 hover:border-zinc-700 transition-all text-left w-full h-full select-none"
     >
         <div className="flex items-center justify-between w-full mb-3">
             <div className="p-2 rounded-md bg-zinc-800 text-zinc-300 group-hover:text-blue-400 group-hover:bg-blue-500/10 transition-colors">
@@ -57,7 +57,6 @@ const RecentItem = ({ name, path, time, onClick }: { name: string, path: string,
 const getRelativeTime = (timestamp: number) => {
     const now = Date.now();
     const diff = now - timestamp;
-
     const minutes = Math.floor(diff / (1000 * 60));
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -70,7 +69,7 @@ const getRelativeTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString();
 };
 
-export const DashboardView: React.FC = () => {
+const DashboardPage: React.FC = () => {
     const [nodeVersion, setNodeVersion] = React.useState('Unknown');
     const [recentProjects, setRecentProjects] = React.useState<any[]>([]);
     const navigate = useNavigate();
@@ -93,7 +92,6 @@ export const DashboardView: React.FC = () => {
             window.electronAPI.invoke('system:getNodeVersion')
                 .then(setNodeVersion)
                 .catch(() => setNodeVersion('Error'));
-
             fetchRecentProjects();
         }
     }, []);
@@ -104,17 +102,8 @@ export const DashboardView: React.FC = () => {
                 const result = await window.electronAPI.invoke('project:openProject');
                 if (!result.canceled && result.path) {
                     const name = result.name || result.path.split(/[\\/]/).pop();
-                    //@ts-ignore
                     setProject(result.path, name);
-                    navigate('/project', {
-                        state: {
-                            name: name,
-                            path: result.path,
-                            autoInstall: false
-                        }
-                    });
-                } else if (result.error) {
-                    alert(result.error);
+                    navigate('/project', { state: { name, path: result.path, autoInstall: false } });
                 }
             } catch (error) {
                 console.error('Failed to open project:', error);
@@ -122,70 +111,21 @@ export const DashboardView: React.FC = () => {
         }
     };
 
-    const handleOpenRecent = (project: any) => {
-        //@ts-ignore
-        setProject(project.path, project.name);
-        navigate('/project', {
-            state: {
-                name: project.name,
-                path: project.path,
-                autoInstall: false
-            }
-        });
-    };
-
-    const handleProjectCreated = (name: string, path: string) => {
-        const fullPath = `${path}\\${name}`;
-
-        setProject(fullPath, name);
-        navigate('/project', {
-            state: {
-                name,
-                path: fullPath,
-                autoInstall: true
-            }
-        });
-    };
-
     return (
         <div className="flex h-full w-full bg-background text-zinc-100">
-            {/* Main Area */}
-            <div className="flex-1 p-12 overflow-auto mx-auto max-w-7xl">
+            <div className="flex-1 p-12 overflow-auto mx-auto max-w-7xl animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="mb-8">
-                    <img
-                        src="/resources/railgun-logo_full.svg"
-                        alt="Railgun"
-                        className="h-12 mb-2 w-auto"
-                    />
+                    <img src="/resources/railgun-logo_full.svg" alt="Railgun" className="h-12 mb-2 w-auto" />
                     <p className="text-zinc-400 text-lg">Visual Discord Bot Editor. v0.0.1-alpha</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-                    <ActionCard
-                        icon={Plus}
-                        title="New Project"
-                        shortcut="Ctrl+N"
-                        description="Create a new bot from scratch or template."
-                        onClick={() => openModal('create-project')}
-                    />
-                    <ActionCard
-                        icon={FolderOpen}
-                        title="Open Project"
-                        shortcut="Ctrl+O"
-                        description="Open an existing bot project from disk."
-                        onClick={handleOpenProject}
-                    />
-                    {/* Clone from Git removed as requested */}
-                    <ActionCard
-                        icon={BookOpen}
-                        title="Documentation"
-                        description="Learn how to use the editor."
-                    />
+                    <ActionCard icon={Plus} title="New Project" shortcut="Ctrl+N" description="Create a new bot from scratch or template." onClick={() => openModal('create-project')} />
+                    <ActionCard icon={FolderOpen} title="Open Project" shortcut="Ctrl+O" description="Open an existing bot project from disk." onClick={handleOpenProject} />
+                    <ActionCard icon={BookOpen} title="Documentation" description="Learn how to use the editor." />
                 </div>
 
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                    {/* Recent Projects */}
                     <div className="lg:col-span-2">
                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-zinc-800">
                             <h2 className="text-lg font-light flex items-center gap-2 text-zinc-100">
@@ -203,7 +143,10 @@ export const DashboardView: React.FC = () => {
                                         name={project.name}
                                         path={project.path}
                                         time={getRelativeTime(project.lastOpened)}
-                                        onClick={() => handleOpenRecent(project)}
+                                        onClick={() => {
+                                            setProject(project.path, project.name);
+                                            navigate('/project', { state: { name: project.name, path: project.path, autoInstall: false } });
+                                        }}
                                     />
                                 ))
                             ) : (
@@ -214,7 +157,6 @@ export const DashboardView: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* System / News */}
                     <div>
                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-zinc-800">
                             <h2 className="text-lg font-light flex items-center gap-2 text-zinc-100">
@@ -222,21 +164,18 @@ export const DashboardView: React.FC = () => {
                                 System Status
                             </h2>
                         </div>
-
-                        <div className="flex flex-col gap-4">
-                            <div className="p-4 rounded-md bg-zinc-900 border border-zinc-800">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs text-zinc-400">Node Runtime</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${nodeVersion !== 'Error' && nodeVersion !== 'Unknown' ? 'bg-green-500' : 'bg-red-500'}`} />
-                                    <span className="text-sm text-zinc-300">{nodeVersion} (Node)</span>
-                                </div>
+                        <div className="p-4 rounded-md bg-zinc-900 border border-zinc-800">
+                            <span className="text-xs text-zinc-400 block mb-2">Node Runtime</span>
+                            <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${nodeVersion !== 'Error' && nodeVersion !== 'Unknown' ? 'bg-green-500' : 'bg-red-500'}`} />
+                                <span className="text-sm text-zinc-300">{nodeVersion} (Node)</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div >
+        </div>
     );
 };
+
+export default DashboardPage;
