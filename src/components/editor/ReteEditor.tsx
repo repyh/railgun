@@ -256,11 +256,26 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             const nodes = editorRef.current.getNodes();
             const connections = editorRef.current.getConnections();
 
-            const compiler = new Compiler({ nodes, connections });
-            const code = compiler.compile();
+            let code = '';
+            // Force usage of new AST Compiler
+            const compiler = new Compiler({
+                nodes,
+                connections,
+                // Determine file type based on file path or content if possible, defaults to command
+                fileType: filePath.includes('slash') ? 'slash_command' : 'command'
+            });
+            code = compiler.compile();
 
             console.log("Generated Code:", code);
-            const jsFilePath = currentFilePathRef.current.replace('.botm.json', '.js');
+
+            let jsFilePath = currentFilePathRef.current;
+            if (jsFilePath.endsWith('.railgun.json')) {
+                jsFilePath = jsFilePath.replace('.railgun.json', '.js');
+            } else if (jsFilePath.endsWith('.botm.json')) {
+                jsFilePath = jsFilePath.replace('.botm.json', '.js');
+            } else {
+                jsFilePath = jsFilePath + '.js';
+            }
 
             // @ts-ignore
             const compiledSuccess = await window.electronAPI.saveFile(projectPathRef.current, jsFilePath, code);

@@ -2,7 +2,7 @@
     "id": "hello-world",
     "name": "Hello World",
     "version": "1.0.0",
-    "description": "A simple plugin to test the Plugin System.",
+    "description": "A simple plugin to test the Plugin System.p.",
     "requirements": {
         "axios": "^1.7.9"
     },

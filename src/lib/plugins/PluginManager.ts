@@ -1,5 +1,7 @@
 import type { Plugin, PluginContext, PluginManifest, PluginNodeDefinition } from './interfaces';
-import { Registry } from '../compiler/Registry';
+import { registry as ASTRegistry } from '../compiler/ast/nodes/index';
+import { DynamicASTNodeAdapter } from './DynamicASTNodeAdapter';
+// import { Registry } from '../compiler/Registry';
 // @ts-ignore
 import { registerNodeDefinition, unregisterNodeDefinition } from '../../nodes/index';
 // @ts-ignore
@@ -60,6 +62,15 @@ export class PluginManager {
         return results;
     }
 
+    static getRuntimePath(pluginId: string): string | undefined {
+        const plugin = this.plugins.get(pluginId);
+        return plugin?.runtimePath;
+    }
+
+    static getManifest(pluginId: string): PluginManifest | undefined {
+        return this.plugins.get(pluginId)?.manifest;
+    }
+
     static unloadAll() {
         console.log(`[PluginManager] Unloading ${this.plugins.size} plugins...`);
         //@ts-ignore
@@ -70,13 +81,15 @@ export class PluginManager {
                     unregisterNodeDefinition(label);
                 }
                 // Unregister Statements
+                /*
                 for (const label of plugin.registeredItems.statements) {
-                    Registry.unregisterStatement(label);
+                    // Registry.unregisterStatement(label);
                 }
                 // Unregister Values
                 for (const cat of plugin.registeredItems.values) {
-                    Registry.unregisterValue(cat);
+                    // Registry.unregisterValue(cat);
                 }
+                */
             }
         }
         this.plugins.clear();
@@ -117,6 +130,12 @@ export class PluginManager {
                 return;
             }
 
+            // Strict ID Validation: alphanumeric, dash, underscore only
+            if (!/^[a-zA-Z0-9\-_]+$/.test(manifest.id)) {
+                console.error(`[PluginManager] Invalid plugin ID "${manifest.id}" in ${dirPath}. Only alphanumeric, dashes, and underscores are allowed.`);
+                return;
+            }
+
             // Load Entry Point
             const entryPath = path.join(dirPath, manifest.main);
             if (!fs.existsSync(entryPath)) {
@@ -140,12 +159,14 @@ export class PluginManager {
                     this.registerNode(manifest.id, def);
                     registeredItems.nodes.push(def.label);
                 },
-                registerStatement: (label, gen) => {
-                    Registry.registerStatement(label, gen);
+                registerStatement: (label, _gen) => {
+                    // Registry.registerStatement(label, gen);
+                    console.warn('[PluginManager] registerStatement not supported in AST compiler yet');
                     registeredItems.statements.push(label);
                 },
-                registerValue: (cat, gen) => {
-                    Registry.registerValue(cat, gen);
+                registerValue: (cat, _gen) => {
+                    // Registry.registerValue(cat, gen);
+                    console.warn('[PluginManager] registerValue not supported in AST compiler yet');
                     registeredItems.values.push(cat);
                 }
             };
@@ -190,39 +211,13 @@ export class PluginManager {
             factory: factory
         });
 
-        // Register Compiler Logic
+        // Register AST Parser Logic
         if (def.execute) {
-            Registry.registerStatement(def.label, (node, ctx, processor) => {
-                // Determine function name
-                const funcName = def.execute;
-                // Generate variable name for the plugin runtime
-                const pluginVar = `plugin_${pluginId.replace(/-/g, '_')}`;
-
-                // Result Variable
-                const resVar = `res_${node.id.replace(/-/g, '_')}`;
-
-                let argsObj = '{';
-                if (def.inputs) {
-                    for (const key of Object.keys(def.inputs)) {
-                        if (def.inputs[key].type === 'exec') continue; // Flow input
-
-                        const val = processor.resolveInput(node, key, ctx);
-                        argsObj += ` ${key}: ${val},`;
-                    }
-                }
-                argsObj += ' }';
-
-                // Return assignment code
-                return `        const ${resVar} = await ${pluginVar}.${funcName}(${argsObj});\n`;
-            });
-
-            // Register Value Generator for Outputs
-            //@ts-ignore
-            Registry.registerValue(def.label, (node, outputKey, ctx, resolver) => {
-                const resVar = `res_${node.id.replace(/-/g, '_')}`;
-                // Outputs from runtime are expected to be properties of the returned object
-                return `${resVar}.${outputKey}`;
-            });
+            const adapter = new DynamicASTNodeAdapter(pluginId, def);
+            ASTRegistry.register(def.label, adapter);
+            console.log(`[PluginManager] Registered AST Adapter for ${def.label}`);
+        } else {
+            console.warn(`[PluginManager] Node ${def.label} has no execute function, AST generation will emit comments.`);
         }
     }
 

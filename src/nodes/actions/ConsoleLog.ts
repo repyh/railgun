@@ -6,7 +6,7 @@ export function createConsoleLogNode() {
     node.addInput('exec', new ClassicPreset.Input(Sockets.Exec, 'Exec'));
 
     const msgInput = new ClassicPreset.Input(Sockets.Any, 'Message');
-    msgInput.addControl(new InputControl('', 'message', 'text'));
+    msgInput.addControl(new InputControl('', 'msg', 'text'));
     node.addInput('msg', msgInput);
 
     node.addOutput('exec_out', new ClassicPreset.Output(Sockets.Exec, 'Then'));

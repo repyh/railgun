@@ -15,6 +15,7 @@ import {
     Trash2,
     Plug,
     Play,
+    FileKey,
     Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -455,9 +456,9 @@ export const ProjectView: React.FC = () => {
                         className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
                         title="Run Configuration"
                     >
-                        <Settings size={16} />
+                        <FileKey size={16} />
                     </button>
-                    <div className="h-4 w-[1px] bg-zinc-800 mx-1" />
+                    <div className="h-4 w-px bg-zinc-800 mx-1" />
 
                     {botStatus === 'stopped' ? (
                         <button

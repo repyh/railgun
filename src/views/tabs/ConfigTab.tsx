@@ -422,6 +422,22 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
                 </div>
 
                 <div className="space-y-6">
+
+                    {/* Compiler Settings Section */}
+                    <div className="p-4 rounded-lg border bg-zinc-900/30 border-zinc-800">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-medium text-zinc-200">Compiler Engine</h3>
+                                <p className="text-xs text-zinc-500">The underlying technology used to build your bot</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                    AST Pipeline
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                     <ConfigObject
                         data={rootData}
                         path={rootPath}

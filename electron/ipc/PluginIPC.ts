@@ -24,6 +24,11 @@ export class PluginIPC extends BaseIPC {
     }
 
     async install(projectPath: string, pluginId: string): Promise<{ success: boolean; message?: string }> {
+        const idRegex = /^[a-zA-Z0-9\-_]+$/;
+        if (!idRegex.test(pluginId)) {
+            return { success: false, message: `Invalid plugin ID: ${pluginId}. Only alphanumeric, dashes, and underscores allowed.` };
+        }
+
         const sourcePath = path.join(app.getPath('documents'), 'railgun', 'plugins', pluginId);
         const destPath = path.join(projectPath, 'plugins', pluginId);
 
@@ -46,7 +51,11 @@ export class PluginIPC extends BaseIPC {
                 if (manifest.requirements) {
                     const isBun = existsSync(path.join(projectPath, 'bun.lockb'));
                     for (const [pkg, version] of Object.entries(manifest.requirements)) {
-                        await this.runInstallCommand(projectPath, pkg, String(version), isBun);
+                        // Strict validation: Allow only alphanumeric, dashes, dots, and common version chars
+                        const safePkg = pkg.replace(/[^a-zA-Z0-9\-_/@]/g, '');
+                        const safeVersion = String(version).replace(/[^a-zA-Z0-9\-_./^~*]/g, '');
+
+                        await this.runInstallCommand(projectPath, safePkg, safeVersion, isBun);
                     }
                 }
             }
@@ -59,6 +68,11 @@ export class PluginIPC extends BaseIPC {
     }
 
     async uninstall(projectPath: string, pluginId: string): Promise<{ success: boolean; message?: string }> {
+        const idRegex = /^[a-zA-Z0-9\-_]+$/;
+        if (!idRegex.test(pluginId)) {
+            return { success: false, message: `Invalid plugin ID: ${pluginId}. Only alphanumeric, dashes, and underscores allowed.` };
+        }
+
         const destPath = path.join(projectPath, 'plugins', pluginId);
 
         if (!existsSync(destPath)) {

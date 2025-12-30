@@ -1,5 +1,5 @@
 import type { BotNode } from '../railgun-rete';
-import type { StatementGenerator, ValueGenerator } from '../compiler/interfaces';
+// import type { StatementGenerator, ValueGenerator } from '../compiler/interfaces';
 
 export interface PluginManifest {
     id: string;
@@ -28,8 +28,10 @@ export interface Plugin {
 
 export interface PluginContext {
     registerNode(definition: PluginNodeDefinition): void;
-    registerStatement(label: string, generator: StatementGenerator): void;
-    registerValue(categoryOrLabel: string, generator: ValueGenerator): void;
+    /** @deprecated specific to legacy transpiler. Use registerNode with 'execute' property for AST support. */
+    registerStatement(label: string, generator: any): void;
+    /** @deprecated specific to legacy transpiler. Use registerNode with 'execute' property for AST support. */
+    registerValue(categoryOrLabel: string, generator: any): void;
 }
 
 export interface PluginNodeDefinition {
