@@ -26,7 +26,7 @@ const ActionCard = ({
 }) => (
     <button
         onClick={onClick}
-        className="group flex flex-col items-start p-4 border border-border rounded-md bg-zinc-900/40 hover:bg-zinc-800/60 hover:border-zinc-700 transition-all text-left w-full h-full select-none"
+        className="group hover:cursor-pointer flex flex-col items-start hover:cursor-pointer p-4 border border-border rounded-md bg-zinc-900/40 hover:bg-zinc-800/60 hover:border-zinc-700 transition-all text-left w-full h-full select-none"
     >
         <div className="flex items-center justify-between w-full mb-3">
             <div className="p-2 rounded-md bg-zinc-800 text-zinc-300 group-hover:text-blue-400 group-hover:bg-blue-500/10 transition-colors">
@@ -148,7 +148,7 @@ export const DashboardView: React.FC = () => {
     };
 
     return (
-        <div className="flex h-full w-full bg-[#09090b]">
+        <div className="flex h-full w-full bg-background text-zinc-100">
             {/* Main Area */}
             <div className="flex-1 p-12 overflow-auto mx-auto max-w-7xl">
                 <div className="mb-8">

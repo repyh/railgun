@@ -41,6 +41,8 @@ export const MENU_CONFIG: Record<string, MenuItem[]> = {
         { label: 'Save', icon: Save, shortcut: 'Ctrl+S', action: { type: 'command', target: 'save-project' } },
         { label: 'Save All', shortcut: 'Ctrl+Shift+S', action: { type: 'command', target: 'save-all' } },
         { divider: true },
+        { label: 'Settings', action: { type: 'command', target: 'settings' } },
+        { divider: true },
         { label: 'Exit', action: { type: 'ipc', target: 'titlebar:closeWindow' } }
     ],
     edit: [

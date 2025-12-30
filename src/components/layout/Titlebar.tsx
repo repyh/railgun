@@ -141,7 +141,7 @@ export const Titlebar = () => {
             </div>
 
             {/* Center: Search & Project Info */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 h-full py-1 titlebar-no-drag">
+            <div className="w-full flex items-center justify-center gap-2 h-full py-1 titlebar-no-drag">
                 <div className="group flex items-center bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 rounded-md px-2.5 py-0.5 min-w-[300px] transition-all cursor-text">
                     <Search size={12} className="text-zinc-500 group-hover:text-zinc-400 mr-2" />
                     <span className="text-[11px] text-zinc-500 group-hover:text-zinc-400 truncate max-w-[400px]">
@@ -175,7 +175,7 @@ export const Titlebar = () => {
             {/* Backdrop click-away for menus */}
             {openMenu && (
                 <div
-                    className="fixed inset-0 z-40 bg-transparent"
+                    className="fixed inset-0 z-40 bg-transparent titlebar-no-drag"
                     onClick={() => setOpenMenu(null)}
                 />
             )}

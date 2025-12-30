@@ -302,7 +302,7 @@ export const ProjectView: React.FC = () => {
     };
 
     return (
-        <div className="flex h-full bg-[#09090b]">
+        <div className="flex h-full bg-background">
             <div className="w-64 shrink-0 border-r border-zinc-800 bg-zinc-900/30 flex flex-col">
                 <div className="h-12 flex items-center px-4 border-b border-zinc-800 shrink-0">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="mr-2 h-7 w-7 text-zinc-500 hover:text-white">
@@ -410,7 +410,7 @@ export const ProjectView: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex-1 flex flex-col min-w-0 bg-[#09090b]">
+            <div className="flex-1 flex flex-col min-w-0 bg-background">
                 <div className="h-12 flex items-center border-b border-zinc-800 bg-zinc-900/50">
                     <TabButton
                         active={activeTab === 'workspace'}

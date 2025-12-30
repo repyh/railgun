@@ -112,7 +112,7 @@ export const PackagesTab: React.FC<PackagesTabProps> = ({ projectPath }) => {
     }
 
     return (
-        <div className="h-full w-full p-6 overflow-auto bg-[#09090b]">
+        <div className="h-full w-full p-6 overflow-auto bg-background">
             <div className="max-w-4xl mx-auto space-y-6">
 
                 {/* Header & Actions */}

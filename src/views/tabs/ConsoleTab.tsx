@@ -41,7 +41,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
         // Initialize XTerm
         const term = new Terminal({
             theme: {
-                background: '#09090b',
+                background: '#121214',
                 foreground: '#ffffff',
                 cursor: '#3b82f6',
                 selectionBackground: '#3b82f640'
@@ -101,10 +101,10 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
     }, [projectName, projectPath, autoInstall]);
 
     return (
-        <div className={cn("h-full w-full absolute inset-0 bg-[#09090b] flex flex-col p-4", isActive ? 'z-10' : '-z-10 opacity-0', className)}>
+        <div className={cn("h-full w-full absolute inset-0 bg-background flex flex-col p-4", isActive ? 'z-10' : '-z-10 opacity-0', className)}>
             <div
                 ref={terminalRef}
-                className="flex-1 w-full rounded-md border border-zinc-800 overflow-hidden bg-[#09090b]"
+                className="flex-1 w-full rounded-md border border-zinc-800 overflow-hidden bg-background"
             />
         </div>
     );

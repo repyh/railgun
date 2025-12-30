@@ -66,7 +66,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTML
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
                     className={cn(
-                        "fixed z-1000 grid w-full max-w-lg gap-4 border border-zinc-800 bg-[#09090b] p-0 shadow-2xl duration-200 sm:rounded-none animate-in fade-in-0 zoom-in-95 ring-1 ring-white/5",
+                        "fixed z-1000 grid w-full max-w-lg gap-4 border border-zinc-800 bg-background p-0 shadow-2xl duration-200 sm:rounded-none animate-in fade-in-0 zoom-in-95 ring-1 ring-white/5",
                         className
                     )}
                     {...props}

@@ -390,7 +390,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
     const rootData = config.config || config;
 
     return (
-        <div className="h-full w-full p-6 overflow-auto bg-[#09090b]">
+        <div className="h-full w-full p-6 overflow-auto bg-background">
             <div className="max-w-4xl mx-auto">
                 <div className="flex items-center justify-between mb-8">
                     <div>
