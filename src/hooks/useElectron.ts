@@ -34,6 +34,7 @@ export interface ElectronAPI {
     installDependencies: (path: string, type: string) => Promise<void>;
     onTerminalData: (callback: (data: string) => void) => () => void;
     onBotStatus: (callback: (status: 'running' | 'stopped') => void) => () => void;
+    onBotLog: (callback: (log: any) => void) => () => void;
 }
 
 export function useElectron() {
@@ -142,6 +143,11 @@ export function useElectron() {
         return window.electronAPI!.onBotStatus(callback);
     }, [isElectron]);
 
+    const onBotLog = useCallback((callback: (log: any) => void) => {
+        if (!isElectron) return () => { };
+        return window.electronAPI!.onBotLog(callback);
+    }, [isElectron]);
+
     return useMemo(() => ({
         isElectron,
         invoke,
@@ -183,7 +189,8 @@ export function useElectron() {
         bot: {
             start: (path: string, env: any) => invoke('bot:start', path, env),
             stop: () => invoke('bot:stop'),
-            onStatus: onBotStatus
+            onStatus: onBotStatus,
+            onLog: onBotLog
         },
         project: {
             getRecent: () => invoke('project:getRecentProjects'),
@@ -197,6 +204,8 @@ export function useElectron() {
         listFiles, readFile, saveFile, deleteFile,
         readProjectConfig, saveProjectConfig,
         listInstalledPlugins, installPlugin, uninstallPlugin,
-        installDependencies, onTerminalData, onBotStatus
+        readProjectConfig, saveProjectConfig,
+        listInstalledPlugins, installPlugin, uninstallPlugin,
+        installDependencies, onTerminalData, onBotStatus, onBotLog
     ]);
 }

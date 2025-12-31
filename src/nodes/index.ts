@@ -9,7 +9,8 @@ import { createWaitNode } from './logic/WaitNode';
 import { createWhileLoopNode } from './logic/WhileLoop';
 import { createOnSlashCommandNode } from './events/OnSlashCommand';
 import { createOnReadyNode } from './events/OnReady';
-import { createOnCommandNode } from './events/OnCommand'; // New
+import { createOnMessageCreateNode } from './events/OnMessageCreate';
+import { createOnCommandNode } from './events/OnCommand';
 import { createStringNode } from './variables/StringNode';
 import { createNumberNode } from './variables/NumberNode';
 import { createBooleanNode } from './variables/BooleanNode';
@@ -62,7 +63,8 @@ export const DEFAULT_NODES: NodeDefinition[] = [
     { label: 'On Modal Submit', category: 'Event', factory: createOnModalSubmitNode },
     { label: 'On Button Click', category: 'Event', factory: createOnButtonClickNode },
     { label: 'On Ready', category: 'Event', factory: createOnReadyNode },
-    { label: 'On Command', category: 'Event', factory: createOnCommandNode }, // New
+    { label: 'On Message Create', category: 'Event', factory: createOnMessageCreateNode },
+    { label: 'On Command', category: 'Event', factory: createOnCommandNode },
     { label: 'Console Log', category: 'Action', factory: createConsoleLogNode },
     { label: 'For Loop', category: 'Logic', factory: createForLoopNode },
     { label: 'Comparison', category: 'Logic', factory: createComparisonNode },

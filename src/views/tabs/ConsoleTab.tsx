@@ -23,7 +23,8 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
     const hasStartedInstall = useRef(false);
 
     const { projectPath, projectName } = useProject();
-    const { isElectron, terminal } = useElectron();
+
+    const { isElectron, terminal, bot } = useElectron();
 
     // Re-fit terminal when it becomes active
     useEffect(() => {
@@ -85,9 +86,19 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
 
         // --- Hook up IPC ---
         let cleanupTerminalListener: (() => void) | undefined;
+        let cleanupBotLogListener: (() => void) | undefined;
+
         if (isElectron) {
             cleanupTerminalListener = terminal.onData((data: string) => {
                 term.write(data);
+            });
+
+            cleanupBotLogListener = bot.onLog((log: { message: string, type: 'stdout' | 'stderr' }) => {
+                // Format: [stdout] message
+                const color = log.type === 'stderr' ? '\x1b[31m' : '\x1b[37m';
+                // Ensure newlines if missing
+                const msg = log.message.endsWith('\n') ? log.message : log.message + '\r\n';
+                term.write(`${color}${msg}\x1b[0m`);
             });
         }
 
@@ -113,6 +124,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
         return () => {
             window.removeEventListener('resize', handleResize);
             if (cleanupTerminalListener) cleanupTerminalListener();
+            if (cleanupBotLogListener) cleanupBotLogListener();
             term.dispose();
             xtermRef.current = null;
         };

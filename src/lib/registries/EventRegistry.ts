@@ -24,10 +24,10 @@ class EventRegistry {
         return Array.from(this.events.values());
     }
 
-    generateContent(id: string, uuid: string): any {
+    generateContent(id: string, name: string, uuid: string): any {
         const event = this.get(id);
         if (!event) throw new Error(`Event type ${id} not found`);
-        return event.defaultContent(uuid);
+        return event.defaultContent(name, uuid);
     }
 }
 

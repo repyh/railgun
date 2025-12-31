@@ -205,7 +205,11 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                     for (const n of data.nodes) {
                         // Use Registry
                         let node: BotNode | null = null;
-                        const def = nodeRegistry.get(n.label);
+
+                        // Try to find by explicit nodeType (from data) first, then fallback to label
+                        // This handles cases where the visual label (n.label) has been customized by the user
+                        const registryKey = (n as any).data?.nodeType || n.label;
+                        const def = nodeRegistry.get(registryKey);
                         if (def) {
                             node = def.factory();
                         } else {

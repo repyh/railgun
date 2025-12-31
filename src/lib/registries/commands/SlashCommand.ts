@@ -41,6 +41,8 @@ export const SlashCommand: CommandDefinition = {
                         ...dynamicOutputs
                     },
                     data: {
+                        eventType: 'slashCommand',
+                        nodeType: 'On Slash Command',
                         name: _id, // Will be replaced by actual name
                         description: "No description provided",
                         options: options // Store metadata for the compiler

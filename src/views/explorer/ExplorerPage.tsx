@@ -13,6 +13,7 @@ import { CreateSlashCommandModal } from '@/components/modals/CreateSlashCommandM
 import { useProject } from '@/contexts/ProjectContext';
 import { PluginManager } from '@/lib/plugins/PluginManager';
 import { RunConfigDialog } from '@/components/dialogs/RunConfigDialog';
+import { SecretsModal } from '@/components/modals/SecretsModal';
 
 // Hooks
 import { useBotControl } from '@/hooks/useBotControl';
@@ -45,6 +46,7 @@ const ExplorerPage: React.FC = () => {
     const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
     const [isCreateCommandModalOpen, setIsCreateCommandModalOpen] = useState(false);
     const [isCreateSlashCommandModalOpen, setIsCreateSlashCommandModalOpen] = useState(false);
+    const [isSecretsModalOpen, setIsSecretsModalOpen] = useState(false);
 
     // Init Plugin Manager
     useEffect(() => {
@@ -57,7 +59,7 @@ const ExplorerPage: React.FC = () => {
         const result = await startBot();
         if (result && !result.success) {
             if (result.missingSecrets) {
-                setIsRunConfigOpen(true);
+                setIsSecretsModalOpen(true);
             } else {
                 alert(`Failed to start bot: ${result.error}`);
             }
@@ -110,26 +112,21 @@ const ExplorerPage: React.FC = () => {
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 bg-background">
-                <ExplorerTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-                {/* Run Controls Bar */}
-                <div className="flex h-12 shrink-0">
+                <ExplorerTabs activeTab={activeTab} onTabChange={setActiveTab}>
+                    <div className="h-4 w-px bg-zinc-800 mx-2" />
                     <BotStatusPanel
                         status={botStatus}
                         onStart={handleRunBot}
                         onStop={stopBot}
                     />
-                    <div className="flex items-center px-2 border-b border-zinc-800 bg-zinc-900/50 flex-1">
-                        <div className="h-4 w-px bg-zinc-800 mx-2" />
-                        <button
-                            onClick={() => setIsRunConfigOpen(true)}
-                            className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
-                            title="Run Configuration"
-                        >
-                            <FileKey size={16} />
-                        </button>
-                    </div>
-                </div>
+                    <button
+                        onClick={() => setIsRunConfigOpen(true)}
+                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+                        title="Run Configuration"
+                    >
+                        <FileKey size={16} />
+                    </button>
+                </ExplorerTabs>
 
 
                 {/* Content Viewport */}
@@ -202,6 +199,13 @@ const ExplorerPage: React.FC = () => {
             <RunConfigDialog
                 open={isRunConfigOpen}
                 onOpenChange={setIsRunConfigOpen}
+            />
+            <SecretsModal
+                open={isSecretsModalOpen}
+                onOpenChange={setIsSecretsModalOpen}
+                onSave={(secrets) => {
+                    startBot(secrets);
+                }}
             />
         </div>
     );

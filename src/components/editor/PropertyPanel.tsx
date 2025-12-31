@@ -66,15 +66,8 @@ export function PropertyPanel(props: PropertyPanelProps) {
                 </div>
             }
         >
-            {props.node ? (
+            {props.node && (
                 <PropertyPanelInner {...props} key={props.node.id} />
-            ) : (
-                <div className="w-80 h-full bg-zinc-900 border-l border-zinc-800 flex flex-col items-center justify-center text-zinc-600 text-xs">
-                    <div className="mb-4 p-4 rounded-xl bg-black/20 border border-white/5">
-                        <Settings2 size={32} opacity={0.3} />
-                    </div>
-                    <span className="text-zinc-600 font-medium">Select a node to edit</span>
-                </div>
             )}
         </ErrorBoundary>
     );

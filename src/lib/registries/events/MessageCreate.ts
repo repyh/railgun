@@ -5,12 +5,13 @@ export const MessageCreateEvent: EventDefinition = {
     label: 'messageCreate',
     description: 'Triggered when a message is sent in a guild or DM.',
     nodeLabel: 'On Message Create',
-    defaultContent: (_id: string) => ({
+    defaultContent: (name: string, _id: string) => ({
         id: `event@${Date.now()}`,
         nodes: [
             {
                 id: "root",
-                label: "On Message Create",
+                label: name || "On Message Create",
+                data: { eventType: 'messageCreate', nodeType: 'On Message Create' },
                 category: "Event",
                 inputs: {},
                 outputs: {

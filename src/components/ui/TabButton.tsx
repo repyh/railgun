@@ -13,10 +13,10 @@ export const TabButton: React.FC<TabButtonProps> = ({ active, onClick, children,
     <button
         onClick={onClick}
         className={cn(
-            "flex items-center gap-2 px-4 h-full text-sm font-medium border-b-2 transition-colors",
+            "flex items-center gap-2 px-4 h-full text-sm font-medium border-b-2 transition-colors hover:cursor-pointer",
             active
-                ? "border-blue-500 text-blue-400 bg-blue-500/5"
-                : "border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/30"
+                ? "border-blue-500 text-blue-400 bg-blue-500/10"
+                : "border-transparent text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
         )}
     >
         {Icon && <Icon size={16} />}

@@ -3,5 +3,5 @@ export interface EventDefinition {
     label: string;
     description?: string;
     nodeLabel: string;
-    defaultContent: (id: string) => any;
+    defaultContent: (name: string, id: string) => any;
 }

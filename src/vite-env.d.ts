@@ -18,6 +18,7 @@ interface ElectronAPI {
     saveFile: (projectPath: string, filePath: string, content: string) => Promise<boolean>;
     onTerminalData: (callback: (data: string) => void) => () => void;
     onBotStatus: (callback: (status: 'running' | 'stopped') => void) => () => void;
+    onBotLog: (callback: (log: any) => void) => () => void;
     installPlugin: (projectPath: string, pluginId: string) => Promise<{ success: boolean; message?: string }>;
     uninstallPlugin: (projectPath: string, pluginId: string) => Promise<{ success: boolean; message?: string }>;
     listInstalledPlugins: (projectPath: string) => Promise<string[]>;

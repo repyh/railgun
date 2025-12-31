@@ -51,6 +51,13 @@ const api = {
         const handler = (_: any, status: 'running' | 'stopped') => callback(status);
         ipcRenderer.on('bot:status', handler);
         return () => ipcRenderer.removeListener('bot:status', handler);
+        ipcRenderer.on('bot:status', handler);
+        return () => ipcRenderer.removeListener('bot:status', handler);
+    },
+    onBotLog: (callback: (log: any) => void) => {
+        const handler = (_: any, log: any) => callback(log);
+        ipcRenderer.on('bot:log', handler);
+        return () => ipcRenderer.removeListener('bot:log', handler);
     }
 };
 

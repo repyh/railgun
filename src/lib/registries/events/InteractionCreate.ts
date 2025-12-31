@@ -5,12 +5,12 @@ export const InteractionCreateEvent: EventDefinition = {
     label: 'interactionCreate',
     description: 'Triggered when a user uses a slash command.',
     nodeLabel: 'On Slash Command',
-    defaultContent: (_id: string) => ({
+    defaultContent: (name: string, _id: string) => ({
         id: `event@${Date.now()}`,
         nodes: [
             {
                 id: "root",
-                label: "On Interaction Create",
+                label: name || "On Slash Command",
                 category: "Event",
                 inputs: {},
                 outputs: {

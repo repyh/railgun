@@ -86,12 +86,19 @@ export class BotProcessIPC extends BaseIPC {
         }
 
         try {
-            console.log('[BotProcess] Killing process...');
-            // tree-kill might be needed for full cleanup, but process.kill is a start
-            this.botProcess.kill();
-            // Cleanup happens in 'close' event handler
+            console.log(`[BotProcess] Stopping bot process (PID: ${this.botProcess.pid})...`);
+
+            if (process.platform === 'win32') {
+                // On Windows, killing the shell process tree is more reliable with taskkill
+                spawn('taskkill', ['/pid', this.botProcess.pid!.toString(), '/f', '/t']);
+            } else {
+                this.botProcess.kill();
+            }
+
+            // Note: The botProcess will be set to null in the 'close' event handler
             return { success: true };
         } catch (error: any) {
+            console.error('[BotProcess] Stop error:', error);
             return { success: false, error: error.message };
         }
     }

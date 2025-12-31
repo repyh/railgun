@@ -9,7 +9,7 @@ export class ProjectService {
     ): Promise<string | null> {
         const { eventRegistry } = await import('@/lib/registries/EventRegistry');
         try {
-            const defaultContent = eventRegistry.generateContent(type, "event@" + Date.now());
+            const defaultContent = eventRegistry.generateContent(type, name, "event@" + Date.now());
             return await createFileFn('events', name, defaultContent);
         } catch (error) {
             console.error('Failed to create event:', error);

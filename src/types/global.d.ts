@@ -9,6 +9,7 @@ declare global {
             invoke: (channel: string, ...args: any[]) => Promise<any>;
             onTermData: (callback: (data: string) => void) => () => void;
             onBotStatus: (callback: (status: 'running' | 'stopped') => void) => () => void;
+            onBotLog: (callback: (log: any) => void) => () => void;
             // Add other methods as needed, or use 'any' for now if lazy
             [key: string]: any;
         };

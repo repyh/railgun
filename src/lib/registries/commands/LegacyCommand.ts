@@ -18,6 +18,7 @@ export const LegacyCommand: CommandDefinition = {
                     id: "root",
                     label: "On Command",
                     category: "Event",
+                    data: { eventType: 'legacyCommand', nodeType: 'On Command' },
                     inputs: {},
                     outputs: {
                         exec: { socket: { name: "Exec" } },
