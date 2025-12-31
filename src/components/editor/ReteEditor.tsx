@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createEditor } from '@/lib/defaultEditor';
 import { Compiler } from '@/lib/compiler';
 import { Button } from '@/components/ui/Button';
@@ -380,15 +380,31 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
 
     return (
         <div className="flex flex-col h-full w-full">
-            {/* Toolbar */}
-            <div className="h-12 bg-zinc-900 border-b border-zinc-800 flex items-center px-4 gap-4 justify-between shrink-0">
-                <div className="text-zinc-400 text-sm font-medium">
-                    {filePath || 'Unsaved Blueprint'}
+            {/* Toolbar (Breadcrumb Style) */}
+            <div className="h-9 bg-zinc-900/50 border-b border-zinc-800 flex items-center px-4 gap-4 justify-between shrink-0">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors cursor-pointer text-zinc-400">
+                        <span>{projectPath?.split(/[\\/]/).pop() || 'Project'}</span>
+                    </div>
+                    <span className="text-zinc-700">/</span>
+                    {filePath ? filePath.split(/[\\/]/).map((part, i, arr) => (
+                        <React.Fragment key={i}>
+                            <div className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${i === arr.length - 1 ? 'text-blue-400 bg-blue-500/5' : 'hover:bg-zinc-800/50 hover:text-zinc-300 cursor-pointer'}`}>
+                                <span>{part}</span>
+                            </div>
+                            {i < arr.length - 1 && <span className="text-zinc-700">/</span>}
+                        </React.Fragment>
+                    )) : (
+                        <span className="text-zinc-500 italic px-2">Unsaved Blueprint</span>
+                    )}
                 </div>
-                <Button onClick={handleCompile} size="sm" className="bg-blue-600 hover:bg-blue-500 text-white gap-2 py-0 h-7 text-xs font-normal border border-blue-500/50">
-                    <Play size={12} fill="currentColor" />
-                    Compile
-                </Button>
+
+                <div className="flex items-center gap-2">
+                    <Button onClick={handleCompile} size="sm" className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white gap-2 py-0 h-6 text-[10px] uppercase tracking-wider font-semibold border border-zinc-700 shadow-sm transition-all active:scale-95">
+                        <Play size={10} fill="currentColor" />
+                        Compile
+                    </Button>
+                </div>
             </div>
 
             {/* Main Workspace Area (Canvas + Property Panel) */}
