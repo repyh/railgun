@@ -3,13 +3,17 @@ import { NodeEditor, type GetSchemes, ClassicPreset } from 'rete';
 import { AreaPlugin, AreaExtensions } from 'rete-area-plugin';
 import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin';
 import { ReactPlugin, Presets as ReactPresets } from 'rete-react-plugin';
+import { HistoryPlugin, Presets as HistoryPresets } from 'rete-history-plugin';
+import { MinimapPlugin } from 'rete-minimap-plugin';
+
 import { CustomNode } from '@/components/editor/CustomNode';
 import { CustomSocket } from '@/components/editor/CustomSocket';
 import { InputControl } from '@/components/editor/InputControl';
+import { BotNode } from '@/lib/railgun-rete';
+import { EditorOperations } from './editor/EditorOperations';
 
 
-// Use generic node type for Schemes to avoid plugin type errors
-export type Schemes = GetSchemes<ClassicPreset.Node, ClassicPreset.Connection<ClassicPreset.Node, ClassicPreset.Node>>;
+export type Schemes = GetSchemes<BotNode, ClassicPreset.Connection<BotNode, BotNode>>;
 export type AreaExtra = ReactPlugin<Schemes, any>;
 
 export async function createEditor(
@@ -20,6 +24,14 @@ export async function createEditor(
     const area = new AreaPlugin<Schemes, AreaExtra>(container);
     const connection = new ConnectionPlugin<Schemes, AreaExtra>();
     const render = new ReactPlugin<Schemes, AreaExtra>({ createRoot });
+
+    // Extensions
+    const history = new HistoryPlugin<Schemes>();
+    history.addPreset(HistoryPresets.classic.setup());
+
+    const minimap = new MinimapPlugin<Schemes>({
+        boundViewport: true
+    });
 
     const selector = AreaExtensions.selector();
     const accumulating = AreaExtensions.accumulateOnCtrl();
@@ -37,40 +49,30 @@ export async function createEditor(
         }
     }));
 
-    connection.addPreset(ConnectionPresets.classic.setup());
+    render.addPreset(ReactPresets.minimap.setup({
+        size: 200,
+    }) as any);
+
+    connection.addPreset(ConnectionPresets.classic.setup() as any);
 
     editor.use(area);
     // @ts-ignore
     area.use(connection);
     area.use(render);
+    // @ts-ignore
+    area.use(history);
+    // @ts-ignore
+    area.use(minimap);
 
     AreaExtensions.selectableNodes(area, selector, { accumulating });
 
-    console.log("Plugins registered. Database ready.");
+    console.log("Plugins registered. Database ready. Selector Helper Available.");
 
     AreaExtensions.simpleNodesOrder(area);
 
-    // Delete handler (Keyboard)
-    const onKeyDown = (e: KeyboardEvent) => {
-        if (e.code === 'Delete' || e.code === 'Backspace') {
-            const nodes = editor.getNodes();
-            for (const n of nodes) {
-                // @ts-ignore
-                if (selector.isSelected(n.id)) {
-                    editor.removeNode(n.id);
-                }
-            }
+    // Delete handler (Keyboard) managed by useEditorShortcuts hook
+    // const onKeyDown = (e: KeyboardEvent) => { ... } removed to avoid duplication
 
-            const connections = editor.getConnections();
-            for (const c of connections) {
-                // @ts-ignore
-                if (selector.isSelected(c.id)) {
-                    editor.removeConnection(c.id);
-                }
-            }
-        }
-    };
-    document.addEventListener('keydown', onKeyDown);
 
     // Delete handler (Custom Event from UI)
     const onDeleteNode = async (e: any) => {
@@ -122,8 +124,10 @@ export async function createEditor(
                 const selected = nodes.find(n => selector.isSelected(n.id));
 
                 if (selected) {
+                    console.log("[defaultEditor] Selection detected via pipe:", selected.id);
                     if (onSelectionChange) onSelectionChange(selected.id);
                 } else {
+                    console.log("[defaultEditor] No selection detected via pipe");
                     if (onSelectionChange) onSelectionChange(null);
                 }
             }, 200);
@@ -134,11 +138,35 @@ export async function createEditor(
 
     return {
         destroy: () => {
-            document.removeEventListener('keydown', onKeyDown);
+            // document.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('delete-node', onDeleteNode);
             area.destroy();
         },
         editor: editor as any,
-        area // Expose area for coordinate conversion
+        area, // Expose area for coordinate conversion
+        undo: () => history.undo(),
+        redo: () => history.redo(),
+        // Encapsulate shortcut operations within the editor closure
+        copy: async () => {
+            const nodes = editor.getNodes();
+            // @ts-ignore
+            const selected = nodes.filter(n => selector.isSelected(n.id));
+            await EditorOperations.copy(area, selected);
+        },
+        paste: async () => {
+            await EditorOperations.paste(editor, area, selector);
+        },
+        duplicate: async () => {
+            const nodes = editor.getNodes();
+            // @ts-ignore
+            const selected = nodes.filter(n => selector.isSelected(n.id));
+            await EditorOperations.duplicate(editor, area, selector, selected);
+        },
+        delete: async () => {
+            const nodes = editor.getNodes();
+            // @ts-ignore
+            const selected = nodes.filter(n => selector.isSelected(n.id));
+            await EditorOperations.delete(editor, selector, selected);
+        }
     };
 }

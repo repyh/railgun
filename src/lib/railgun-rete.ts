@@ -18,10 +18,15 @@ export class BotNode extends ClassicPreset.Node {
 
     public data: Record<string, any> = {};
 
+    public height!: number;
+    public width!: number;
+
     constructor(label: string, category: NodeCategory = 'Action') {
         super(label);
         this.category = category;
         this.codeType = label;
+        this.width = 200;
+        this.height = 120;
     }
 }
 

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createEditor } from '@/lib/defaultEditor';
 import { Compiler } from '@/lib/compiler';
 import { Button } from '@/components/ui/Button';
-import { Play } from 'lucide-react';
+import { Play, Undo2, Redo2 } from 'lucide-react';
 import { BotNode, InputControl, Sockets } from '@/lib/railgun-rete';
 import { ClassicPreset } from 'rete';
 import { ContextMenu } from '@/components/editor/ContextMenu';
@@ -11,12 +11,15 @@ import { nodeRegistry } from '@/lib/registries/NodeRegistry';
 import { AreaExtensions } from 'rete-area-plugin';
 import { useElectron } from '@/hooks/useElectron';
 import { PropertyPanel } from '@/components/editor/PropertyPanel';
+import { useEditorShortcuts } from '@/hooks/useEditorShortcuts';
 
 export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: string, filePath: string, setStatus?: (s: string) => void }) {
 
     const containerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<any>(null); // Store editor instance
     const areaRef = useRef<any>(null); // Store area instance
+    const editorInstanceRef = useRef<any>(null); // Store full editor return object (undo/redo/selector)
+
     const saveTimeout = useRef<NodeJS.Timeout | null>(null);
     const loading = useRef(false);
     const previousFilePath = useRef<string | null>(null);
@@ -107,6 +110,7 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                     setSelectedNodeId(nodeId);
                 });
 
+                editorInstanceRef.current = res;
                 editorRef.current = res.editor;
                 areaRef.current = res.area;
                 cleanup = res.destroy;
@@ -146,9 +150,14 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             if (cleanup) cleanup();
             editorRef.current = null;
             areaRef.current = null;
+            editorInstanceRef.current = null;
         }
     }, []); // Removed triggerSave to prevent infinite re-initialization loop
 
+    // Use centralized shortcuts hook
+    useEditorShortcuts(editorInstanceRef.current, editorReady);
+
+    // ... Hydration useEffect (Unchanged) ...
     useEffect(() => {
         const loadGraph = async () => {
             if (previousFilePath.current && previousFilePath.current !== filePath && editorRef.current) {
@@ -418,6 +427,27 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <div className="flex items-center border-r border-zinc-800 pr-2 mr-2 gap-1">
+                        <Button
+                            onClick={() => editorInstanceRef.current?.undo()}
+                            variant="ghost"
+                            size="icon"
+                            title="Undo (Ctrl+Z)"
+                            className="h-6 w-6 text-zinc-400 hover:text-zinc-200"
+                        >
+                            <Undo2 size={14} />
+                        </Button>
+                        <Button
+                            onClick={() => editorInstanceRef.current?.redo()}
+                            variant="ghost"
+                            size="icon"
+                            title="Redo (Ctrl+Y)"
+                            className="h-6 w-6 text-zinc-400 hover:text-zinc-200"
+                        >
+                            <Redo2 size={14} />
+                        </Button>
+                    </div>
+
                     <Button onClick={handleCompile} size="sm" className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white gap-2 py-0 h-6 text-[10px] uppercase tracking-wider font-semibold border border-zinc-700 shadow-sm transition-all active:scale-95">
                         <Play size={10} fill="currentColor" />
                         Compile

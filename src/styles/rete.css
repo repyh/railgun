@@ -66,3 +66,50 @@ svg[data-testid="connection"] path:hover {
     stroke: #3b82f6;
     stroke-width: 3px;
 }
+
+/* Minimap Styles */
+/* Minimap Styles */
+/* Target both class (if present) and data-testid */
+.minimap,
+[data-testid="minimap"] {
+    position: absolute !important;
+    left: 24px !important;
+    bottom: 24px !important;
+    right: auto !important;
+    top: auto !important;
+
+    background-color: #18181b !important;
+    /* zinc-900 */
+    border: 1px solid #27272a !important;
+    /* zinc-800 */
+    border-radius: 0.5rem !important;
+    /* rounded-lg */
+    padding: 0 !important;
+
+    width: 200px !important;
+    height: 200px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+
+    overflow: hidden;
+    /* Clip rounded corners */
+}
+
+/* Mini Nodes */
+.minimap .mini-node,
+[data-testid="minimap"] [data-testid="node"] {
+    background: #52525b !important;
+    /* zinc-600 */
+    border: none !important;
+    border-radius: 2px;
+}
+
+/* Active Viewport Area */
+.minimap .mini-viewport,
+[data-testid="minimap"] [data-testid="viewport"] {
+    background: rgba(59, 130, 246, 0.15) !important;
+    /* blue-500 optimized opacity */
+    border: 1px solid #3b82f6 !important;
+    /* blue-500 */
+    border-radius: 4px;
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
