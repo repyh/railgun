@@ -53,8 +53,264 @@ export class ProjectGenerator {
         // .env
         await fs.writeFile(path.join(projectPath, '.env'), `DISCORD_TOKEN=\nCLIENT_ID=\n`);
 
-        // railgun.json
-        const railgunJson = {
+        // project.railgun
+        const goldenGraphNodes = [
+            {
+                "inputs": {},
+                "outputs": {
+                    "exec": {
+                        "socket": {
+                            "name": "Exec"
+                        },
+                        "label": "Exec",
+                        "multipleConnections": true,
+                        "id": "bf4a41bf5b0bdaa7"
+                    },
+                    "client": {
+                        "socket": {
+                            "name": "Any"
+                        },
+                        "label": "Client",
+                        "multipleConnections": true,
+                        "id": "7318838d0ae497db"
+                    }
+                },
+                "controls": {},
+                "label": "On Ready",
+                "id": "root",
+                "category": "Event",
+                "codeType": "On Ready",
+                "data": {
+                    "eventType": "clientReady",
+                    "nodeType": "On Ready"
+                },
+                "height": 120,
+                "width": 200,
+                "x": 0,
+                "y": 0
+            },
+            {
+                "inputs": {
+                    "exec": {
+                        "socket": {
+                            "name": "Exec"
+                        },
+                        "label": "Exec",
+                        "id": "ad4a676ec46881b9",
+                        "control": null,
+                        "showControl": true
+                    },
+                    "msg": {
+                        "socket": {
+                            "name": "Any"
+                        },
+                        "label": "Message",
+                        "id": "f8d32a83ee5a4605",
+                        "control": {
+                            "id": "f9bcb1cf8b4c5e30",
+                            "value": "",
+                            "label": "msg",
+                            "type": "text",
+                            "initial": ""
+                        },
+                        "showControl": true
+                    }
+                },
+                "outputs": {
+                    "exec_out": {
+                        "socket": {
+                            "name": "Exec"
+                        },
+                        "label": "Then",
+                        "multipleConnections": true,
+                        "id": "d25a4eaa6890ad89"
+                    }
+                },
+                "controls": {},
+                "label": "Console Log",
+                "id": "8d72aedbc30dcf0f",
+                "category": "Action",
+                "codeType": "Console Log",
+                "data": {},
+                "height": 120,
+                "width": 200,
+                "selected": false,
+                "x": 742.5966623677942,
+                "y": 0.11104555411665062
+            },
+            {
+                "inputs": {
+                    "object": {
+                        "socket": {
+                            "name": "Any"
+                        },
+                        "label": "Object",
+                        "id": "dce0858dc21c86a8",
+                        "control": null,
+                        "showControl": true
+                    }
+                },
+                "outputs": {
+                    "value": {
+                        "socket": {
+                            "name": "Any"
+                        },
+                        "label": "Value",
+                        "multipleConnections": true,
+                        "id": "99239fa4abae74c9"
+                    }
+                },
+                "controls": {
+                    "property": {
+                        "id": "d63dc0f8d6dd9a86",
+                        "value": "user.tag",
+                        "label": "Property Path",
+                        "type": "text",
+                        "initial": ""
+                    }
+                },
+                "label": "Get Property",
+                "id": "880d39444477a127",
+                "category": "Variable",
+                "codeType": "Get Property",
+                "data": {},
+                "height": 120,
+                "width": 200,
+                "selected": false,
+                "x": 240.207287785954,
+                "y": 242.41474798560478
+            },
+            {
+                "inputs": {},
+                "outputs": {
+                    "output": {
+                        "socket": {
+                            "name": "String"
+                        },
+                        "label": "Value",
+                        "multipleConnections": true,
+                        "id": "ff8098f254d293e0"
+                    }
+                },
+                "controls": {
+                    "value": {
+                        "id": "d452cac2d6ae430d",
+                        "value": "Logged in as ",
+                        "label": "Value",
+                        "type": "text",
+                        "initial": ""
+                    }
+                },
+                "label": "String",
+                "id": "7cef4e3dc8478e4c",
+                "category": "Variable",
+                "codeType": "String",
+                "data": {},
+                "height": 120,
+                "width": 200,
+                "selected": false,
+                "x": 240.78941453946973,
+                "y": 118.01139182779276
+            },
+            {
+                "inputs": {
+                    "a": {
+                        "socket": {
+                            "name": "Number"
+                        },
+                        "label": "A",
+                        "id": "e4416289e44d1c54",
+                        "control": null,
+                        "showControl": true
+                    },
+                    "b": {
+                        "socket": {
+                            "name": "Number"
+                        },
+                        "label": "B",
+                        "id": "3986345ecaf629f9",
+                        "control": null,
+                        "showControl": true
+                    }
+                },
+                "outputs": {
+                    "value": {
+                        "socket": {
+                            "name": "Number"
+                        },
+                        "label": "Result",
+                        "multipleConnections": true,
+                        "id": "d7e203b8ff67e419"
+                    }
+                },
+                "controls": {
+                    "a_val": {
+                        "id": "2e4ca16c3c0f30ba",
+                        "value": "0",
+                        "label": "A",
+                        "type": "number",
+                        "initial": "0"
+                    },
+                    "b_val": {
+                        "id": "fb9204c4b7f83ca5",
+                        "value": "0",
+                        "label": "B",
+                        "type": "number",
+                        "initial": "0"
+                    }
+                },
+                "label": "Add",
+                "id": "d42ff55a373f3553",
+                "category": "Math",
+                "codeType": "Add",
+                "data": {},
+                "height": 120,
+                "width": 200,
+                "selected": false,
+                "x": 505.89996337890625,
+                "y": 148.60006713867188
+            }
+        ];
+
+        const goldenGraphConnections = [
+            {
+                "id": "0c4f3916834c31c9",
+                "source": "root",
+                "sourceOutput": "exec",
+                "target": "8d72aedbc30dcf0f",
+                "targetInput": "exec"
+            },
+            {
+                "id": "ee28fac48e2d2fe6",
+                "source": "root",
+                "sourceOutput": "client",
+                "target": "880d39444477a127",
+                "targetInput": "object"
+            },
+            {
+                "id": "0ccef9997aedc3a8",
+                "source": "7cef4e3dc8478e4c",
+                "sourceOutput": "output",
+                "target": "d42ff55a373f3553",
+                "targetInput": "a"
+            },
+            {
+                "id": "0c0f1c9da185b172",
+                "source": "880d39444477a127",
+                "sourceOutput": "value",
+                "target": "d42ff55a373f3553",
+                "targetInput": "b"
+            },
+            {
+                "id": "03784008554bbf20",
+                "source": "d42ff55a373f3553",
+                "sourceOutput": "value",
+                "target": "8d72aedbc30dcf0f",
+                "targetInput": "msg"
+            }
+        ];
+
+        const railgunProject = {
             "name": options.name,
             "version": "1.0.0",
             "railgunVersion": "1.0.0",
@@ -63,27 +319,55 @@ export class ProjectGenerator {
                 "Guilds",
                 "GuildMessages",
                 "MessageContent"
-            ]
+            ],
+            "nodes": goldenGraphNodes,
+            "connections": goldenGraphConnections
         };
-        await fs.writeFile(path.join(projectPath, 'railgun.json'), JSON.stringify(railgunJson, null, 2));
+        await fs.writeFile(path.join(projectPath, 'project.railgun'), JSON.stringify(railgunProject, null, 2));
+
+        // bot.js (Pre-compiled Golden Graph)
+        const botJs = `const { Events } = require('discord.js');
+
+module.exports = (client) => {
+    // Generated by Railgun (Standard Template)
+    
+    // Event: On Ready
+    client.once(Events.ClientReady, async (client) => {
+        // Action: Console Log
+        console.log(\`Logged in as \${options.name}!\`);
+    });
+};
+`;
+        await fs.writeFile(path.join(projectPath, 'bot.js'), botJs);
 
         // index.js
         const indexJs = `require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const botmConfig = require('./railgun.json');
+
+// Load Config from project.railgun (JSON parse as Node doesn't native load .railgun)
+const projectConfig = JSON.parse(fs.readFileSync(path.join(__dirname, 'project.railgun'), 'utf-8'));
 
 const client = new Client({
-    intents: botmConfig.gatewayIntents || ['Guilds', 'GuildMessages', 'MessageContent'],
+    intents: projectConfig.gatewayIntents || ['Guilds', 'GuildMessages', 'MessageContent'],
 });
 
-// Load Handlers
-const handlersPath = path.join(__dirname, 'handlers');
-const handlerFiles = fs.readdirSync(handlersPath).filter(file => file.endsWith('.js'));
+// Load Compiled Logic (bot.js)
+// This file is generated by the Railgun Compiler
+try {
+    require('./bot.js')(client);
+} catch (err) {
+    console.error("Failed to load bot logic (bot.js):", err);
+}
 
-for (const file of handlerFiles) {
-    require(\`./handlers/\${file}\`)(client);
+// Load Handlers (Legacy Support for manual handlers)
+const handlersPath = path.join(__dirname, 'handlers');
+if (fs.existsSync(handlersPath)) {
+    const handlerFiles = fs.readdirSync(handlersPath).filter(file => file.endsWith('.js'));
+    for (const file of handlerFiles) {
+        require(\`./handlers/\${file}\`)(client);
+    }
 }
 
 client.login(process.env.DISCORD_TOKEN);

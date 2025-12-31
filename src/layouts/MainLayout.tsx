@@ -11,6 +11,7 @@ import { useElectron } from '@/hooks/useElectron';
 import { ConsolePanel } from '@/components/console/ConsolePanel';
 import { Titlebar } from '@/components/layout/Titlebar';
 import { ModalProvider, useModal } from '@/contexts/ModalContext';
+import { useProject } from '@/contexts/ProjectContext';
 import { CreateProjectModal } from '@/components/modals/CreateProjectModal';
 import { SIDEBAR_CONFIG, type SidebarItem } from '@/components/layout/sidebar';
 import { VIEW_REGISTRY } from '@/views/viewRegistry';
@@ -44,12 +45,18 @@ const ActivityBarItem = ({
 
 const ModalContainer = () => {
     const { activeModal, closeModal } = useModal();
+    const { setProject } = useProject();
+    const navigate = useNavigate();
 
     return (
         <>
             <CreateProjectModal
                 open={activeModal === 'create-project'}
                 onOpenChange={(open) => !open && closeModal()}
+                onCreateProject={(name, path) => {
+                    setProject(path, name);
+                    navigate('/explorer');
+                }}
             />
             {/* Add other modals here as they are implemented */}
         </>

@@ -127,7 +127,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
             // Handle loading: if data exists, use it. If not, use empty object.
             setConfig(data || {});
         } catch (error) {
-            console.error('Failed to load railgun.json', error);
+            console.error('Failed to load project.railgun', error);
         } finally {
             setIsLoading(false);
         }
@@ -154,7 +154,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
 
             await configAPI.save(projectPath, config);
         } catch (error) {
-            console.error('Failed to save railgun.json', error);
+            console.error('Failed to save project.railgun', error);
         } finally {
             setIsSaving(false);
         }

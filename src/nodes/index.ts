@@ -33,6 +33,9 @@ import { createCreateButtonNode } from './discord/CreateButton';
 import { createActionRowNode } from './discord/CreateActionRow';
 import { createSendMessageNode } from './discord/SendMessage';
 import { createShowModalNode } from './discord/ShowModal';
+import { createEditMessageNode } from './discord/EditMessage';
+import { createDeleteMessageNode } from './discord/DeleteMessage';
+import { createAwaitComponentNode } from './discord/AwaitComponent';
 import { createOnModalSubmitNode } from './events/OnModalSubmit';
 import { createOnButtonClickNode } from './events/OnButtonClick';
 import { createEmbedFieldNode } from './data/EmbedField';
@@ -55,6 +58,9 @@ export const DEFAULT_NODES: NodeDefinition[] = [
     { label: 'Create Action Row', category: 'Discord', factory: createActionRowNode },
     { label: 'Send Message', category: 'Discord', factory: createSendMessageNode },
     { label: 'Show Modal', category: 'Discord', factory: createShowModalNode },
+    { label: 'Edit Message', category: 'Discord', factory: createEditMessageNode },
+    { label: 'Delete Message', category: 'Discord', factory: createDeleteMessageNode },
+    { label: 'Wait for Interaction', category: 'Discord', factory: createAwaitComponentNode },
     { label: 'Kick Member', category: 'Discord', factory: () => new KickMemberNode() },
     { label: 'Ban Member', category: 'Discord', factory: () => new BanMemberNode() },
     { label: 'Add Role', category: 'Discord', factory: () => new AddRoleNode() },

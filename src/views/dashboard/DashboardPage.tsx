@@ -108,7 +108,7 @@ const DashboardPage: React.FC = () => {
         try {
             const result = await project.open();
             if (result) {
-                setProject(result.name, result.path);
+                setProject(result.path, result.name);
                 navigate('/explorer');
             }
         } catch (e) {

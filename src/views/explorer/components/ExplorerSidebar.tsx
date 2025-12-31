@@ -48,6 +48,7 @@ interface ExplorerSidebarProps {
     commandFiles: string[];
     slashCommandFiles: string[];
     eventFiles: string[];
+    projectFiles: string[];
     selectedFile: string | null;
     onFileClick: (file: string) => void;
     onDeleteFile: (file: string) => void;
@@ -63,6 +64,7 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
     commandFiles,
     slashCommandFiles,
     eventFiles,
+    projectFiles,
     selectedFile,
     onFileClick,
     onDeleteFile,
@@ -85,6 +87,18 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
 
             <div className="flex-1 overflow-auto p-2 space-y-4">
                 <div className="px-2">
+                    <h3 className="text-[10px] uppercase font-bold text-zinc-600 mb-2">Project</h3>
+                    {projectFiles.map(file => (
+                        <TreeItem
+                            key={file}
+                            label={file}
+                            icon={FileCode}
+                            active={selectedFile === file}
+                            onClick={() => onFileClick(file)}
+                        />
+                    ))}
+
+                    <div className="mt-4" />
                     <h3 className="text-[10px] uppercase font-bold text-zinc-600 mb-2">Behaviors</h3>
 
                     <TreeItem
@@ -102,7 +116,7 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                         {commandFiles.map(file => (
                             <TreeItem
                                 key={file}
-                                label={file.replace('.railgun.json', '')}
+                                label={file.replace('.railgun', '')}
                                 icon={FileCode}
                                 active={selectedFile === `commands/${file}`}
                                 onClick={() => onFileClick(`commands/${file}`)}
@@ -137,7 +151,7 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                         {slashCommandFiles.map(file => (
                             <TreeItem
                                 key={file}
-                                label={file.replace('.railgun.json', '')}
+                                label={file.replace('.railgun', '')}
                                 icon={TerminalIcon}
                                 active={selectedFile === `slash_commands/${file}`}
                                 onClick={() => onFileClick(`slash_commands/${file}`)}
@@ -172,7 +186,7 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                         {eventFiles.map(file => (
                             <TreeItem
                                 key={file}
-                                label={file.replace('.railgun.json', '')}
+                                label={file.replace('.railgun', '')}
                                 icon={FileCode}
                                 active={selectedFile === `events/${file}`}
                                 onClick={() => onFileClick(`events/${file}`)}

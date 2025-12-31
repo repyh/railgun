@@ -52,6 +52,9 @@ import { ButtonParser } from './discord/Button';
 import { ActionRowParser } from './discord/ActionRow';
 import { ShowModalParser } from './discord/ShowModal';
 import { MemberActionParser } from './discord/MemberActions';
+import { EditMessageParser } from './discord/EditMessage';
+import { DeleteMessageParser } from './discord/DeleteMessage';
+import { AwaitComponentParser } from './discord/AwaitComponent';
 
 // Functions
 import { FunctionDefParser } from './functions/FunctionDef';
@@ -124,6 +127,9 @@ export class ParserRegistry {
         this.register('Show Modal', new ShowModalParser());
         this.register('Kick Member', new MemberActionParser('kick'));
         this.register('Ban Member', new MemberActionParser('ban'));
+        this.register('Edit Message', new EditMessageParser());
+        this.register('Delete Message', new DeleteMessageParser());
+        this.register('Wait for Interaction', new AwaitComponentParser());
 
         // --- Functions ---
         this.register('Function Def', new FunctionDefParser());

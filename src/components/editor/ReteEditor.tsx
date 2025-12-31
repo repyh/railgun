@@ -350,7 +350,9 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             console.log("Generated Code:", code);
 
             let jsFilePath = currentFilePathRef.current;
-            if (jsFilePath.endsWith('.railgun.json')) {
+            if (jsFilePath.endsWith('.railgun')) {
+                jsFilePath = jsFilePath.replace('.railgun', '.js');
+            } else if (jsFilePath.endsWith('.railgun.json')) {
                 jsFilePath = jsFilePath.replace('.railgun.json', '.js');
             } else if (jsFilePath.endsWith('.botm.json')) {
                 jsFilePath = jsFilePath.replace('.botm.json', '.js');

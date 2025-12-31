@@ -5,26 +5,34 @@ export function useFileSystem(projectPath: string | null) {
     const [eventFiles, setEventFiles] = useState<string[]>([]);
     const [commandFiles, setCommandFiles] = useState<string[]>([]);
     const [slashCommandFiles, setSlashCommandFiles] = useState<string[]>([]);
+    const [projectFiles, setProjectFiles] = useState<string[]>([]);
     const { isElectron, files } = useElectron();
 
     const loadFiles = useCallback(async () => {
         if (!projectPath || !isElectron) return;
         try {
+            // Root project files
+            const rootFiles = await files.list(projectPath, '.');
+            if (rootFiles) {
+                const filtered = rootFiles.filter((f: string) => f.endsWith('.railgun'));
+                setProjectFiles(filtered);
+            }
+
             const eFiles = await files.list(projectPath, 'events');
             if (eFiles) {
-                const filtered = eFiles.filter((f: string) => f.endsWith('.railgun.json'));
+                const filtered = eFiles.filter((f: string) => f.endsWith('.railgun'));
                 setEventFiles(filtered);
             }
 
             const cFiles = await files.list(projectPath, 'commands');
             if (cFiles) {
-                const filtered = cFiles.filter((f: string) => f.endsWith('.railgun.json'));
+                const filtered = cFiles.filter((f: string) => f.endsWith('.railgun'));
                 setCommandFiles(filtered);
             }
 
             const sFiles = await files.list(projectPath, 'slash_commands');
             if (sFiles) {
-                const filtered = sFiles.filter((f: string) => f.endsWith('.railgun.json'));
+                const filtered = sFiles.filter((f: string) => f.endsWith('.railgun'));
                 setSlashCommandFiles(filtered);
             }
         } catch (error) {
@@ -56,7 +64,7 @@ export function useFileSystem(projectPath: string | null) {
     const createFile = useCallback(async (subDir: string, name: string, content: any) => {
         if (!projectPath || !isElectron) return null;
 
-        const fileName = name.endsWith('.railgun.json') ? name : `${name}.railgun.json`;
+        const fileName = name.endsWith('.railgun') ? name : `${name}.railgun`;
         const filePath = `${subDir}/${fileName}`;
 
         try {
@@ -70,6 +78,7 @@ export function useFileSystem(projectPath: string | null) {
     }, [projectPath, isElectron, files, loadFiles]);
 
     return {
+        projectFiles,
         eventFiles,
         commandFiles,
         slashCommandFiles,

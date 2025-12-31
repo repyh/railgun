@@ -26,7 +26,9 @@ export type ASTNodeType =
     | 'BreakStatement'
     | 'ContinueStatement'
     | 'UpdateExpression'
-    | 'LogicalExpression';
+    | 'LogicalExpression'
+    | 'TryStatement'
+    | 'CatchClause';
 
 export interface BaseNode {
     type: ASTNodeType;
@@ -53,7 +55,8 @@ export type Statement =
     | BreakStatement
     | ContinueStatement
     | VariableDeclaration
-    | CommentStatement; // Added for QoL
+    | CommentStatement
+    | TryStatement; // Added for AwaitComponent branching
 
 export interface CommentStatement extends BaseNode {
     type: 'CommentStatement';
@@ -256,8 +259,20 @@ export interface ContinueStatement extends BaseNode {
 }
 
 export interface LogicalExpression extends BaseNode {
-    type: 'LogicalExpression';
     operator: '||' | '&&' | '??';
     left: Expression;
     right: Expression;
+}
+
+export interface TryStatement extends BaseNode {
+    type: 'TryStatement';
+    block: BlockStatement;
+    handler: CatchClause | null;
+    finalizer?: BlockStatement | null;
+}
+
+export interface CatchClause extends BaseNode {
+    type: 'CatchClause';
+    param: Identifier | null;
+    body: BlockStatement;
 }

@@ -38,7 +38,7 @@ const ExplorerPage: React.FC = () => {
     // Custom Hooks
     const { activeTab, setActiveTab, selectedFile, openFile, closeFile } = useTabManager();
     const { status: botStatus, startBot, stopBot } = useBotControl(projectPath, setStatus);
-    const { eventFiles, commandFiles, slashCommandFiles, deleteFile, createFile } = useFileSystem(projectPath);
+    const { eventFiles, commandFiles, slashCommandFiles, projectFiles, deleteFile, createFile } = useFileSystem(projectPath);
 
     // Local State (that doesn't fit neatly into hooks yet or is UI specific)
     const [isRunConfigOpen, setIsRunConfigOpen] = useState(false);
@@ -96,6 +96,7 @@ const ExplorerPage: React.FC = () => {
                 commandFiles={commandFiles}
                 slashCommandFiles={slashCommandFiles}
                 eventFiles={eventFiles}
+                projectFiles={projectFiles}
                 selectedFile={selectedFile}
                 onFileClick={openFile}
                 onDeleteFile={(file) => {
