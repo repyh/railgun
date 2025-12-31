@@ -34,4 +34,34 @@ export class ProjectService {
             throw error;
         }
     }
+    /**
+     * Creates a new slash command file using the CommandRegistry.
+     */
+    static async createSlashCommand(
+        name: string,
+        description: string,
+        options: any[], // SlashOption[]
+        createFileFn: (folder: 'events' | 'commands' | 'slash_commands', name: string, content: any) => Promise<string | null>
+    ): Promise<string | null> {
+        const { commandRegistry } = await import('@/lib/registries/CommandRegistry');
+        try {
+            // Pass options as the first argument in the array to generateContent
+            // The SlashCommand definition expects args[0] to be the options array
+            const defaultContent = commandRegistry.generateContent('slashCommand', "slash-command@" + Date.now(), [options]);
+
+            // Inject description into the root node data if possible, or handle it in the registry
+            if (defaultContent.nodes && defaultContent.nodes.length > 0) {
+                defaultContent.nodes[0].data = {
+                    ...defaultContent.nodes[0].data,
+                    name: name,
+                    description: description
+                };
+            }
+
+            return await createFileFn('slash_commands', name, defaultContent);
+        } catch (error) {
+            console.error('Failed to create slash command:', error);
+            throw error;
+        }
+    }
 }

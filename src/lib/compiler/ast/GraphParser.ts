@@ -270,6 +270,53 @@ export class GraphParser implements ParserContext {
                     return expr;
                 }
             }
+
+            // Logic for Dynamic Slash Command Options
+            if (label === 'On Slash Command') {
+                // If the key is not one of the standard ones (exec, user, channel), assume it is an option
+                if (!['exec', 'user', 'channel'].includes(outputKey)) {
+                    // We need to know the type to generate the correct .getString(), .getUser(), etc.
+                    // But strictly speaking, .get() works for most or we can guess.
+                    // Better: Look up the option definition from node.data.options
+                    const options = node.data?.options || [];
+                    const optionDef = options.find((o: any) => o.name === outputKey);
+
+                    let method = 'get'; // Default
+                    if (optionDef) {
+                        switch (optionDef.type) {
+                            case 'STRING': method = 'getString'; break;
+                            case 'INTEGER': method = 'getInteger'; break;
+                            case 'BOOLEAN': method = 'getBoolean'; break;
+                            case 'USER': method = 'getUser'; break;
+                            case 'CHANNEL': method = 'getChannel'; break;
+                            case 'ROLE': method = 'getRole'; break;
+                            case 'MENTIONABLE': method = 'getMentionable'; break;
+                            case 'NUMBER': method = 'getNumber'; break;
+                            case 'ATTACHMENT': method = 'getAttachment'; break;
+                        }
+                    }
+
+                    const expr: AST.CallExpression = {
+                        type: 'CallExpression',
+                        callee: {
+                            type: 'MemberExpression',
+                            object: {
+                                type: 'MemberExpression',
+                                object: { type: 'Identifier', name: 'interaction' },
+                                property: { type: 'Identifier', name: 'options' },
+                                computed: false
+                            },
+                            property: { type: 'Identifier', name: method },
+                            computed: false
+                        },
+                        arguments: [
+                            { type: 'Literal', value: outputKey }
+                        ]
+                    };
+                    this.cachedExpressions.set(cacheKey, expr);
+                    return expr;
+                }
+            }
         }
 
         // 2. Registry Lookup (Handles Primitives, Variables, and regular Value nodes)

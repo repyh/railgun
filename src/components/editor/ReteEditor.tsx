@@ -227,6 +227,24 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                             }
                         }
 
+                        if (n.label === 'On Slash Command' && (n as any).data?.options) {
+                            try {
+                                const options = (n as any).data.options;
+                                if (Array.isArray(options)) {
+                                    options.forEach((opt: any) => {
+                                        // Check if output already exists (factory might have added it, unlikely for dynamic)
+                                        // @ts-ignore
+                                        if (!node.outputs[opt.name]) {
+                                            // @ts-ignore
+                                            node.addOutput(opt.name, new ClassicPreset.Output(Sockets.Any, `${opt.name} (${opt.type})`));
+                                        }
+                                    });
+                                }
+                            } catch (e) {
+                                console.error("Failed to hydrate slash command options", e);
+                            }
+                        }
+
                         if (n.controls) {
                             for (const [key, controlData] of Object.entries(n.controls)) {
                                 // @ts-ignore

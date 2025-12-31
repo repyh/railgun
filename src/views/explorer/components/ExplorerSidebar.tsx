@@ -46,11 +46,13 @@ interface ExplorerSidebarProps {
     projectName: string | null;
     projectPath: string | null;
     commandFiles: string[];
+    slashCommandFiles: string[];
     eventFiles: string[];
     selectedFile: string | null;
     onFileClick: (file: string) => void;
     onDeleteFile: (file: string) => void;
     onOpenCreateCommand: (e: React.MouseEvent) => void;
+    onOpenCreateSlashCommand: (e: React.MouseEvent) => void;
     onOpenCreateEvent: (e: React.MouseEvent) => void;
     onNavigateBack: () => void;
 }
@@ -59,11 +61,13 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
     projectName,
     projectPath,
     commandFiles,
+    slashCommandFiles,
     eventFiles,
     selectedFile,
     onFileClick,
     onDeleteFile,
     onOpenCreateCommand,
+    onOpenCreateSlashCommand,
     onOpenCreateEvent,
     onNavigateBack
 }) => {
@@ -118,10 +122,38 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                     </TreeItem>
 
                     <div className="mt-2" />
-                    <TreeItem label="Slash Commands" icon={TerminalIcon}>
-                        <TreeItem label="/ ping" />
-                        <TreeItem label="/ help" />
-                        <TreeItem label="/ ban" />
+                    <TreeItem
+                        label="Slash Commands"
+                        icon={TerminalIcon}
+                        action={
+                            <button onClick={onOpenCreateSlashCommand} className="hover:bg-zinc-700 p-0.5 rounded text-zinc-400 hover:text-white">
+                                <Plus size={12} />
+                            </button>
+                        }
+                    >
+                        {slashCommandFiles.length === 0 && (
+                            <div className="text-xs text-zinc-600 italic px-2 py-1">No slash commands found</div>
+                        )}
+                        {slashCommandFiles.map(file => (
+                            <TreeItem
+                                key={file}
+                                label={file.replace('.railgun.json', '')}
+                                icon={TerminalIcon}
+                                active={selectedFile === `slash_commands/${file}`}
+                                onClick={() => onFileClick(`slash_commands/${file}`)}
+                                action={
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDeleteFile(`slash_commands/${file}`);
+                                        }}
+                                        className="text-zinc-500 hover:text-red-400 p-1 rounded"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                }
+                            />
+                        ))}
                     </TreeItem>
 
                     <div className="mt-2" />

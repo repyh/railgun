@@ -9,6 +9,7 @@ import { PluginsTab } from '@/views/tabs/PluginsTab';
 import { ReteEditor } from '@/components/editor/ReteEditor';
 import { CreateEventModal } from '@/components/modals/CreateEventModal';
 import { CreateCommandModal } from '@/components/modals/CreateCommandModal';
+import { CreateSlashCommandModal } from '@/components/modals/CreateSlashCommandModal';
 import { useProject } from '@/contexts/ProjectContext';
 import { PluginManager } from '@/lib/plugins/PluginManager';
 import { RunConfigDialog } from '@/components/dialogs/RunConfigDialog';
@@ -37,12 +38,13 @@ const ExplorerPage: React.FC = () => {
     // Custom Hooks
     const { activeTab, setActiveTab, selectedFile, openFile, closeFile } = useTabManager();
     const { status: botStatus, startBot, stopBot } = useBotControl(projectPath, setStatus);
-    const { eventFiles, commandFiles, deleteFile, createFile } = useFileSystem(projectPath);
+    const { eventFiles, commandFiles, slashCommandFiles, deleteFile, createFile } = useFileSystem(projectPath);
 
     // Local State (that doesn't fit neatly into hooks yet or is UI specific)
     const [isRunConfigOpen, setIsRunConfigOpen] = useState(false);
     const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
     const [isCreateCommandModalOpen, setIsCreateCommandModalOpen] = useState(false);
+    const [isCreateSlashCommandModalOpen, setIsCreateSlashCommandModalOpen] = useState(false);
 
     // Init Plugin Manager
     useEffect(() => {
@@ -90,6 +92,7 @@ const ExplorerPage: React.FC = () => {
                 projectName={projectName}
                 projectPath={projectPath}
                 commandFiles={commandFiles}
+                slashCommandFiles={slashCommandFiles}
                 eventFiles={eventFiles}
                 selectedFile={selectedFile}
                 onFileClick={openFile}
@@ -100,6 +103,7 @@ const ExplorerPage: React.FC = () => {
                     }
                 }}
                 onOpenCreateCommand={(e) => { e.stopPropagation(); setIsCreateCommandModalOpen(true); }}
+                onOpenCreateSlashCommand={(e) => { e.stopPropagation(); setIsCreateSlashCommandModalOpen(true); }}
                 onOpenCreateEvent={(e) => { e.stopPropagation(); setIsCreateEventModalOpen(true); }}
                 onNavigateBack={() => navigate('/')}
             />
@@ -179,6 +183,18 @@ const ExplorerPage: React.FC = () => {
                         if (path) openFile(path);
                     } catch (e) {
                         alert("Failed to create command: " + e);
+                    }
+                }}
+            />
+            <CreateSlashCommandModal
+                open={isCreateSlashCommandModalOpen}
+                onOpenChange={setIsCreateSlashCommandModalOpen}
+                onCreateCommand={async (name, description, options) => {
+                    try {
+                        const path = await ProjectService.createSlashCommand(name, description, options, createFile);
+                        if (path) openFile(path);
+                    } catch (e) {
+                        alert("Failed to create slash command: " + e);
                     }
                 }}
             />

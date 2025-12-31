@@ -6,6 +6,7 @@ export interface WrappingMetadata {
     isAsync: boolean;
     fileName?: string;
     description?: string;    // For Slash Commands
+    options?: any[];         // For Slash Commands
     once?: boolean;          // For Events (e.g. valid for some events)
 }
 

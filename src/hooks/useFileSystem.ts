@@ -4,6 +4,7 @@ import { useElectron } from '@/hooks/useElectron';
 export function useFileSystem(projectPath: string | null) {
     const [eventFiles, setEventFiles] = useState<string[]>([]);
     const [commandFiles, setCommandFiles] = useState<string[]>([]);
+    const [slashCommandFiles, setSlashCommandFiles] = useState<string[]>([]);
     const { isElectron, files } = useElectron();
 
     const loadFiles = useCallback(async () => {
@@ -19,6 +20,12 @@ export function useFileSystem(projectPath: string | null) {
             if (cFiles) {
                 const filtered = cFiles.filter((f: string) => f.endsWith('.railgun.json'));
                 setCommandFiles(filtered);
+            }
+
+            const sFiles = await files.list(projectPath, 'slash_commands');
+            if (sFiles) {
+                const filtered = sFiles.filter((f: string) => f.endsWith('.railgun.json'));
+                setSlashCommandFiles(filtered);
             }
         } catch (error) {
             console.error("Failed to load files", error);
@@ -65,6 +72,7 @@ export function useFileSystem(projectPath: string | null) {
     return {
         eventFiles,
         commandFiles,
+        slashCommandFiles,
         loadFiles,
         deleteFile,
         createFile

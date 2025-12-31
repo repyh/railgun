@@ -1,11 +1,13 @@
 import type { CommandDefinition } from './commands/CommandDefinition';
 import { LegacyCommand } from './commands/LegacyCommand';
+import { SlashCommand } from './commands/SlashCommand';
 
 class CommandRegistry {
     private commands: Map<string, CommandDefinition> = new Map();
 
     constructor() {
         this.register(LegacyCommand);
+        this.register(SlashCommand);
     }
 
     register(command: CommandDefinition) {

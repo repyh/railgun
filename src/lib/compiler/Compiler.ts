@@ -139,6 +139,7 @@ export class Compiler {
             eventParams,
             isAsync,
             description,
+            options: eventNode?.data?.options as any[] || [],
             once
         });
 
