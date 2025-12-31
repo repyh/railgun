@@ -253,17 +253,34 @@ export class GraphParser implements ParserContext {
                     this.cachedExpressions.set(cacheKey, ident);
                     return ident;
                 }
-                if (outputKey === 'args') {
+                // Handle both legacy 'args' and new 'rawArgs' output keys
+                if (outputKey === 'args' || outputKey === 'rawArgs') {
                     const ident: AST.Expression = { type: 'Identifier', name: 'args' };
                     this.cachedExpressions.set(cacheKey, ident);
                     return ident;
                 }
+
+                // Handle legacy indexed arguments (arg_0, arg_1, etc.)
                 if (outputKey.startsWith('arg_')) {
                     const index = parseInt(outputKey.split('_')[1]);
                     const expr: AST.Expression = {
                         type: 'MemberExpression',
                         object: { type: 'Identifier', name: 'args' },
                         property: { type: 'Literal', value: index },
+                        computed: true
+                    };
+                    this.cachedExpressions.set(cacheKey, expr);
+                    return expr;
+                }
+
+                // Handle named arguments by checking metadata
+                const argNames = node.data?.args || [];
+                const argIndex = argNames.indexOf(outputKey);
+                if (argIndex !== -1) {
+                    const expr: AST.Expression = {
+                        type: 'MemberExpression',
+                        object: { type: 'Identifier', name: 'args' },
+                        property: { type: 'Literal', value: argIndex },
                         computed: true
                     };
                     this.cachedExpressions.set(cacheKey, expr);

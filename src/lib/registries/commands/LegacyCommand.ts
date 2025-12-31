@@ -5,10 +5,11 @@ export const LegacyCommand: CommandDefinition = {
     label: 'Legacy Command',
     description: 'Triggered when a user types a specific prefix command.',
     nodeLabel: 'On Command',
-    defaultContent: (_id: string, args: any[] = []) => {
+    defaultContent: (_id: string, args: string[] = []) => {
         const dynamicOutputs: any = {};
-        args.forEach((arg, i) => {
-            dynamicOutputs[`arg_${i}`] = { socket: { name: arg } };
+        args.forEach((argName, _i) => {
+            // Use the name as the key, similar to Slash Commands
+            dynamicOutputs[argName] = { socket: { name: argName } };
         });
 
         return {
@@ -18,16 +19,19 @@ export const LegacyCommand: CommandDefinition = {
                     id: "root",
                     label: "On Command",
                     category: "Event",
-                    data: { eventType: 'legacyCommand', nodeType: 'On Command' },
+                    data: {
+                        eventType: 'legacyCommand',
+                        nodeType: 'On Command',
+                        args: args // Store as metadata
+                    },
                     inputs: {},
                     outputs: {
                         exec: { socket: { name: "Exec" } },
                         message: { socket: { name: "Message" } },
-                        args: { socket: { name: "Raw Args" } },
+                        rawArgs: { socket: { name: "Raw Args" } },
                         ...dynamicOutputs
                     },
-                    controls: { // Controls will be set by the UI separately if needed, but for initial creation we can set defaults if passed
-                    }
+                    controls: {}
                 }
             ],
             connections: []

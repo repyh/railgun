@@ -16,8 +16,9 @@ export function CreateCommandModal({ open, onOpenChange, onCreateCommand }: Crea
     const [newArg, setNewArg] = useState('');
 
     const handleAddArg = () => {
-        if (newArg && !args.includes(newArg)) {
-            setArgs([...args, newArg]);
+        const sanitized = newArg.trim().toLowerCase().replace(/\s+/g, '_');
+        if (sanitized && !args.includes(sanitized)) {
+            setArgs([...args, sanitized]);
             setNewArg('');
         }
     };
@@ -28,8 +29,7 @@ export function CreateCommandModal({ open, onOpenChange, onCreateCommand }: Crea
 
     const handleCreate = () => {
         if (name) {
-            // @ts-ignore
-            onCreateCommand(name, args);
+            onCreateCommand(name.trim().toLowerCase(), args);
             setName('');
             setArgs([]);
             onOpenChange(false);
@@ -40,44 +40,75 @@ export function CreateCommandModal({ open, onOpenChange, onCreateCommand }: Crea
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>Create New Command</DialogTitle>
+                    <DialogTitle>Create New Legacy Command</DialogTitle>
                 </DialogHeader>
 
-                <div className="grid gap-4 py-4 px-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="name">Command Name</Label>
-                        <Input
-                            id="name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g. ping"
-                            autoFocus
-                        />
-                        <p className="text-[10px] text-zinc-500">
-                            The command trigger (e.g. !ping)
-                        </p>
+                <div className="grid gap-6 py-4 px-2">
+                    {/* Basic Info */}
+                    <div className="space-y-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="cmd-name">Command Trigger</Label>
+                            <Input
+                                id="cmd-name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="e.g. kick"
+                                autoFocus
+                            />
+                            <p className="text-[10px] text-zinc-500">The word that follows the prefix (e.g. !kick)</p>
+                        </div>
                     </div>
 
-                    <div className="grid gap-2">
-                        <Label>Arguments (Optional)</Label>
+                    <div className="border-t border-zinc-800 my-2" />
+
+                    {/* Arguments Manager */}
+                    <div className="space-y-4">
+                        <Label className="text-sm font-medium">Command Arguments (Order Matters)</Label>
+
                         <div className="flex gap-2">
                             <Input
                                 value={newArg}
                                 onChange={(e) => setNewArg(e.target.value)}
-                                placeholder="Arg name (e.g. user)"
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddArg()}
+                                placeholder="e.g. target_user"
+                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddArg())}
+                                className="h-9"
                             />
-                            <Button onClick={handleAddArg} variant="secondary">Add</Button>
+                            <Button onClick={handleAddArg} variant="secondary" size="sm" type="button">
+                                Add
+                            </Button>
                         </div>
-                        <div className="flex flex-wrap gap-2 mt-2">
+
+                        {/* Args List */}
+                        <div className="space-y-2 min-h-[40px]">
                             {args.map((arg, i) => (
-                                <div key={i} className="bg-zinc-800 text-xs px-2 py-1 rounded flex items-center gap-2 border border-zinc-700">
-                                    <span>{arg}</span>
-                                    <button onClick={() => handleRemoveArg(i)} className="text-zinc-500 hover:text-red-400">×</button>
+                                <div key={i} className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-sm">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-[10px] font-bold text-zinc-500 w-4">
+                                            #{i + 1}
+                                        </span>
+                                        <span className="font-medium text-zinc-200">{arg}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleRemoveArg(i)}
+                                        className="text-zinc-500 hover:text-red-400 transition-colors"
+                                        type="button"
+                                    >
+                                        ×
+                                    </button>
                                 </div>
                             ))}
-                            {args.length === 0 && <span className="text-xs text-zinc-600 italic">No arguments</span>}
+                            {args.length === 0 && (
+                                <p className="text-xs text-zinc-600 italic text-center py-4 bg-zinc-900/30 rounded border border-dashed border-zinc-800">
+                                    No arguments defined. (e.g. !{name || 'cmd'})
+                                </p>
+                            )}
                         </div>
+
+                        {args.length > 0 && (
+                            <p className="text-[10px] text-zinc-500 italic">
+                                Example usage: !{name || 'cmd'} {args.map(a => `<${a}>`).join(' ')}
+                            </p>
+                        )}
                     </div>
                 </div>
 

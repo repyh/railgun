@@ -28,6 +28,15 @@ export class ProjectService {
         const { commandRegistry } = await import('@/lib/registries/CommandRegistry');
         try {
             const defaultContent = commandRegistry.generateContent('legacyCommand', "command@" + Date.now(), args || []);
+
+            // Inject name into data
+            if (defaultContent.nodes && defaultContent.nodes.length > 0) {
+                defaultContent.nodes[0].data = {
+                    ...defaultContent.nodes[0].data,
+                    name: name
+                };
+            }
+
             return await createFileFn('commands', name, defaultContent);
         } catch (error) {
             console.error('Failed to create command:', error);

@@ -5,9 +5,8 @@ import type { ParserContext } from '../ParserContext';
 
 export class OnCommandParser implements ASTEventParser {
     parse(node: BotNode, context: ParserContext): AST.FunctionDeclaration {
-        // Name control determines the command name, but for the function ID we use the label
-        const nameControl = node.controls?.['name'] as any;
-        const cmdName = nameControl?.value || 'command';
+        // Name control determines the command name, but for the function ID we use the data.name if available
+        const cmdName = node.data?.name || (node.controls?.['name'] as any)?.value || 'command';
 
         const body = context.traverseBlock(node, 'exec');
 

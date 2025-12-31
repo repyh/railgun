@@ -5,10 +5,12 @@ import type { ParserContext } from '../ParserContext';
 
 export class OnSlashCommandParser implements ASTEventParser {
     parse(node: BotNode, context: ParserContext): AST.FunctionDeclaration {
+        const cmdName = node.data?.name || node.label || 'OnSlashCommand';
         const body = context.traverseBlock(node, 'exec');
+
         return {
             type: 'FunctionDeclaration',
-            id: { type: 'Identifier', name: context.sanitizeName(node.label || 'OnSlashCommand') },
+            id: { type: 'Identifier', name: context.sanitizeName(cmdName) },
             params: [{ type: 'Identifier', name: 'interaction' }],
             body,
             async: true,

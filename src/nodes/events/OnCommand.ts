@@ -7,7 +7,7 @@ export function createOnCommandNode(): BotNode {
     // Outputs
     node.addOutput('exec', new ClassicPreset.Output(Sockets.Exec, 'Exec'));
     node.addOutput('message', new ClassicPreset.Output(Sockets.Any, 'Message')); // Message object (will be treated as any/obj in compiler)
-    node.addOutput('args', new ClassicPreset.Output(Sockets.Any, 'Args'));    // Args array
+    node.addOutput('rawArgs', new ClassicPreset.Output(Sockets.Any, 'Raw Args'));    // Args array
 
     // Controls
     node.addControl('name', new InputControl('', 'Command Name'));

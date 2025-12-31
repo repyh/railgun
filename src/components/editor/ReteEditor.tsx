@@ -218,16 +218,35 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                         }
                         node.id = n.id;
 
-                        if (n.label === 'On Command' && n.controls?.args) {
-                            try {
-                                const args = JSON.parse(n.controls.args.value);
+                        const isLegacyCommand = n.label === 'On Command' || (n as any).data?.nodeType === 'On Command';
+
+                        if (isLegacyCommand) {
+                            // Support new metadata-based named arguments
+                            if ((n as any).data?.args) {
+                                const args = (n as any).data.args;
+                                console.log('[ReteEditor] Hydrating legacy command args:', args);
                                 if (Array.isArray(args)) {
-                                    args.forEach((arg: string, i: number) => {
-                                        node.addOutput(`arg_${i}`, new ClassicPreset.Output(Sockets.Any, arg)); // Display label
+                                    args.forEach((argName: string) => {
+                                        // @ts-ignore
+                                        if (!node.outputs[argName]) {
+                                            // @ts-ignore
+                                            node.addOutput(argName, new ClassicPreset.Output(Sockets.Any, argName));
+                                        }
                                     });
                                 }
-                            } catch (e) {
-                                console.error("Failed to hydrate args", e);
+                            } else if (n.controls?.args) {
+                                // Fallback for older projects using JSON in controls
+                                try {
+                                    const args = JSON.parse(n.controls.args.value);
+                                    if (Array.isArray(args)) {
+                                        args.forEach((arg: string, i: number) => {
+                                            // @ts-ignore
+                                            node.addOutput(`arg_${i}`, new ClassicPreset.Output(Sockets.Any, arg));
+                                        });
+                                    }
+                                } catch (e) {
+                                    console.error("Failed to hydrate legacy args", e);
+                                }
                             }
                         }
 
@@ -236,7 +255,6 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                                 const options = (n as any).data.options;
                                 if (Array.isArray(options)) {
                                     options.forEach((opt: any) => {
-                                        // Check if output already exists (factory might have added it, unlikely for dynamic)
                                         // @ts-ignore
                                         if (!node.outputs[opt.name]) {
                                             // @ts-ignore
