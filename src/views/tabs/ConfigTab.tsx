@@ -34,12 +34,48 @@ const ConfigFieldRenderer = ({
                     checked={Boolean(value)}
                     disabled={field.readonly}
                     onChange={(e) => onChange(e.target.checked)}
-                    className="rounded border-zinc-600 bg-zinc-800 text-blue-500 h-4 w-4"
+                    className="rounded border-zinc-600 bg-zinc-800 text-blue-500 h-4 w-4 focus:ring-blue-500 focus:ring-offset-zinc-900"
                 />
                 <div>
                     <Label className="cursor-pointer font-medium text-zinc-300">{field.label}</Label>
                     {field.description && <p className="text-xs text-zinc-500 mt-0.5">{field.description}</p>}
                 </div>
+            </div>
+        );
+    }
+
+    if (field.type === 'select' && field.options) {
+        const currentSelection = Array.isArray(value) ? value : [];
+
+        const toggleSelection = (optionValue: string) => {
+            if (currentSelection.includes(optionValue)) {
+                onChange(currentSelection.filter((v: string) => v !== optionValue));
+            } else {
+                onChange([...currentSelection, optionValue]);
+            }
+        };
+
+        return (
+            <div className="space-y-3">
+                <Label className="text-zinc-300 font-medium">
+                    {field.label}
+                    {field.required && <span className="text-red-400 ml-1">*</span>}
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-md border border-zinc-800 bg-zinc-900/20">
+                    {field.options.map(opt => (
+                        <label key={opt.value} className="flex items-center gap-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                checked={currentSelection.includes(opt.value)}
+                                onChange={() => toggleSelection(opt.value as string)}
+                                disabled={field.readonly}
+                                className="rounded border-zinc-600 bg-zinc-800 text-blue-500 h-4 w-4 focus:ring-blue-500 focus:ring-offset-zinc-900 group-hover:border-blue-500 transition-colors"
+                            />
+                            <span className="text-sm text-zinc-300 group-hover:text-zinc-100 transition-colors">{opt.label}</span>
+                        </label>
+                    ))}
+                </div>
+                {field.description && <p className="text-xs text-zinc-500">{field.description}</p>}
             </div>
         );
     }
@@ -89,15 +125,7 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
         try {
             const data = await configAPI.read(projectPath);
             // Handle loading: if data exists, use it. If not, use empty object.
-            // Also need to handle legacy format if keys have :type suffix (Basic migration)
-            const cleanConfig: any = {};
-            if (data && typeof data === 'object') {
-                Object.keys(data).forEach(key => {
-                    const cleanKey = key.split(':')[0]; // Simple migration for display
-                    cleanConfig[cleanKey] = data[key];
-                });
-            }
-            setConfig(cleanConfig || {});
+            setConfig(data || {});
         } catch (error) {
             console.error('Failed to load railgun.json', error);
         } finally {
@@ -154,7 +182,6 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h2 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
-                            <Settings className="w-6 h-6 text-blue-500" />
                             Configuration
                         </h2>
                         <p className="text-zinc-500 text-sm mt-1">Manage project settings</p>

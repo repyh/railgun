@@ -14,16 +14,9 @@ export const defaultConfigSchema: ConfigSchema = {
         },
         {
             id: "general",
-            label: "General Settings",
-            description: "Basic configuration for your Discord bot.",
+            label: "Bot Configuration",
+            description: "Core settings for your Discord bot.",
             fields: [
-                {
-                    key: "token",
-                    label: "Bot Token",
-                    type: "secret",
-                    required: true,
-                    description: "The token found in the Discord Developer Portal."
-                },
                 {
                     key: "prefix",
                     label: "Command Prefix",
@@ -32,25 +25,18 @@ export const defaultConfigSchema: ConfigSchema = {
                     description: "The character used to trigger commands (e.g., !ping)."
                 },
                 {
-                    key: "status",
-                    label: "Bot Status",
-                    type: "string",
-                    description: "The status text to display on the bot."
-                },
-                {
-                    key: "ownerId",
-                    label: "Owner ID",
-                    type: "string",
-                    description: "The Discord User ID of the bot owner."
-                },
-                {
                     key: "gatewayIntents",
                     label: "Gateway Intents",
                     type: "select",
                     default: ["Guilds", "GuildMessages", "MessageContent"],
-                    description: "Events the bot will receive from Discord.",
+                    description: "Events the bot will receive from Discord. IMPORTANT: You must also enable these intents in the Discord Developer Portal under the 'Bot' tab.",
                     options: [
-                        { label: "Default", value: "Default" }
+                        { label: "Guilds", value: "Guilds" },
+                        { label: "GuildMessages", value: "GuildMessages" },
+                        { label: "GuildMembers", value: "GuildMembers" },
+                        { label: "MessageContent", value: "MessageContent" },
+                        { label: "GuildPresences", value: "GuildPresences" },
+                        { label: "DirectMessages", value: "DirectMessages" }
                     ]
                 }
             ]

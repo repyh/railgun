@@ -58,14 +58,12 @@ export class ProjectGenerator {
             "name": options.name,
             "version": "1.0.0",
             "railgunVersion": "1.0.0",
-            "token": "",
             "prefix": "!",
             "gatewayIntents": [
                 "Guilds",
                 "GuildMessages",
                 "MessageContent"
-            ],
-            "config": {} // Reserved for other config if needed, or flat structure
+            ]
         };
         await fs.writeFile(path.join(projectPath, 'railgun.json'), JSON.stringify(railgunJson, null, 2));
 
