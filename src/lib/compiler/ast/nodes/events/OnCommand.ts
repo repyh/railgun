@@ -22,7 +22,7 @@ export class OnCommandParser implements ASTEventParser {
             async: true,
             sourceNodeId: node.id,
             isEvent: true,
-            eventName: 'On Command'
+            eventName: 'messageCreate'
         };
     }
 }

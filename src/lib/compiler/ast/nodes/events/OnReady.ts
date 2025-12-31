@@ -14,7 +14,7 @@ export class OnReadyParser implements ASTEventParser {
             async: true,
             sourceNodeId: node.id,
             isEvent: true,
-            eventName: 'On Ready'
+            eventName: 'clientReady'
         };
     }
 }

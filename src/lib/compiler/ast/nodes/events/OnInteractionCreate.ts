@@ -14,7 +14,7 @@ export class OnInteractionCreateParser implements ASTEventParser {
             async: true,
             sourceNodeId: node.id,
             isEvent: true,
-            eventName: 'On Interaction Create'
+            eventName: 'interactionCreate'
         };
     }
 }

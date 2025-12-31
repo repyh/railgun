@@ -14,7 +14,7 @@ export class OnMessageCreateParser implements ASTEventParser {
             async: true,
             sourceNodeId: node.id,
             isEvent: true,
-            eventName: 'On Message Create'
+            eventName: 'messageCreate'
         };
     }
 }

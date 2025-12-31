@@ -14,7 +14,7 @@ export class OnSlashCommandParser implements ASTEventParser {
             async: true,
             sourceNodeId: node.id,
             isEvent: true,
-            eventName: 'On Slash Command'
+            eventName: 'interactionCreate'
         };
     }
 }
