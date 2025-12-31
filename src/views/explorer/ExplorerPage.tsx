@@ -24,6 +24,9 @@ import { ExplorerTabs } from './components/ExplorerTabs';
 import { BotStatusPanel } from './components/BotStatusPanel';
 import { FileKey } from 'lucide-react';
 
+// Services
+import { ProjectService } from '@/services/ProjectService';
+
 const ExplorerPage: React.FC = () => {
     const { projectName, projectPath } = useProject();
     const navigate = useNavigate();
@@ -159,21 +162,11 @@ const ExplorerPage: React.FC = () => {
                 open={isCreateEventModalOpen}
                 onOpenChange={setIsCreateEventModalOpen}
                 onCreateEvent={async (name, type) => {
-                    // Logic from old component moved here for now or into new util?
-                    // Better to keep simple logic here or moving to hook? 
-                    // Let's use the hook's createFile
-                    // We need registry access though.
-                    // For now, let's keep registry access here as it's specific business logic?
-                    // Or move registry logic to hook? 
-                    // Let's keep it here for now to avoid moving registries into generic file hook.
-
-                    const { eventRegistry } = await import('@/lib/registries/EventRegistry');
                     try {
-                        const defaultContent = eventRegistry.generateContent(type, "event@" + Date.now());
-                        const path = await createFile('events', name, defaultContent);
+                        const path = await ProjectService.createEvent(name, type, createFile);
                         if (path) openFile(path);
                     } catch (e) {
-                        alert("Failed: " + e);
+                        alert("Failed to create event: " + e);
                     }
                 }}
             />
@@ -181,13 +174,11 @@ const ExplorerPage: React.FC = () => {
                 open={isCreateCommandModalOpen}
                 onOpenChange={setIsCreateCommandModalOpen}
                 onCreateCommand={async (name, args) => {
-                    const { commandRegistry } = await import('@/lib/registries/CommandRegistry');
                     try {
-                        const defaultContent = commandRegistry.generateContent('legacyCommand', "command@" + Date.now(), args || []);
-                        const path = await createFile('commands', name, defaultContent);
+                        const path = await ProjectService.createCommand(name, args || [], createFile);
                         if (path) openFile(path);
                     } catch (e) {
-                        alert("Failed: " + e);
+                        alert("Failed to create command: " + e);
                     }
                 }}
             />

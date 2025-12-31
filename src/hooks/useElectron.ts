@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 export interface ElectronAPI {
     invoke: (channel: string, ...args: any[]) => Promise<any>;
@@ -142,7 +142,7 @@ export function useElectron() {
         return window.electronAPI!.onBotStatus(callback);
     }, [isElectron]);
 
-    return {
+    return useMemo(() => ({
         isElectron,
         invoke,
         window: {
@@ -190,5 +190,13 @@ export function useElectron() {
             open: () => invoke('project:openProject'),
             create: (data: any) => invoke('project:createProject', data)
         }
-    };
+    }), [
+        isElectron, invoke, minimizeWindow, toggleMaximizeWindow, closeWindow, selectDirectory,
+        getAppVersion, getNodeVersion, openExternalLink,
+        readPackageJson, installPackage, uninstallPackage,
+        listFiles, readFile, saveFile, deleteFile,
+        readProjectConfig, saveProjectConfig,
+        listInstalledPlugins, installPlugin, uninstallPlugin,
+        installDependencies, onTerminalData, onBotStatus
+    ]);
 }

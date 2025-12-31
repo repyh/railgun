@@ -147,7 +147,7 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             editorRef.current = null;
             areaRef.current = null;
         }
-    }, [triggerSave]); // Added triggerSave to dependencies
+    }, []); // Removed triggerSave to prevent infinite re-initialization loop
 
     useEffect(() => {
         const loadGraph = async () => {
@@ -181,16 +181,26 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
 
                 let content = null;
                 if (isElectron) {
-                    // Assuming files.read is available or will be added to useElectron
                     content = await files.read(projectPath, filePath);
                 } else {
-                    // Fallback for non-Electron environments
                     content = localStorage.getItem(`graph-${projectPath}-${filePath}`);
                 }
 
-                if (content) {
-                    const data = JSON.parse(content);
+                if (content && content.trim() !== '') {
+                    let data;
+                    try {
+                        data = JSON.parse(content);
+                    } catch (err) {
+                        console.error("[ReteEditor] JSON Parse Error:", err);
+                        return;
+                    }
+
                     const nodeMap = new Map<string, BotNode>();
+
+                    if (!data.nodes) {
+                        console.warn("[ReteEditor] No nodes property in data!");
+                        data.nodes = [];
+                    }
 
                     for (const n of data.nodes) {
                         // Use Registry
