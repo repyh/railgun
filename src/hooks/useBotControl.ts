@@ -13,9 +13,17 @@ export function useBotControl(projectPath: string | null, setStatus?: (msg: stri
 
     useEffect(() => {
         if (!isElectron) return;
+
+        // Listen for status changes
         const cleanup = bot.onStatus((status) => {
             setBotStatus(status);
         });
+
+        // Fetch initial status
+        bot.getStatus().then((status: 'running' | 'stopped') => {
+            setBotStatus(status);
+        });
+
         return cleanup;
     }, [isElectron, bot]);
 

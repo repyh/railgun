@@ -89,6 +89,15 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
         let cleanupBotLogListener: (() => void) | undefined;
 
         if (isElectron) {
+            // Fetch buffered logs
+            bot.getLogs().then((logs: { message: string, type: 'stdout' | 'stderr' }[]) => {
+                logs.forEach(log => {
+                    const color = log.type === 'stderr' ? '\x1b[31m' : '\x1b[37m';
+                    const msg = log.message.endsWith('\n') ? log.message : log.message + '\r\n';
+                    term.write(`${color}${msg}\x1b[0m`);
+                });
+            });
+
             cleanupTerminalListener = terminal.onData((data: string) => {
                 term.write(data);
             });

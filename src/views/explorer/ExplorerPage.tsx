@@ -12,8 +12,7 @@ import { CreateCommandModal } from '@/components/modals/CreateCommandModal';
 import { CreateSlashCommandModal } from '@/components/modals/CreateSlashCommandModal';
 import { useProject } from '@/contexts/ProjectContext';
 import { PluginManager } from '@/lib/plugins/PluginManager';
-import { RunConfigDialog } from '@/components/dialogs/RunConfigDialog';
-import { SecretsModal } from '@/components/modals/SecretsModal';
+import { RunConfigModal } from '@/components/modals/RunConfigModal';
 
 // Hooks
 import { useBotControl } from '@/hooks/useBotControl';
@@ -43,10 +42,10 @@ const ExplorerPage: React.FC = () => {
 
     // Local State (that doesn't fit neatly into hooks yet or is UI specific)
     const [isRunConfigOpen, setIsRunConfigOpen] = useState(false);
+    const [runBotAfterConfig, setRunBotAfterConfig] = useState(false);
     const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
     const [isCreateCommandModalOpen, setIsCreateCommandModalOpen] = useState(false);
     const [isCreateSlashCommandModalOpen, setIsCreateSlashCommandModalOpen] = useState(false);
-    const [isSecretsModalOpen, setIsSecretsModalOpen] = useState(false);
 
     // Init Plugin Manager
     useEffect(() => {
@@ -59,7 +58,8 @@ const ExplorerPage: React.FC = () => {
         const result = await startBot();
         if (result && !result.success) {
             if (result.missingSecrets) {
-                setIsSecretsModalOpen(true);
+                setRunBotAfterConfig(true);
+                setIsRunConfigOpen(true);
             } else {
                 alert(`Failed to start bot: ${result.error}`);
             }
@@ -196,15 +196,16 @@ const ExplorerPage: React.FC = () => {
                 }}
             />
 
-            <RunConfigDialog
+            <RunConfigModal
                 open={isRunConfigOpen}
-                onOpenChange={setIsRunConfigOpen}
-            />
-            <SecretsModal
-                open={isSecretsModalOpen}
-                onOpenChange={setIsSecretsModalOpen}
+                onOpenChange={(open) => {
+                    setIsRunConfigOpen(open);
+                    if (!open) setRunBotAfterConfig(false);
+                }}
                 onSave={(secrets) => {
-                    startBot(secrets);
+                    if (runBotAfterConfig) {
+                        startBot(secrets);
+                    }
                 }}
             />
         </div>

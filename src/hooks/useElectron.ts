@@ -189,6 +189,9 @@ export function useElectron() {
         bot: {
             start: (path: string, env: any) => invoke('bot:start', path, env),
             stop: () => invoke('bot:stop'),
+            getStatus: () => invoke('bot:getStatus'),
+            getLogs: () => invoke('bot:getLogs'),
+            clearLogs: () => invoke('bot:clearLogs'),
             onStatus: onBotStatus,
             onLog: onBotLog
         },

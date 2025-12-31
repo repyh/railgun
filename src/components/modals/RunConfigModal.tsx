@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
-
-// import { Save } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { Eye, EyeOff } from 'lucide-react';
 
-interface RunConfigDialogProps {
+interface RunConfigModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onSave?: (secrets: Record<string, string>) => void;
 }
 
-export function RunConfigDialog({ open, onOpenChange }: RunConfigDialogProps) {
+export function RunConfigModal({ open, onOpenChange, onSave }: RunConfigModalProps) {
     const [token, setToken] = useState('');
     const [clientId, setClientId] = useState('');
     const [guildId, setGuildId] = useState('');
+    const [showToken, setShowToken] = useState(false);
 
     useEffect(() => {
         if (open) {
@@ -39,6 +40,7 @@ export function RunConfigDialog({ open, onOpenChange }: RunConfigDialogProps) {
             GUILD_ID: guildId,
         };
         localStorage.setItem('railgun_secrets', JSON.stringify(secrets));
+        if (onSave) onSave(secrets);
         onOpenChange(false);
     };
 
@@ -52,13 +54,22 @@ export function RunConfigDialog({ open, onOpenChange }: RunConfigDialogProps) {
                 <div className="grid gap-4 py-4 px-6">
                     <div className="grid gap-2">
                         <Label htmlFor="token">Discord Token</Label>
-                        <Input
-                            id="token"
-                            type="password"
-                            value={token}
-                            onChange={(e) => setToken(e.target.value)}
-                            placeholder="MTA..."
-                        />
+                        <div className="relative">
+                            <Input
+                                id="token"
+                                type={showToken ? 'text' : 'password'}
+                                value={token}
+                                onChange={(e) => setToken(e.target.value)}
+                                placeholder=".................................................................."
+                                className="pr-10"
+                            />
+                            <button
+                                onClick={() => setShowToken(!showToken)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                            >
+                                {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid gap-2">

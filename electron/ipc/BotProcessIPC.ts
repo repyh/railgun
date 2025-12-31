@@ -31,6 +31,7 @@ export class BotProcessIPC extends BaseIPC {
         }
 
         try {
+            await this.clearLogs();
             console.log(`[BotProcess] Starting bot at: ${projectPath}`);
             const entryPoint = path.join(projectPath, 'index.js'); // Assuming index.js is the entry
 
@@ -110,12 +111,36 @@ export class BotProcessIPC extends BaseIPC {
         return this.botProcess ? 'running' : 'stopped';
     }
 
+    private logBuffer: { message: string; type: 'stdout' | 'stderr'; timestamp: number }[] = [];
+    private MAX_LOG_BUFFER = 1000;
+
     private broadcastLog(message: string, type: 'stdout' | 'stderr') {
+        const logEntry = { message, type, timestamp: Date.now() };
+        this.logBuffer.push(logEntry);
+
+        // Keep buffer within limits
+        if (this.logBuffer.length > this.MAX_LOG_BUFFER) {
+            this.logBuffer.shift();
+        }
+
         const wins = BrowserWindow.getAllWindows();
         wins.forEach(w => {
-            // Avoid sending to splash screen if possible (though splash listens to different channel)
-            w.webContents.send('bot:log', { message, type, timestamp: Date.now() });
+            w.webContents.send('bot:log', logEntry);
         });
+    }
+
+    /**
+     * Returns the buffered logs.
+     */
+    async getLogs(): Promise<{ message: string; type: 'stdout' | 'stderr'; timestamp: number }[]> {
+        return this.logBuffer;
+    }
+
+    /**
+     * Clears the log buffer (usually on start).
+     */
+    async clearLogs(): Promise<void> {
+        this.logBuffer = [];
     }
 
     private broadcastStatus(status: 'running' | 'stopped') {

@@ -11,6 +11,7 @@ export const InteractionCreateEvent: EventDefinition = {
             {
                 id: "root",
                 label: name || "On Slash Command",
+                data: { eventType: 'interactionCreate', nodeType: 'On Slash Command' },
                 category: "Event",
                 inputs: {},
                 outputs: {
