@@ -58,13 +58,14 @@ export class ProjectGenerator {
             "name": options.name,
             "version": "1.0.0",
             "railgunVersion": "1.0.0",
-            "config:editable": {
-                "gatewayIntents": [
-                    "Guilds",
-                    "GuildMessages",
-                    "MessageContent"
-                ]
-            }
+            "token": "",
+            "prefix": "!",
+            "gatewayIntents": [
+                "Guilds",
+                "GuildMessages",
+                "MessageContent"
+            ],
+            "config": {} // Reserved for other config if needed, or flat structure
         };
         await fs.writeFile(path.join(projectPath, 'railgun.json'), JSON.stringify(railgunJson, null, 2));
 
@@ -76,7 +77,7 @@ const path = require('path');
 const botmConfig = require('./railgun.json');
 
 const client = new Client({
-    intents: botmConfig['config:editable'].gatewayIntents,
+    intents: botmConfig.gatewayIntents || ['Guilds', 'GuildMessages', 'MessageContent'],
 });
 
 // Load Handlers

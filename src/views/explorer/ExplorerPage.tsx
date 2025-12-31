@@ -111,7 +111,6 @@ const ExplorerPage: React.FC = () => {
                         status={botStatus}
                         onStart={handleRunBot}
                         onStop={stopBot}
-                        onOpenConfig={() => setIsRunConfigOpen(true)}
                     />
                     <div className="flex items-center px-2 border-b border-zinc-800 bg-zinc-900/50 flex-1">
                         <div className="h-4 w-px bg-zinc-800 mx-2" />

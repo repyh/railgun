@@ -123,7 +123,7 @@
         const { ipcRenderer } = require('electron');
 
         // Set dynamic year
-        document.getElementById('copyright').innerText = `© ${new Date().getFullYear()} Repyh`;
+        document.getElementById('copyright').innerText = `© ${new Date().getFullYear()} Railgun Team`;
 
         ipcRenderer.on('splash-update', (event, data) => {
             if (data.status) {

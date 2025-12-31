@@ -5,10 +5,9 @@ interface BotStatusPanelProps {
     status: 'stopped' | 'running';
     onStart: () => void;
     onStop: () => void;
-    onOpenConfig: () => void;
 }
 
-export const BotStatusPanel: React.FC<BotStatusPanelProps> = ({ status, onStart, onStop, onOpenConfig }) => {
+export const BotStatusPanel: React.FC<BotStatusPanelProps> = ({ status, onStart, onStop }) => {
     return (
         <div className="flex items-center gap-2 px-4 h-12 border-b border-zinc-800 bg-zinc-900/50">
             {status === 'stopped' ? (
