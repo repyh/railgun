@@ -18,6 +18,7 @@ import {
     SelectValue
 } from '@/components/ui/Select';
 import { FolderOpen, ChevronRight, ChevronDown } from 'lucide-react';
+import { useElectron } from '@/hooks/useElectron';
 
 interface CreateProjectModalProps {
     open: boolean;
@@ -32,11 +33,12 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ open, on
     const [runtime, setRuntime] = useState('nodejs');
     const [template, setTemplate] = useState('typescript');
     const [isLoading, setIsLoading] = useState(false);
+    const { isElectron, window: win, project } = useElectron();
 
     const handleBrowse = async () => {
-        if (window.electronAPI) {
+        if (isElectron) {
             try {
-                const selectedPath = await window.electronAPI.selectDirectory();
+                const selectedPath = await win.selectDirectory();
                 if (selectedPath) {
                     setPath(selectedPath);
                 }
@@ -55,8 +57,8 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ open, on
         try {
             console.log('Creating project:', { name, path, runtime, template });
 
-            if (window.electronAPI) {
-                const result = await window.electronAPI.invoke('project:createProject', {
+            if (isElectron) {
+                const result = await project.create({
                     name,
                     path,
                     runtime,

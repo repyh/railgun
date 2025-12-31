@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { PluginManager } from '@/lib/plugins/PluginManager';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { RefreshCw, Check } from 'lucide-react';
+import { RefreshCw, Check, Trash2, Download } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
+import { useElectron } from '@/hooks/useElectron';
 
 export const PluginsTab: React.FC = () => {
     const { projectPath } = useProject();
@@ -11,10 +12,27 @@ export const PluginsTab: React.FC = () => {
     const [availablePlugins, setAvailablePlugins] = useState<any[]>([]);
     const [installedPlugins, setInstalledPlugins] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
+    const [installing, setInstalling] = useState<string | null>(null);
+    const [uninstalling, setUninstalling] = useState<string | null>(null);
+    const { isElectron, plugins } = useElectron();
+
+    const loadInstalled = async () => {
+        if (!projectPath || !isElectron) return;
+        try {
+            const installed = await plugins.list(projectPath);
+            setInstalledPlugins(installed);
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     useEffect(() => {
         refresh();
     }, [projectPath]);
+
+    useEffect(() => {
+        loadInstalled();
+    }, [projectPath, isElectron]); // Reload installed plugins when projectPath or electron status changes
 
     const refresh = async () => {
         if (!projectPath) return;
@@ -25,10 +43,7 @@ export const PluginsTab: React.FC = () => {
             setAvailablePlugins(available);
 
             // Get Installed (Async IPC)
-            if (window.electronAPI) {
-                const installed = await window.electronAPI.listInstalledPlugins(projectPath);
-                setInstalledPlugins(installed);
-            }
+            await loadInstalled(); // Use the new loadInstalled function
         } catch (e) {
             console.error("Failed to refresh plugins", e);
         }
@@ -36,38 +51,40 @@ export const PluginsTab: React.FC = () => {
     };
 
     const handleInstall = async (pluginId: string) => {
-        if (!projectPath || !window.electronAPI) return;
-        setLoading(true);
+        if (!projectPath || !isElectron) return;
+        setInstalling(pluginId);
         try {
-            const res = await window.electronAPI.installPlugin(projectPath, pluginId);
-            if (res.success) {
-                await PluginManager.init(projectPath); // Reload runtime
-                await refresh(); // Refresh UI
-            } else {
+            const res: any = await plugins.install(projectPath, pluginId);
+            if (res && !res.success) {
                 alert('Install Failed: ' + res.message);
+            } else {
+                await PluginManager.init(projectPath); // Reload runtime
+                await loadInstalled(); // Refresh UI
             }
         } catch (e) {
             console.error(e);
+        } finally {
+            setInstalling(null);
         }
-        setLoading(false);
     };
 
     const handleUninstall = async (pluginId: string) => {
-        if (!projectPath || !window.electronAPI) return;
+        if (!projectPath || !isElectron) return;
         if (!confirm(`Uninstall plugin ${pluginId}?`)) return;
-        setLoading(true);
+        setUninstalling(pluginId);
         try {
-            const res = await window.electronAPI.uninstallPlugin(projectPath, pluginId);
-            if (res.success) {
-                await PluginManager.init(projectPath); // Reload runtime
-                await refresh(); // Refresh UI
-            } else {
+            const res: any = await plugins.uninstall(projectPath, pluginId);
+            if (res && !res.success) {
                 alert('Uninstall Failed: ' + res.message);
+            } else {
+                await PluginManager.init(projectPath); // Reload runtime
+                await loadInstalled(); // Refresh UI
             }
         } catch (e) {
             console.error(e);
+        } finally {
+            setUninstalling(null);
         }
-        setLoading(false);
     };
 
     if (!projectPath) {
@@ -125,8 +142,9 @@ export const PluginsTab: React.FC = () => {
                                             size="sm"
                                             className="w-full gap-2"
                                             onClick={() => handleUninstall(plugin.id)}
-                                            disabled={loading}
+                                            disabled={loading || uninstalling === plugin.id}
                                         >
+                                            {uninstalling === plugin.id ? <RefreshCw className="animate-spin" size={14} /> : <Trash2 size={14} />}
                                             Disable
                                         </Button>
                                     ) : (
@@ -135,8 +153,9 @@ export const PluginsTab: React.FC = () => {
                                             size="sm"
                                             className="w-full gap-2"
                                             onClick={() => handleInstall(plugin.id)}
-                                            disabled={loading}
+                                            disabled={loading || installing === plugin.id}
                                         >
+                                            {installing === plugin.id ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />}
                                             Enable
                                         </Button>
                                     )}
@@ -152,6 +171,6 @@ export const PluginsTab: React.FC = () => {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

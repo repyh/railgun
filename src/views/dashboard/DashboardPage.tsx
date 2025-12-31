@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Plus,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useModal } from '@/contexts/ModalContext';
+import { useElectron } from '@/hooks/useElectron';
 
 const ActionCard = ({
     icon: Icon,
@@ -70,44 +71,48 @@ const getRelativeTime = (timestamp: number) => {
 };
 
 const DashboardPage: React.FC = () => {
-    const [nodeVersion, setNodeVersion] = React.useState('Unknown');
-    const [recentProjects, setRecentProjects] = React.useState<any[]>([]);
+    const [nodeVersion, setNodeVersion] = useState<string>('Unknown');
+    const [recentProjects, setRecentProjects] = useState<any[]>([]);
     const navigate = useNavigate();
     const { setProject } = useProject();
+    const { isElectron, project, system } = useElectron();
     const { openModal } = useModal();
 
-    const fetchRecentProjects = async () => {
-        if (window.electronAPI) {
-            try {
-                const projects = await window.electronAPI.invoke('project:getRecentProjects');
-                setRecentProjects(projects || []);
-            } catch (err) {
-                console.error('Failed to fetch recent projects:', err);
-            }
+    const loadRecent = async () => {
+        if (!isElectron) return;
+        try {
+            const result = await project.getRecent();
+            if (result) setRecentProjects(result);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const checkSystem = async () => {
+        if (!isElectron) return;
+        try {
+            const version = await system.getNodeVersion();
+            setNodeVersion(version);
+        } catch (e) {
+            setNodeVersion('Unknown');
         }
     };
 
     React.useEffect(() => {
-        if (window.electronAPI) {
-            window.electronAPI.invoke('system:getNodeVersion')
-                .then(setNodeVersion)
-                .catch(() => setNodeVersion('Error'));
-            fetchRecentProjects();
-        }
+        checkSystem();
+        loadRecent();
     }, []);
 
     const handleOpenProject = async () => {
-        if (window.electronAPI) {
-            try {
-                const result = await window.electronAPI.invoke('project:openProject');
-                if (!result.canceled && result.path) {
-                    const name = result.name || result.path.split(/[\\/]/).pop();
-                    setProject(result.path, name);
-                    navigate('/explorer', { state: { name, path: result.path, autoInstall: false } });
-                }
-            } catch (error) {
-                console.error('Failed to open project:', error);
+        if (!isElectron) return;
+        try {
+            const result = await project.open();
+            if (result) {
+                setProject(result.name, result.path);
+                navigate('/explorer');
             }
+        } catch (e) {
+            console.error(e);
         }
     };
 

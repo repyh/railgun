@@ -19,6 +19,7 @@ import {
     Square,
     Files
 } from 'lucide-react';
+import { useElectron } from '@/hooks/useElectron';
 import { Button } from '@/components/ui/Button';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { TabButton } from '@/components/ui/TabButton';
@@ -87,14 +88,16 @@ const ExplorerPage: React.FC = () => {
     const [botStatus, setBotStatus] = useState<'stopped' | 'running'>('stopped');
     const [isRunConfigOpen, setIsRunConfigOpen] = useState(false);
 
+    const { isElectron, bot, files } = useElectron();
+
     // Listen for bot status
     useEffect(() => {
-        if (window.electronAPI) {
-            window.electronAPI.onBotStatus((status: 'running' | 'stopped') => {
-                setBotStatus(status);
-            });
-        }
-    }, []);
+        if (!isElectron) return;
+        const cleanup = bot.onStatus((status) => {
+            setBotStatus(status);
+        });
+        return cleanup;
+    }, [isElectron, bot]);
 
     // Load files when project changes
     useEffect(() => {
@@ -125,7 +128,7 @@ const ExplorerPage: React.FC = () => {
         }
 
         if (window.electronAPI) {
-            const result = await window.electronAPI.invoke('bot:start', projectPath, env);
+            const result = await bot.start(projectPath, env);
             if (result.success) {
                 setStatus?.('Bot Started');
             } else {
@@ -135,8 +138,8 @@ const ExplorerPage: React.FC = () => {
     };
 
     const handleStopBot = async () => {
-        if (window.electronAPI) {
-            await window.electronAPI.invoke('bot:stop');
+        if (isElectron) {
+            await bot.stop();
             setStatus?.('Bot Stopped');
         }
     };
@@ -144,15 +147,13 @@ const ExplorerPage: React.FC = () => {
     const loadFiles = async () => {
         if (!projectPath) return;
         try {
-            // @ts-ignore
-            const eFiles = await window.electronAPI.listFiles(projectPath, 'events');
+            const eFiles = await files.list(projectPath, 'events');
             if (eFiles) {
                 const filtered = eFiles.filter((f: string) => f.endsWith('.railgun.json'));
                 setEventFiles(filtered);
             }
 
-            // @ts-ignore
-            const cFiles = await window.electronAPI.listFiles(projectPath, 'commands');
+            const cFiles = await files.list(projectPath, 'commands');
             if (cFiles) {
                 const filtered = cFiles.filter((f: string) => f.endsWith('.railgun.json'));
                 setCommandFiles(filtered);
@@ -191,8 +192,7 @@ const ExplorerPage: React.FC = () => {
         }
 
         try {
-            // @ts-ignore
-            await window.electronAPI.saveFile(projectPath, filePath, JSON.stringify(defaultContent, null, 2));
+            await files.save(projectPath, filePath, JSON.stringify(defaultContent, null, 2));
             await loadFiles();
             setSelectedFile(`events/${fileName}`);
             setActiveTab('workspace');
@@ -218,8 +218,7 @@ const ExplorerPage: React.FC = () => {
         }
 
         try {
-            // @ts-ignore
-            await window.electronAPI.saveFile(projectPath, filePath, JSON.stringify(defaultContent, null, 2));
+            await files.save(projectPath, filePath, JSON.stringify(defaultContent, null, 2));
             await loadFiles();
             setSelectedFile(`commands/${fileName}`);
             setActiveTab('workspace');
@@ -235,10 +234,10 @@ const ExplorerPage: React.FC = () => {
     };
 
     const handleDeleteFile = async (filePath: string) => {
+        if (!projectPath) return;
         if (!confirm(`Are you sure you want to delete ${filePath}?`)) return;
 
-        // @ts-ignore
-        const success = await window.electronAPI.deleteFile(projectPath, filePath);
+        const success = await files.delete(projectPath, filePath);
         if (success) {
             if (selectedFile === filePath) setSelectedFile(null);
             loadFiles();
@@ -456,8 +455,6 @@ const ExplorerPage: React.FC = () => {
                     <div className={`absolute inset-0 ${activeTab === 'console' ? 'block' : 'hidden'}`}>
                         <ConsoleTab
                             isActive={activeTab === 'console'}
-                            projectName={projectName!}
-                            projectPath={projectPath!}
                             autoInstall={false} // Todo: Pass correct autoinstall state
                         />
                     </div>

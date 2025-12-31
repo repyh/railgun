@@ -14,12 +14,15 @@ interface ElectronAPI {
     uninstallPackage: (projectPath: string, packageName: string) => Promise<void>;
     readProjectConfig: (projectPath: string) => Promise<any>;
     saveProjectConfig: (projectPath: string, config: any) => Promise<boolean>;
+    readFile: (projectPath: string, filePath: string) => Promise<string | null>;
     saveFile: (projectPath: string, filePath: string, content: string) => Promise<boolean>;
     onTerminalData: (callback: (data: string) => void) => () => void;
     onBotStatus: (callback: (status: 'running' | 'stopped') => void) => () => void;
     installPlugin: (projectPath: string, pluginId: string) => Promise<{ success: boolean; message?: string }>;
     uninstallPlugin: (projectPath: string, pluginId: string) => Promise<{ success: boolean; message?: string }>;
     listInstalledPlugins: (projectPath: string) => Promise<string[]>;
+    listFiles: (projectPath: string, directory: string) => Promise<string[]>;
+    deleteFile: (projectPath: string, filePath: string) => Promise<boolean>;
 }
 
 interface Window {

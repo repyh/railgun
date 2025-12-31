@@ -9,6 +9,7 @@ import { ContextMenu } from '@/components/editor/ContextMenu';
 
 import { nodeRegistry } from '@/lib/registries/NodeRegistry';
 import { AreaExtensions } from 'rete-area-plugin';
+import { useElectron } from '@/hooks/useElectron';
 import { PropertyPanel } from '@/components/editor/PropertyPanel';
 
 export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: string, filePath: string, setStatus?: (s: string) => void }) {
@@ -21,6 +22,9 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
     const previousFilePath = useRef<string | null>(null);
     const currentFilePathRef = useRef(filePath);
     const projectPathRef = useRef(projectPath);
+
+    // Use useElectron hook
+    const { isElectron, files } = useElectron();
 
     // Keep refs updated
     useEffect(() => {
@@ -60,8 +64,13 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                 };
             });
 
-            // @ts-ignore
-            await window.electronAPI.saveFile(projectPathRef.current, targetPath, JSON.stringify({ nodes: nodesWithPositions, connections }, null, 2));
+            if (isElectron) {
+                await files.save(projectPathRef.current, targetPath, JSON.stringify({ nodes: nodesWithPositions, connections }, null, 2));
+            } else {
+                // Fallback for non-Electron environments (e.g., web)
+                console.log("Saving to local storage (mock) for non-Electron environment.");
+                localStorage.setItem(`graph-${projectPathRef.current}-${targetPath}`, JSON.stringify({ nodes: nodesWithPositions, connections }, null, 2));
+            }
 
             if (!silent && !pathOverride && setStatus) setStatus('Saved');
             if (!pathOverride) {
@@ -83,7 +92,7 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
         saveTimeout.current = setTimeout(() => {
             saveGraph();
         }, 1000);
-    }, [setStatus]); // Removed projectPath and filePath from deps to prevent recreating hook
+    }, [setStatus, filePath, projectPath, isElectron, files]); // Added dependencies for useCallback
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -138,7 +147,7 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             editorRef.current = null;
             areaRef.current = null;
         }
-    }, []);
+    }, [triggerSave]); // Added triggerSave to dependencies
 
     useEffect(() => {
         const loadGraph = async () => {
@@ -170,8 +179,15 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                     await editorRef.current.removeNode(n.id);
                 }
 
-                // @ts-ignore
-                const content = await window.electronAPI.readFile(projectPath, filePath);
+                let content = null;
+                if (isElectron) {
+                    // Assuming files.read is available or will be added to useElectron
+                    content = await files.read(projectPath, filePath);
+                } else {
+                    // Fallback for non-Electron environments
+                    content = localStorage.getItem(`graph-${projectPath}-${filePath}`);
+                }
+
                 if (content) {
                     const data = JSON.parse(content);
                     const nodeMap = new Map<string, BotNode>();

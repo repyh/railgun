@@ -3,6 +3,7 @@ import { Save, RefreshCw, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { useElectron } from '@/hooks/useElectron';
 
 interface ConfigTabProps {
     projectPath: string;
@@ -326,12 +327,13 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
     const [config, setConfig] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const { isElectron, config: configAPI } = useElectron();
 
     const loadConfig = async () => {
-        if (!projectPath || !window.electronAPI) return;
+        if (!projectPath || !isElectron) return;
         setIsLoading(true);
         try {
-            const data = await window.electronAPI.readProjectConfig(projectPath);
+            const data = await configAPI.read(projectPath);
             setConfig(data);
         } catch (error) {
             console.error('Failed to load railgun.json', error);
@@ -345,10 +347,10 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
     }, [projectPath]);
 
     const handleSave = async () => {
-        if (!projectPath || !window.electronAPI || !config) return;
+        if (!projectPath || !isElectron || !config) return;
         setIsSaving(true);
         try {
-            await window.electronAPI.saveProjectConfig(projectPath, config);
+            await configAPI.save(projectPath, config);
         } catch (error) {
             console.error('Failed to save railgun.json', error);
         } finally {
