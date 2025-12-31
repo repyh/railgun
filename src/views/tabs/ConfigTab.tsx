@@ -177,37 +177,36 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
     }
 
     return (
-        <div className="h-full w-full p-6 overflow-auto bg-background">
-            <div className="max-w-3xl mx-auto">
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h2 className="text-2xl font-bold text-zinc-100 flex items-center gap-2">
-                            Configuration
-                        </h2>
-                        <p className="text-zinc-500 text-sm mt-1">Manage project settings</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={loadConfig}
-                            disabled={isLoading}
-                            className="border-zinc-700 hover:bg-zinc-800 text-zinc-300"
-                        >
-                            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                            Refresh
-                        </Button>
-                        <Button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className="bg-blue-600 hover:bg-blue-500 text-white min-w-[120px]"
-                        >
-                            {isSaving ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                            {isSaving ? 'Saving...' : 'Save Changes'}
-                        </Button>
-                    </div>
+        <div className="flex flex-col h-full w-full bg-background">
+            <div className="h-9 bg-zinc-900/50 border-b border-zinc-800 flex items-center px-4 justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xs font-medium text-zinc-200">Configuration</h2>
                 </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={loadConfig}
+                        disabled={isLoading}
+                        className="h-6 w-6 text-zinc-400 hover:text-white"
+                        title="Refresh"
+                    >
+                        <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+                    </Button>
+                    <Button
+                        size="sm"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="h-6 text-xs px-2 bg-blue-600 hover:bg-blue-500 text-white"
+                    >
+                        {isSaving ? <RefreshCw className="w-3 h-3 animate-spin mr-1.5" /> : <Save className="w-3 h-3 mr-1.5" />}
+                        {isSaving ? 'Saving...' : 'Save'}
+                    </Button>
+                </div>
+            </div>
 
-                <div className="space-y-8">
+            <div className="flex-1 overflow-auto p-6">
+                <div className="max-w-3xl mx-auto space-y-8">
                     {defaultConfigSchema.groups.map(group => (
                         <div key={group.id} className="space-y-4">
                             <div className="border-b border-zinc-800 pb-2">

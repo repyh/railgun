@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export type TabType = 'workspace' | 'packages' | 'console' | 'config' | 'plugins';
+export type TabType = 'workspace' | 'packages' | 'config' | 'console' | 'plugins' | 'variables';
 
 export function useTabManager() {
     const [activeTab, setActiveTab] = useState<TabType>('workspace');

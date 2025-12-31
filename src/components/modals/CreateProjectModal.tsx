@@ -68,7 +68,9 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ open, on
                 if (result.success) {
                     onOpenChange(false);
                     if (onCreateProject) {
-                        onCreateProject(name, path);
+                        // The backend returns the FULL path in the message field on success
+                        const fullPath = result.message || path;
+                        onCreateProject(name, fullPath);
                     }
                 } else {
                     console.error('Failed to create project:', result.message);

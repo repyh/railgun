@@ -174,8 +174,6 @@ export const MainLayoutInner = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-4 text-zinc-400">
-                            <span>TypeScript React</span>
-                            <span>UTF-8</span>
                             <span>v{appVersion}</span>
                         </div>
                     </div>

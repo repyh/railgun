@@ -76,7 +76,11 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
         term.loadAddon(fitAddon);
 
         term.open(terminalRef.current);
-        fitAddon.fit();
+
+        // FIT IMMEDIATELY needs a small delay for DOM to paint
+        setTimeout(() => {
+            fitAddon.fit();
+        }, 10);
 
         xtermRef.current = term;
         fitAddonRef.current = fitAddon;
@@ -111,9 +115,14 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
             });
         }
 
-        // Handle Resize
-        const handleResize = () => fitAddon.fit();
-        window.addEventListener('resize', handleResize);
+        // Handle Resize with ResizeObserver on the container
+        const resizeObserver = new ResizeObserver(() => {
+            fitAddon.fit();
+        });
+
+        if (terminalRef.current) {
+            resizeObserver.observe(terminalRef.current);
+        }
 
         // Auto Install if requested
         if (autoInstall && !hasStartedInstall.current && isElectron) {
@@ -131,7 +140,7 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
         }
 
         return () => {
-            window.removeEventListener('resize', handleResize);
+            resizeObserver.disconnect();
             if (cleanupTerminalListener) cleanupTerminalListener();
             if (cleanupBotLogListener) cleanupBotLogListener();
             term.dispose();
@@ -140,11 +149,19 @@ export const ConsoleTab: React.FC<ConsoleTabProps> = ({
     }, [projectName, projectPath, autoInstall, isElectron]);
 
     return (
-        <div className={cn("h-full w-full absolute inset-0 bg-background flex flex-col p-4", isActive ? 'z-10' : '-z-10 opacity-0', className)}>
-            <div
-                ref={terminalRef}
-                className="flex-1 w-full rounded-md border border-zinc-800 overflow-hidden bg-background"
-            />
+        <div className={cn("h-full w-full absolute inset-0 bg-background flex flex-col", isActive ? 'z-10' : '-z-10 opacity-0', className)}>
+            <div className="h-9 bg-zinc-900/50 border-b border-zinc-800 flex items-center px-4 justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xs font-medium text-zinc-200">Terminal</h2>
+                </div>
+            </div>
+
+            <div className="flex-1 relative bg-black">
+                <div
+                    ref={terminalRef}
+                    className="h-full w-full overflow-hidden"
+                />
+            </div>
         </div>
     );
 };

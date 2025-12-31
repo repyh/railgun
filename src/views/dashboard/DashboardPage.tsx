@@ -142,15 +142,27 @@ const DashboardPage: React.FC = () => {
 
                         <div className="flex flex-col gap-1">
                             {recentProjects.length > 0 ? (
-                                recentProjects.map((project) => (
+                                recentProjects.map((p) => (
                                     <RecentItem
-                                        key={project.path}
-                                        name={project.name}
-                                        path={project.path}
-                                        time={getRelativeTime(project.lastOpened)}
-                                        onClick={() => {
-                                            setProject(project.path, project.name);
-                                            navigate('/explorer', { state: { name: project.name, path: project.path, autoInstall: false } });
+                                        key={p.path}
+                                        name={p.name}
+                                        path={p.path}
+                                        time={getRelativeTime(p.lastOpened)}
+                                        onClick={async () => {
+                                            if (isElectron) {
+                                                const exists = await project.verify(p.path);
+                                                if (!exists) {
+                                                    const shouldRemove = window.confirm(`Project not found at ${p.path}.\nDo you want to remove it from your recent projects?`);
+                                                    if (shouldRemove) {
+                                                        await project.removeFromHistory(p.path);
+                                                        // Refresh list to show it's gone
+                                                        loadRecent();
+                                                    }
+                                                    return;
+                                                }
+                                            }
+                                            setProject(p.path, p.name);
+                                            navigate('/explorer', { state: { name: p.name, path: p.path, autoInstall: false } });
                                         }}
                                     />
                                 ))

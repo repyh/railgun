@@ -20,6 +20,7 @@ export class ProjectIPC extends BaseIPC {
     }
 
     async createProject(data: ProjectData): Promise<{ success: boolean; message?: string }> {
+        // ... (keep existing implementation, this is just context)
         const projectPath = path.join(data.path, data.name);
 
         try {
@@ -38,11 +39,15 @@ export class ProjectIPC extends BaseIPC {
             // Add to history
             await HistoryManager.addToRecent(data.name, projectPath);
 
-            return { success: true };
+            return { success: true, message: projectPath };
         } catch (error: any) {
             console.error('Project creation failed:', error);
             return { success: false, message: error.message };
         }
+    }
+
+    async verifyProject(projectPath: string): Promise<boolean> {
+        return existsSync(projectPath);
     }
 
     async openProject(): Promise<{ canceled: boolean; path?: string; name?: string; error?: string }> {
@@ -60,7 +65,7 @@ export class ProjectIPC extends BaseIPC {
         }
 
         const projectPath = result.filePaths[0];
-        const botmConfigPath = path.join(projectPath, 'project.railgun');
+        const botmConfigPath = path.join(projectPath, 'events', 'project.railgun');
 
         if (!existsSync(botmConfigPath)) {
             return { canceled: false, error: 'Invalid project: project.railgun not found.' };
@@ -85,7 +90,7 @@ export class ProjectIPC extends BaseIPC {
     }
 
     async readProjectConfig(projectPath: string): Promise<any> {
-        const configPath = path.join(projectPath, 'project.railgun');
+        const configPath = path.join(projectPath, 'events', 'project.railgun');
         if (!existsSync(configPath)) return null;
         try {
             const raw = await fs.readFile(configPath, 'utf-8');
@@ -97,7 +102,7 @@ export class ProjectIPC extends BaseIPC {
     }
 
     async saveProjectConfig(projectPath: string, config: any): Promise<boolean> {
-        const configPath = path.join(projectPath, 'project.railgun');
+        const configPath = path.join(projectPath, 'events', 'project.railgun');
         try {
             await fs.writeFile(configPath, JSON.stringify(config, null, 2));
             return true;

@@ -32,7 +32,8 @@ export interface ElectronAPI {
 
     // Terminal / Bot
     installDependencies: (path: string, type: string) => Promise<void>;
-    onTerminalData: (callback: (data: string) => void) => () => void;
+
+    onTermData: (callback: (data: string) => void) => () => void;
     onBotStatus: (callback: (status: 'running' | 'stopped') => void) => () => void;
     onBotLog: (callback: (log: any) => void) => () => void;
 }
@@ -135,7 +136,8 @@ export function useElectron() {
 
     const onTerminalData = useCallback((callback: (data: string) => void) => {
         if (!isElectron) return () => { };
-        return window.electronAPI!.onTerminalData(callback);
+        // Hook maps internal naming to exposed naming
+        return window.electronAPI!.onTermData(callback);
     }, [isElectron]);
 
     const onBotStatus = useCallback((callback: (status: 'running' | 'stopped') => void) => {
@@ -198,7 +200,9 @@ export function useElectron() {
         project: {
             getRecent: () => invoke('project:getRecentProjects'),
             open: () => invoke('project:openProject'),
-            create: (data: any) => invoke('project:createProject', data)
+            create: (data: any) => invoke('project:createProject', data),
+            verify: (path: string) => invoke('project:verifyProject', path),
+            removeFromHistory: (path: string) => invoke('project:removeProjectFromHistory', path)
         }
     }), [
         isElectron, invoke, minimizeWindow, toggleMaximizeWindow, closeWindow, selectDirectory,

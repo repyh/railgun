@@ -66,7 +66,7 @@ export function CreateSlashCommandModal({ open, onOpenChange, onCreateCommand }:
                     <DialogTitle>Create New Slash Command</DialogTitle>
                 </DialogHeader>
 
-                <div className="grid gap-6 py-4 px-2">
+                <div className="grid gap-4 py-4 px-6">
                     {/* Basic Info */}
                     <div className="space-y-4">
                         <div className="grid gap-2">

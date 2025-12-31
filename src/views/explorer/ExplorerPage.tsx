@@ -6,6 +6,7 @@ import { PackagesTab } from '@/views/tabs/PackagesTab';
 import { ConfigTab } from '@/views/tabs/ConfigTab';
 import { ConsoleTab } from '@/views/tabs/ConsoleTab';
 import { PluginsTab } from '@/views/tabs/PluginsTab';
+import { VariablesTab } from '@/views/tabs/VariablesTab';
 import { ReteEditor } from '@/components/editor/ReteEditor';
 import { CreateEventModal } from '@/components/modals/CreateEventModal';
 import { CreateCommandModal } from '@/components/modals/CreateCommandModal';
@@ -29,7 +30,7 @@ import { FileKey } from 'lucide-react';
 import { ProjectService } from '@/services/ProjectService';
 
 const ExplorerPage: React.FC = () => {
-    const { projectName, projectPath } = useProject();
+    const { projectName, projectPath, setProject } = useProject();
     const navigate = useNavigate();
 
     // Editor State
@@ -38,7 +39,7 @@ const ExplorerPage: React.FC = () => {
     // Custom Hooks
     const { activeTab, setActiveTab, selectedFile, openFile, closeFile } = useTabManager();
     const { status: botStatus, startBot, stopBot } = useBotControl(projectPath, setStatus);
-    const { eventFiles, commandFiles, slashCommandFiles, projectFiles, deleteFile, createFile } = useFileSystem(projectPath);
+    const { eventFiles, commandFiles, slashCommandFiles, projectFiles, deleteFile, createFile, loadFiles } = useFileSystem(projectPath);
 
     // Local State (that doesn't fit neatly into hooks yet or is UI specific)
     const [isRunConfigOpen, setIsRunConfigOpen] = useState(false);
@@ -47,12 +48,37 @@ const ExplorerPage: React.FC = () => {
     const [isCreateCommandModalOpen, setIsCreateCommandModalOpen] = useState(false);
     const [isCreateSlashCommandModalOpen, setIsCreateSlashCommandModalOpen] = useState(false);
 
-    // Init Plugin Manager
+    const [isVerified, setIsVerified] = useState(false);
+
+    // 1. Verify Project Exists
     useEffect(() => {
+        setIsVerified(false); // Reset on path change
         if (projectPath) {
+            const verify = () => {
+                if (window.electronAPI) {
+                    window.electronAPI.invoke('project:verifyProject', projectPath).then((exists: boolean) => {
+                        if (!exists) {
+                            // Silent failure: just clear the project state.
+                            // The UI will return to the "No Project Active" empty state.
+                            setProject(null, null);
+                        } else {
+                            setIsVerified(true);
+                        }
+                    });
+                }
+            };
+            verify();
+            window.addEventListener('focus', verify);
+            return () => window.removeEventListener('focus', verify);
+        }
+    }, [projectPath, navigate]);
+
+    // 2. Initialize Plugins (ONLY after verification)
+    useEffect(() => {
+        if (projectPath && isVerified) {
             PluginManager.init(projectPath);
         }
-    }, [projectPath]);
+    }, [projectPath, isVerified]);
 
     const handleRunBot = async () => {
         const result = await startBot();
@@ -87,6 +113,16 @@ const ExplorerPage: React.FC = () => {
         );
     }
 
+    // LOADING / VERIFYING STATE
+    if (projectPath && !isVerified) {
+        return (
+            <div className="h-full w-full flex flex-col items-center justify-center bg-background animate-in fade-in duration-200">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500 border-r-2 border-transparent mb-4" />
+                <p className="text-zinc-500 text-sm">Verifying project...</p>
+            </div>
+        );
+    }
+
     // MAIN IDE VIEW
     return (
         <div className="flex h-full bg-background animate-in fade-in zoom-in-95 duration-200">
@@ -99,6 +135,7 @@ const ExplorerPage: React.FC = () => {
                 projectFiles={projectFiles}
                 selectedFile={selectedFile}
                 onFileClick={openFile}
+                onRefresh={loadFiles} // Pass manual refresh
                 onDeleteFile={(file) => {
                     if (confirm(`Are you sure you want to delete ${file}?`)) {
                         deleteFile(file);
@@ -109,6 +146,8 @@ const ExplorerPage: React.FC = () => {
                 onOpenCreateSlashCommand={(e) => { e.stopPropagation(); setIsCreateSlashCommandModalOpen(true); }}
                 onOpenCreateEvent={(e) => { e.stopPropagation(); setIsCreateEventModalOpen(true); }}
                 onNavigateBack={() => navigate('/')}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
             />
 
             {/* Main Content Area */}
@@ -157,6 +196,7 @@ const ExplorerPage: React.FC = () => {
                     {activeTab === 'config' && <ConfigTab projectPath={projectPath} />}
                     {activeTab === 'packages' && <PackagesTab projectPath={projectPath} />}
                     {activeTab === 'plugins' && <PluginsTab />}
+                    {activeTab === 'variables' && <VariablesTab projectPath={projectPath} />}
                 </div>
             </div>
 

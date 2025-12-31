@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Terminal as TerminalIcon, Plus, FileCode, Trash2, Zap, Variable, Database, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+    Files,
+    Terminal,
+    Plus,
+    Trash2,
+    ChevronRight,
+    ChevronDown,
+    FileCode,
+    Zap,
+    RefreshCw,
+    Database
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import type { TabType } from '@/hooks/useTabManager';
 
 // Internal TreeItem component for the sidebar
 const TreeItem = ({ label, icon: Icon, children, onClick, active, action }: { label: string, icon?: any, children?: React.ReactNode, onClick?: () => void, active?: boolean, action?: React.ReactNode }) => {
@@ -52,10 +64,15 @@ interface ExplorerSidebarProps {
     selectedFile: string | null;
     onFileClick: (file: string) => void;
     onDeleteFile: (file: string) => void;
+    onRefresh?: () => void;
     onOpenCreateCommand: (e: React.MouseEvent) => void;
     onOpenCreateSlashCommand: (e: React.MouseEvent) => void;
     onOpenCreateEvent: (e: React.MouseEvent) => void;
     onNavigateBack: () => void;
+
+    // Tab Management
+    activeTab: TabType;
+    onTabChange: (tab: TabType) => void;
 }
 
 export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
@@ -71,29 +88,40 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
     onOpenCreateCommand,
     onOpenCreateSlashCommand,
     onOpenCreateEvent,
-    onNavigateBack
+    onNavigateBack,
+    onRefresh,
+    activeTab,
+    onTabChange
 }) => {
     return (
         <div className="w-64 shrink-0 border-r border-zinc-800 bg-zinc-900/30 flex flex-col">
             <div className="h-12 flex items-center px-4 border-b border-zinc-800 shrink-0">
                 <Button variant="ghost" size="icon" onClick={onNavigateBack} className="mr-2 h-7 w-7 text-zinc-500 hover:text-white" title="Back to Dashboard">
-                    <ArrowLeft size={16} />
+                    <Files size={16} />
                 </Button>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                     <div className="font-semibold text-sm truncate text-zinc-200 mt-1">{projectName}</div>
                     <div className="text-[10px] text-zinc-500 font-mono truncate">{projectPath}</div>
                 </div>
+                {onRefresh && (
+                    <Button variant="ghost" size="icon" onClick={onRefresh} className="h-6 w-6 text-zinc-500 hover:text-white" title="Refresh Files">
+                        <RefreshCw size={14} />
+                    </Button>
+                )}
             </div>
 
             <div className="flex-1 overflow-auto p-2 space-y-4">
+                {/* Views */}
+                {/* Views Section Removed */}
+
                 <div className="px-2">
-                    <h3 className="text-[10px] uppercase font-bold text-zinc-600 mb-2">Project</h3>
+                    <h3 className="text-[10px] uppercase font-bold text-zinc-600 mb-2">Project Files</h3>
                     {projectFiles.map(file => (
                         <TreeItem
                             key={file}
                             label={file}
                             icon={FileCode}
-                            active={selectedFile === file}
+                            active={activeTab === 'workspace' && selectedFile === file}
                             onClick={() => onFileClick(file)}
                         />
                     ))}
@@ -103,7 +131,7 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
 
                     <TreeItem
                         label="Commands"
-                        icon={TerminalIcon}
+                        icon={Terminal}
                         action={
                             <button onClick={onOpenCreateCommand} className="hover:bg-zinc-700 p-0.5 rounded text-zinc-400 hover:text-white">
                                 <Plus size={12} />
@@ -118,7 +146,7 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                                 key={file}
                                 label={file.replace('.railgun', '')}
                                 icon={FileCode}
-                                active={selectedFile === `commands/${file}`}
+                                active={activeTab === 'workspace' && selectedFile === `commands/${file}`}
                                 onClick={() => onFileClick(`commands/${file}`)}
                                 action={
                                     <button
@@ -138,7 +166,7 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                     <div className="mt-2" />
                     <TreeItem
                         label="Slash Commands"
-                        icon={TerminalIcon}
+                        icon={Terminal}
                         action={
                             <button onClick={onOpenCreateSlashCommand} className="hover:bg-zinc-700 p-0.5 rounded text-zinc-400 hover:text-white">
                                 <Plus size={12} />
@@ -152,8 +180,8 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                             <TreeItem
                                 key={file}
                                 label={file.replace('.railgun', '')}
-                                icon={TerminalIcon}
-                                active={selectedFile === `slash_commands/${file}`}
+                                icon={Terminal}
+                                active={activeTab === 'workspace' && selectedFile === `slash_commands/${file}`}
                                 onClick={() => onFileClick(`slash_commands/${file}`)}
                                 action={
                                     <button
@@ -188,7 +216,7 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                                 key={file}
                                 label={file.replace('.railgun', '')}
                                 icon={FileCode}
-                                active={selectedFile === `events/${file}`}
+                                active={activeTab === 'workspace' && selectedFile === `events/${file}`}
                                 onClick={() => onFileClick(`events/${file}`)}
                                 action={
                                     <button
@@ -206,17 +234,14 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                     </TreeItem>
                 </div>
 
-                <div className="px-2 border-t border-zinc-800/50 pt-4">
-                    <h3 className="text-[10px] uppercase font-bold text-zinc-600 mb-2">Global State</h3>
-                    <TreeItem label="Variables" icon={Variable}>
-                        <TreeItem label="xp_rate (Number)" />
-                        <TreeItem label="welcome_msg (String)" />
-                    </TreeItem>
-                    <div className="mt-2" />
-                    <TreeItem label="Database" icon={Database}>
-                        <TreeItem label="Users Table" />
-                        <TreeItem label="Inventory Table" />
-                    </TreeItem>
+                <div className="px-2">
+                    <h3 className="text-[10px] uppercase font-bold text-zinc-600 mb-2">Data</h3>
+                    <TreeItem
+                        label="Global Variables"
+                        icon={Database}
+                        active={activeTab === 'variables'}
+                        onClick={() => onTabChange('variables')}
+                    />
                 </div>
             </div>
         </div>

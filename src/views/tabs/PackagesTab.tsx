@@ -114,74 +114,74 @@ export const PackagesTab: React.FC<PackagesTabProps> = ({ projectPath }) => {
     }
 
     return (
-        <div className="h-full w-full p-6 overflow-auto bg-background">
-            <div className="max-w-4xl mx-auto space-y-6">
-
-                {/* Header & Actions */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-2xl font-semibold text-zinc-100 mb-1">Packages</h2>
-                        <p className="text-zinc-500 text-sm">Manage dependencies for your project.</p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={loadPackages} disabled={isLoading}>
-                        <RefreshCw size={14} className={isLoading ? "animate-spin mr-2" : "mr-2"} />
-                        Refresh
-                    </Button>
+        <div className="flex flex-col h-full w-full bg-background">
+            {/* Standard Header */}
+            <div className="h-9 bg-zinc-900/50 border-b border-zinc-800 flex items-center px-4 justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xs font-medium text-zinc-200">Packages</h2>
                 </div>
+                <Button variant="ghost" size="icon" onClick={loadPackages} disabled={isLoading} className="h-6 w-6 text-zinc-400 hover:text-white" title="Refresh">
+                    <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
+                </Button>
+            </div>
 
-                {/* Install New Package */}
-                <Card className="bg-zinc-900/50 border-zinc-800">
-                    <CardHeader>
-                        <CardTitle className="text-sm font-medium text-zinc-300">Install New Package</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex gap-2">
-                            <Input
-                                placeholder="Package name (e.g. discord.js)"
-                                value={newPackage}
-                                onChange={(e) => setNewPackage(e.target.value)}
-                                className="bg-zinc-950 border-zinc-800 flex-1"
-                            />
-                            <label className="flex items-center gap-2 text-sm text-zinc-400 select-none cursor-pointer hover:text-zinc-200 transition-colors border border-zinc-700 rounded-md px-3 h-10 hover:bg-zinc-800 bg-zinc-900/50">
-                                <input
-                                    type="checkbox"
-                                    checked={isDev}
-                                    onChange={(e) => setIsDev(e.target.checked)}
-                                    className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-offset-0 focus:ring-blue-500/50 h-4 w-4"
+            <div className="flex-1 overflow-auto p-6">
+                <div className="max-w-4xl mx-auto space-y-6">
+
+                    {/* Install New Package */}
+                    <Card className="bg-zinc-900/50 border-zinc-800">
+                        <CardHeader>
+                            <CardTitle className="text-sm font-medium text-zinc-300">Install New Package</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="Package name (e.g. discord.js)"
+                                    value={newPackage}
+                                    onChange={(e) => setNewPackage(e.target.value)}
+                                    className="bg-zinc-950 border-zinc-800 flex-1"
                                 />
-                                Save as Dev Dependency
-                            </label>
-                            <Button onClick={handleInstall} disabled={installing || !newPackage}>
-                                {installing ? 'Installing...' : 'Install'}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                                <label className="flex items-center gap-2 text-sm text-zinc-400 select-none cursor-pointer hover:text-zinc-200 transition-colors border border-zinc-700 rounded-md px-3 h-10 hover:bg-zinc-800 bg-zinc-900/50">
+                                    <input
+                                        type="checkbox"
+                                        checked={isDev}
+                                        onChange={(e) => setIsDev(e.target.checked)}
+                                        className="rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-offset-0 focus:ring-blue-500/50 h-4 w-4"
+                                    />
+                                    Save as Dev Dependency
+                                </label>
+                                <Button onClick={handleInstall} disabled={installing || !newPackage}>
+                                    {installing ? 'Installing...' : 'Install'}
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                <div className="grid gap-6">
-                    {/* Dependencies */}
-                    <div>
-                        <h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2">
-                            Dependencies
-                            <Badge variant="secondary" className="text-xs">{depList.length}</Badge>
-                        </h3>
-                        <div className="grid gap-2">
-                            {renderPackageList(depList)}
+                    <div className="grid gap-6">
+                        {/* Dependencies */}
+                        <div>
+                            <h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2">
+                                Dependencies
+                                <Badge variant="secondary" className="text-xs">{depList.length}</Badge>
+                            </h3>
+                            <div className="grid gap-2">
+                                {renderPackageList(depList)}
+                            </div>
+                        </div>
+
+                        {/* Dev Dependencies */}
+                        <div>
+                            <h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2">
+                                Dev Dependencies
+                                <Badge variant="secondary" className="text-xs">{devDepList.length}</Badge>
+                            </h3>
+                            <div className="grid gap-2">
+                                {renderPackageList(devDepList)}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Dev Dependencies */}
-                    <div>
-                        <h3 className="text-sm font-medium text-zinc-400 mb-3 flex items-center gap-2">
-                            Dev Dependencies
-                            <Badge variant="secondary" className="text-xs">{devDepList.length}</Badge>
-                        </h3>
-                        <div className="grid gap-2">
-                            {renderPackageList(devDepList)}
-                        </div>
-                    </div>
                 </div>
-
             </div>
         </div>
     );

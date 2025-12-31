@@ -44,6 +44,9 @@ export function useFileSystem(projectPath: string | null) {
     useEffect(() => {
         if (projectPath) {
             loadFiles();
+            // Retry after a short delay to handle potential FS race conditions during project creation
+            const timer = setTimeout(loadFiles, 500);
+            return () => clearTimeout(timer);
         }
     }, [projectPath, loadFiles]);
 

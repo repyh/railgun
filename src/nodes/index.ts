@@ -14,6 +14,8 @@ import { createOnCommandNode } from './events/OnCommand';
 import { createStringNode } from './variables/StringNode';
 import { createNumberNode } from './variables/NumberNode';
 import { createBooleanNode } from './variables/BooleanNode';
+import { createGetGlobalVariableNode } from './variables/GetGlobalVariable';
+import { createSetGlobalVariableNode } from './variables/SetGlobalVariable';
 import { createSetVariableNode } from './variables/SetVariable';
 import { createDeclareVariableNode } from './variables/DeclareVariable';
 import { createFunctionDefNode } from './functions/FunctionDef';
@@ -86,6 +88,8 @@ export const DEFAULT_NODES: NodeDefinition[] = [
     { label: 'Boolean', category: 'Variable', factory: createBooleanNode },
     { label: 'Set Variable', category: 'Action', factory: createSetVariableNode },
     { label: 'Declare Variable', category: 'Action', factory: createDeclareVariableNode },
+    { label: 'Get Global Var', category: 'Variable', factory: createGetGlobalVariableNode },
+    { label: 'Set Global Var', category: 'Action', factory: createSetGlobalVariableNode },
     { label: 'Get Property', category: 'Variable', factory: createObjectAccessorNode },
     { label: 'Function Def', category: 'Function', factory: createFunctionDefNode },
     { label: 'Return', category: 'Function', factory: createReturnNode },

@@ -96,79 +96,78 @@ export const PluginsTab: React.FC = () => {
     }
 
     return (
-        <div className="h-full w-full p-6 overflow-auto bg-background">
-            <div className="max-w-4xl mx-auto space-y-6">
-
-                {/* Header & Actions */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-2xl font-semibold text-zinc-100 mb-1">Installed Plugins</h2>
-                        <p className="text-zinc-500 text-sm">Enable or disable extensions for this specific project.</p>
-                    </div>
-                    <Button onClick={refresh} variant="outline" size="sm" className="gap-2">
-                        <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-                        Refresh
-                    </Button>
+        <div className="flex flex-col h-full w-full bg-background">
+            <div className="h-9 bg-zinc-900/50 border-b border-zinc-800 flex items-center px-4 justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-xs font-medium text-zinc-200">Installed Plugins</h2>
                 </div>
+                <Button onClick={refresh} variant="ghost" size="icon" className="h-6 w-6 text-zinc-400 hover:text-white" title="Refresh">
+                    <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                </Button>
+            </div>
 
-                {/* Available Plugins List (to be enabled) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {availablePlugins.map((plugin) => {
-                        const isInstalled = installedPlugins.includes(plugin.id);
+            <div className="flex-1 overflow-auto p-6">
+                <div className="max-w-4xl mx-auto space-y-6">
 
-                        return (
-                            <Card key={plugin.id} className="p-4 flex flex-col gap-3 bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors relative group">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="font-semibold text-zinc-100">{plugin.name}</h3>
-                                        <p className="text-xs text-zinc-500 font-mono mt-0.5">v{plugin.version}</p>
-                                    </div>
-                                    {isInstalled && (
-                                        <div className="px-2 py-0.5 bg-green-500/10 text-green-500 text-[10px] rounded-full flex items-center gap-1">
-                                            <Check size={10} />
-                                            ENABLED
+                    {/* Available Plugins List (to be enabled) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {availablePlugins.map((plugin) => {
+                            const isInstalled = installedPlugins.includes(plugin.id);
+
+                            return (
+                                <Card key={plugin.id} className="p-4 flex flex-col gap-3 bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 transition-colors relative group">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className="font-semibold text-zinc-100">{plugin.name}</h3>
+                                            <p className="text-xs text-zinc-500 font-mono mt-0.5">v{plugin.version}</p>
                                         </div>
-                                    )}
-                                </div>
+                                        {isInstalled && (
+                                            <div className="px-2 py-0.5 bg-green-500/10 text-green-500 text-[10px] rounded-full flex items-center gap-1">
+                                                <Check size={10} />
+                                                ENABLED
+                                            </div>
+                                        )}
+                                    </div>
 
-                                <p className="text-sm text-zinc-400 line-clamp-2 flex-1">
-                                    {plugin.description || "No description provided."}
-                                </p>
+                                    <p className="text-sm text-zinc-400 line-clamp-2 flex-1">
+                                        {plugin.description || "No description provided."}
+                                    </p>
 
-                                <div className="mt-2 pt-3 border-t border-zinc-800/50 flex gap-2">
-                                    {isInstalled ? (
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            className="w-full gap-2"
-                                            onClick={() => handleUninstall(plugin.id)}
-                                            disabled={loading || uninstalling === plugin.id}
-                                        >
-                                            {uninstalling === plugin.id ? <RefreshCw className="animate-spin" size={14} /> : <Trash2 size={14} />}
-                                            Disable
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            variant="default"
-                                            size="sm"
-                                            className="w-full gap-2"
-                                            onClick={() => handleInstall(plugin.id)}
-                                            disabled={loading || installing === plugin.id}
-                                        >
-                                            {installing === plugin.id ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />}
-                                            Enable
-                                        </Button>
-                                    )}
-                                </div>
-                            </Card>
-                        );
-                    })}
+                                    <div className="mt-2 pt-3 border-t border-zinc-800/50 flex gap-2">
+                                        {isInstalled ? (
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                className="w-full gap-2"
+                                                onClick={() => handleUninstall(plugin.id)}
+                                                disabled={loading || uninstalling === plugin.id}
+                                            >
+                                                {uninstalling === plugin.id ? <RefreshCw className="animate-spin" size={14} /> : <Trash2 size={14} />}
+                                                Disable
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                variant="default"
+                                                size="sm"
+                                                className="w-full gap-2"
+                                                onClick={() => handleInstall(plugin.id)}
+                                                disabled={loading || installing === plugin.id}
+                                            >
+                                                {installing === plugin.id ? <RefreshCw className="animate-spin" size={14} /> : <Download size={14} />}
+                                                Enable
+                                            </Button>
+                                        )}
+                                    </div>
+                                </Card>
+                            );
+                        })}
 
-                    {availablePlugins.length === 0 && (
-                        <div className="col-span-full text-center py-10 text-zinc-500 border border-dashed border-zinc-800 rounded-md bg-zinc-900/20">
-                            No plugins found in local library.
-                        </div>
-                    )}
+                        {availablePlugins.length === 0 && (
+                            <div className="col-span-full text-center py-10 text-zinc-500 border border-dashed border-zinc-800 rounded-md bg-zinc-900/20">
+                                No plugins found in local library.
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div >
