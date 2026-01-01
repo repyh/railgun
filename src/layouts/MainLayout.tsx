@@ -15,6 +15,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { CreateProjectModal } from '@/components/modals/CreateProjectModal';
 import { SIDEBAR_CONFIG, type SidebarItem } from '@/components/layout/sidebar';
 import { VIEW_REGISTRY } from '@/views/viewRegistry';
+import { useRPCManager } from '@/services/RPCManager';
 
 const ActivityBarItem = ({
     item,
@@ -68,6 +69,10 @@ export const MainLayoutInner = () => {
     const location = useLocation();
     const { openModal } = useModal();
     const { isElectron, invoke, system } = useElectron();
+
+    // Initialize Discord RPC Manager
+    useRPCManager();
+
     const [appVersion, setAppVersion] = useState<string>('0.0.0');
     const [status, setStatus] = useState('Ready');
     const [isConsoleOpen, setIsConsoleOpen] = useState(false);

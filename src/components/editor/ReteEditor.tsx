@@ -13,7 +13,28 @@ import { useElectron } from '@/hooks/useElectron';
 import { PropertyPanel } from '@/components/editor/PropertyPanel';
 import { useEditorShortcuts } from '@/hooks/useEditorShortcuts';
 
+import { useSettings } from '@/contexts/SettingsContext';
+
 export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: string, filePath: string, setStatus?: (s: string) => void }) {
+    const { settings } = useSettings();
+    const settingsRef = useRef(settings);
+
+    useEffect(() => {
+        settingsRef.current = settings;
+        if (containerRef.current) {
+            containerRef.current.style.setProperty('--grid-size', `${settings.editor?.gridSize || 40}px`);
+            const gridColor = settings.editor?.showGrid ? '#2a2a2e' : 'transparent';
+            containerRef.current.style.setProperty('--grid-color', gridColor);
+
+            // Handle minimap visibility if we had a reference to it, but typically it is plugin based.
+            // For now we just handle grid visualization here.
+            // Minimap toggling might require removing/adding the control or hiding via CSS if we can target it.
+            const minimapEl = containerRef.current.querySelector('.minimap');
+            if (minimapEl) {
+                (minimapEl as HTMLElement).style.display = settings.editor?.minimap ? 'block' : 'none';
+            }
+        }
+    }, [settings]);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const editorRef = useRef<any>(null); // Store editor instance
@@ -106,8 +127,16 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             if (editorRef.current) return;
 
             try {
-                const res = await createEditor(containerRef.current!, (nodeId) => {
-                    setSelectedNodeId(nodeId);
+                const res = await createEditor(containerRef.current!, {
+                    onSelectionChange: (nodeId: string | null) => {
+                        setSelectedNodeId(nodeId);
+                    },
+                    getSnapSettings: () => {
+                        return {
+                            snap: settingsRef.current.editor?.snapToGrid ?? false,
+                            gridSize: settingsRef.current.editor?.gridSize ?? 40
+                        };
+                    }
                 });
 
                 editorInstanceRef.current = res;

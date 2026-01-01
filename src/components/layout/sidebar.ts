@@ -48,7 +48,7 @@ export const SIDEBAR_CONFIG: SidebarItem[] = [
         id: 'settings',
         label: 'Settings',
         icon: Settings,
-        action: { type: 'command', target: 'settings' },
+        path: '/settings',
         position: 'bottom'
     }
 ];

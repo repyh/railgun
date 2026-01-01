@@ -18,7 +18,10 @@ export type AreaExtra = ReactPlugin<Schemes, any>;
 
 export async function createEditor(
     container: HTMLElement,
-    onSelectionChange?: (nodeId: string | null) => void
+    options?: {
+        onSelectionChange?: (nodeId: string | null) => void;
+        getSnapSettings?: () => { snap: boolean; gridSize: number };
+    }
 ) {
     const editor = new NodeEditor<Schemes>();
     const area = new AreaPlugin<Schemes, AreaExtra>(container);
@@ -104,13 +107,13 @@ export async function createEditor(
             // console.log("Picked/Dragged:", pickedId);
 
             setTimeout(() => {
-                if (onSelectionChange) {
+                if (options?.onSelectionChange) {
                     //@ts-ignore
                     const isSelected = selector.isSelected(pickedId);
                     if (isSelected) {
-                        onSelectionChange(pickedId);
+                        options.onSelectionChange(pickedId);
                     } else {
-                        onSelectionChange(pickedId);
+                        options.onSelectionChange(pickedId);
                     }
                 }
             }, 50);
@@ -125,14 +128,30 @@ export async function createEditor(
 
                 if (selected) {
                     console.log("[defaultEditor] Selection detected via pipe:", selected.id);
-                    if (onSelectionChange) onSelectionChange(selected.id);
+                    if (options?.onSelectionChange) options.onSelectionChange(selected.id);
                 } else {
                     console.log("[defaultEditor] No selection detected via pipe");
-                    if (onSelectionChange) onSelectionChange(null);
+                    if (options?.onSelectionChange) options.onSelectionChange(null);
                 }
             }, 200);
         }
 
+        // @ts-ignore
+        if (context.type === 'nodetranslated') {
+            const { id, position } = context.data;
+            const snapSettings = options?.getSnapSettings ? options.getSnapSettings() : { snap: false, gridSize: 40 };
+
+            if (snapSettings.snap) {
+                const { gridSize } = snapSettings;
+                const x = Math.round(position.x / gridSize) * gridSize;
+                const y = Math.round(position.y / gridSize) * gridSize;
+
+                if (x !== position.x || y !== position.y) {
+                    area.translate(id, { x, y });
+                    return; // Stop propagation of original event to prevent jitter
+                }
+            }
+        }
         return context;
     });
 

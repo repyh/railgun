@@ -1,24 +1,25 @@
 import { useState } from 'react';
+import { useProject } from '@/contexts/ProjectContext';
 
 export type TabType = 'workspace' | 'packages' | 'config' | 'console' | 'plugins' | 'variables';
 
 export function useTabManager() {
+    const { activeFile, setActiveFile } = useProject();
     const [activeTab, setActiveTab] = useState<TabType>('workspace');
-    const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
     const openFile = (file: string) => {
-        setSelectedFile(file);
+        setActiveFile(file);
         setActiveTab('workspace');
     };
 
     const closeFile = () => {
-        setSelectedFile(null);
+        setActiveFile(null);
     };
 
     return {
         activeTab,
         setActiveTab,
-        selectedFile,
+        selectedFile: activeFile,
         openFile,
         closeFile
     };
