@@ -11,6 +11,7 @@ import {
 import { useProject } from '@/contexts/ProjectContext';
 import { useModal } from '@/contexts/ModalContext';
 import { useElectron } from '@/hooks/useElectron';
+import { SystemStatus } from './SystemStatus';
 
 const ActionCard = ({
     icon: Icon,
@@ -71,11 +72,10 @@ const getRelativeTime = (timestamp: number) => {
 };
 
 const DashboardPage: React.FC = () => {
-    const [nodeVersion, setNodeVersion] = useState<string>('Unknown');
     const [recentProjects, setRecentProjects] = useState<any[]>([]);
     const navigate = useNavigate();
     const { setProject } = useProject();
-    const { isElectron, project, system } = useElectron();
+    const { isElectron, project } = useElectron();
     const { openModal } = useModal();
 
     const loadRecent = async () => {
@@ -88,18 +88,7 @@ const DashboardPage: React.FC = () => {
         }
     };
 
-    const checkSystem = async () => {
-        if (!isElectron) return;
-        try {
-            const version = await system.getNodeVersion();
-            setNodeVersion(version);
-        } catch (e) {
-            setNodeVersion('Unknown');
-        }
-    };
-
     React.useEffect(() => {
-        checkSystem();
         loadRecent();
     }, []);
 
@@ -181,13 +170,7 @@ const DashboardPage: React.FC = () => {
                                 System Status
                             </h2>
                         </div>
-                        <div className="p-4 rounded-md bg-zinc-900 border border-zinc-800">
-                            <span className="text-xs text-zinc-400 block mb-2">Node Runtime</span>
-                            <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${nodeVersion !== 'Error' && nodeVersion !== 'Unknown' ? 'bg-green-500' : 'bg-red-500'}`} />
-                                <span className="text-sm text-zinc-300">{nodeVersion} (Node)</span>
-                            </div>
-                        </div>
+                        <SystemStatus />
                     </div>
                 </div>
             </div>

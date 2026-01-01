@@ -20,6 +20,10 @@ const api = {
     getNodeVersion: () => ipcRenderer.invoke('system:getNodeVersion'),
     openExternalLink: (url: string) => ipcRenderer.invoke('system:openExternalLink', url),
 
+    // Runtime
+    checkRuntime: () => ipcRenderer.invoke('runtime:checkAll'),
+    installBun: () => ipcRenderer.invoke('runtime:installBun'),
+
     // Dependencies
     readPackageJson: (path: string) => ipcRenderer.invoke('dependencies:readPackageJson', path),
     installPackage: (path: string, name: string, dev: boolean) => ipcRenderer.invoke('dependencies:install', path, name, dev),

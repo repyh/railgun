@@ -15,6 +15,10 @@ export interface ElectronAPI {
     installPackage: (path: string, name: string, isDev?: boolean) => Promise<void>;
     uninstallPackage: (path: string, name: string) => Promise<void>;
 
+    // Runtime
+    checkRuntime: () => Promise<{ node: any, bun: any }>;
+    installBun: () => Promise<boolean>;
+
     // Files
     readFile: (path: string, file: string) => Promise<string>;
     saveFile: (path: string, file: string, content: string) => Promise<boolean>;
@@ -73,6 +77,17 @@ export function useElectron() {
     const uninstallPackage = useCallback((path: string, name: string) => {
         if (!isElectron) return Promise.reject("Not Electron");
         return window.electronAPI!.uninstallPackage(path, name);
+    }, [isElectron]);
+
+    /* Runtime */
+    const checkRuntime = useCallback(() => {
+        if (!isElectron) return Promise.resolve({ node: { status: 'unknown' }, bun: { status: 'unknown' } });
+        return window.electronAPI!.checkRuntime();
+    }, [isElectron]);
+
+    const installBun = useCallback(() => {
+        if (!isElectron) return Promise.resolve(false);
+        return window.electronAPI!.installBun();
     }, [isElectron]);
 
     /* Files */
@@ -168,6 +183,10 @@ export function useElectron() {
             readPackageJson,
             installPackage,
             uninstallPackage
+        },
+        runtime: {
+            check: checkRuntime,
+            installBun
         },
         files: {
             list: listFiles,
