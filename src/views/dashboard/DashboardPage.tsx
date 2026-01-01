@@ -110,7 +110,7 @@ const DashboardPage: React.FC = () => {
             <div className="flex-1 p-12 overflow-auto mx-auto max-w-7xl animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="mb-8">
                     <img src="/resources/railgun-logo_full.svg" alt="Railgun" className="h-12 mb-2 w-auto" />
-                    <p className="text-zinc-400 text-lg">Visual Discord Bot Editor. v0.0.1-alpha</p>
+                    <p className="text-zinc-400 text-lg">Visual Discord Bot Editor. v0.1.0</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
