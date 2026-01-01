@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { useElectron } from '../hooks/useElectron';
 
-type RuntimeStatus = {
+export type RuntimeStatus = {
     type: 'node' | 'bun';
     status: 'installed' | 'missing' | 'outdated' | 'unknown';
     version?: string;

@@ -2,28 +2,49 @@
 
 interface ElectronAPI {
     invoke: (channel: string, ...args: any[]) => Promise<any>;
+    on: (channel: string, func: (...args: any[]) => void) => void;
+    off: (channel: string, func: (...args: any[]) => void) => void;
+
+    // Window
     minimizeWindow: () => Promise<void>;
     toggleMaximizeWindow: () => Promise<void>;
     closeWindow: () => Promise<void>;
+
+    // System
     selectDirectory: () => Promise<string | null>;
-    createProject: (data: any) => Promise<{ success: boolean; message?: string }>;
-    openProject: () => Promise<{ canceled: boolean; path?: string; name?: string; error?: string }>;
-    installDependencies: (projectPath: string, runtime: 'nodejs' | 'bun') => Promise<void>;
-    readPackageJson: (projectPath: string) => Promise<any>;
-    installPackage: (projectPath: string, packageName: string, dev: boolean) => Promise<void>;
-    uninstallPackage: (projectPath: string, packageName: string) => Promise<void>;
-    readProjectConfig: (projectPath: string) => Promise<any>;
-    saveProjectConfig: (projectPath: string, config: any) => Promise<boolean>;
-    readFile: (projectPath: string, filePath: string) => Promise<string | null>;
-    saveFile: (projectPath: string, filePath: string, content: string) => Promise<boolean>;
-    onTerminalData: (callback: (data: string) => void) => () => void;
+    getAppVersion: () => Promise<string>;
+    getNodeVersion: () => Promise<string>;
+    openExternalLink: (url: string) => Promise<void>;
+
+    // Runtime
+    checkRuntime: () => Promise<{ node: any, bun: any }>;
+    installBun: () => Promise<boolean>;
+
+    // Dependencies
+    readPackageJson: (path: string) => Promise<any>;
+    installPackage: (path: string, name: string, isDev?: boolean) => Promise<void>;
+    uninstallPackage: (path: string, name: string) => Promise<void>;
+    installDependencies: (path: string, type: 'nodejs' | 'bun') => Promise<void>;
+
+    // Files
+    readFile: (path: string, file: string) => Promise<string | null>;
+    saveFile: (path: string, file: string, content: string) => Promise<boolean>;
+    deleteFile: (path: string, file: string) => Promise<boolean>;
+    listFiles: (path: string, dir: string) => Promise<string[]>;
+
+    // Config
+    readProjectConfig: (path: string) => Promise<any>;
+    saveProjectConfig: (path: string, config: any) => Promise<boolean>;
+
+    // Plugins
+    listInstalledPlugins: (path: string) => Promise<string[]>;
+    installPlugin: (path: string, id: string) => Promise<void>;
+    uninstallPlugin: (path: string, id: string) => Promise<void>;
+
+    // Terminal / Bot
+    onTermData: (callback: (data: string) => void) => () => void;
     onBotStatus: (callback: (status: 'running' | 'stopped') => void) => () => void;
     onBotLog: (callback: (log: any) => void) => () => void;
-    installPlugin: (projectPath: string, pluginId: string) => Promise<{ success: boolean; message?: string }>;
-    uninstallPlugin: (projectPath: string, pluginId: string) => Promise<{ success: boolean; message?: string }>;
-    listInstalledPlugins: (projectPath: string) => Promise<string[]>;
-    listFiles: (projectPath: string, directory: string) => Promise<string[]>;
-    deleteFile: (projectPath: string, filePath: string) => Promise<boolean>;
 }
 
 interface Window {

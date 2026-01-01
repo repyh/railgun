@@ -6,9 +6,9 @@ Railgun is a powerful desktop application that allows you to create fully-featur
 
 ![Railgun Interface](https://github.com/repyh/railgun/blob/main/docs/assets/main.png?raw=true)
 
-> [DISCLAIMER]</br>
-> **Development Status: Pre-Alpha Preview**
-> This software is currently **UNDER DEVELOPMENT** and does not yet meet MVP standards. The code compilation engine has not been fully field-tested.
+> [!IMPORTANT]
+> **Development Status: v0.1.0 - Alpha Release**
+> Railgun v0.1.0 is now officially available. This release provides the foundation for visual bot building with essential node support and a stable distribution pipeline.
 >
 
 ## 🚀 Key Features
@@ -64,4 +64,4 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for our full policy.
 Free to use for non-commercial purposes. No derivatives.
 See `LICENSE` for full terms and conditions.
 
-Copyright (c) 2025 Railgun Contributors.
+Copyright (c) 2026 Railgun Team.

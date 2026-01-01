@@ -81,11 +81,30 @@
     "appId": "com.railgun.app",
     "productName": "Railgun",
     "directories": {
-      "output": "dist-app"
+      "output": "dist-app",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
       "dist-electron/**/*"
-    ]
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Railgun"
+    }
   }
 }

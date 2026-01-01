@@ -1,5 +1,5 @@
 import { BotNode } from '@/lib/railgun-rete';
-import { Database, Terminal, Play, ArrowRight, Box, X, Settings2, Plus, Trash2, CheckSquare, Square } from 'lucide-react';
+import { Database, Terminal, Play, ArrowRight, Box, X, Plus, Trash2, CheckSquare, Square } from 'lucide-react';
 import { InspectorField, InspectorSection } from '@/components/ui/InspectorField';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { useState, useEffect } from 'react';

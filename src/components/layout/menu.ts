@@ -4,14 +4,9 @@ import {
     Plus,
     Undo,
     Redo,
-    Scissors,
-    Copy,
-    ClipboardCopy as ClipboardIcon,
     RefreshCw,
     Terminal,
-    Monitor,
     Layout,
-    HelpCircle,
     Github,
     Info
 } from 'lucide-react';

@@ -105,10 +105,6 @@ export const MainLayoutInner = () => {
                         system.openExternalLink(action.target);
                     }
                     break;
-                case 'command':
-                    // TODO: Implement command palette integration
-                    console.log('Sidebar Command:', action.target);
-                    break;
             }
         }
     };

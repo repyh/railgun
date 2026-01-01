@@ -12,6 +12,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { useModal } from '@/contexts/ModalContext';
 import { useElectron } from '@/hooks/useElectron';
 import { SystemStatus } from './SystemStatus';
+import railgunLogo from '@/assets/branding/railgun-logo_full.svg';
 
 const ActionCard = ({
     icon: Icon,
@@ -109,7 +110,7 @@ const DashboardPage: React.FC = () => {
         <div className="flex h-full w-full bg-background text-zinc-100">
             <div className="flex-1 p-12 overflow-auto mx-auto max-w-7xl animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <div className="mb-8">
-                    <img src="/resources/railgun-logo_full.svg" alt="Railgun" className="h-12 mb-2 w-auto" />
+                    <img src={railgunLogo} alt="Railgun" className="h-12 mb-2 w-auto" />
                     <p className="text-zinc-400 text-lg">Visual Discord Bot Editor. v0.1.0</p>
                 </div>
 
