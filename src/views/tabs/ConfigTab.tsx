@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Save, RefreshCw, Settings, Eye, EyeOff } from 'lucide-react';
+import { Save, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';

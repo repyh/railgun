@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRuntimeStore } from '@/stores/useRuntimeStore';
 import { Loader2, AlertCircle, CheckCircle2, Download } from 'lucide-react';
 import { useElectron } from '@/hooks/useElectron';
@@ -40,6 +40,7 @@ const StatusItem = ({
                     <span className="text-sm text-zinc-300 font-mono">
                         {status === 'installed' ? version : (message || 'Not Found')}
                     </span>
+                    {icon && <div className="ml-auto opacity-80">{icon}</div>}
                 </div>
             </div>
             {(status === 'missing' || status === 'outdated') && onAction && (

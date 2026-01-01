@@ -259,6 +259,7 @@ export interface ContinueStatement extends BaseNode {
 }
 
 export interface LogicalExpression extends BaseNode {
+    type: 'LogicalExpression';
     operator: '||' | '&&' | '??';
     left: Expression;
     right: Expression;

@@ -6,9 +6,9 @@ Railgun is a powerful desktop application that allows you to create fully-featur
 
 ![Railgun Interface](docs/assets/screenshot.png)
 
-> [DISCLAIMER]</br>
-> **Development Status: Pre-Alpha Preview**
-> This software is currently **UNDER DEVELOPMENT** and does not yet meet MVP standards. The code compilation engine has not been fully field-tested.
+> [!IMPORTANT]
+> **Development Status: v0.1.0 - Alpha Release**
+> Railgun v0.1.0 is now officially available. This release provides the foundation for visual bot building with essential node support and a stable distribution pipeline.
 >
 
 ## 🚀 Key Features
@@ -26,31 +26,6 @@ Railgun is a powerful desktop application that allows you to create fully-featur
 *   **Frontend**: React 19, TypeScript, Tailwind CSS v4
 *   **State/Logic**: Rete.js v2 (Node Editor)
 
-## 📦 Getting Started
-
-### Prerequisites
-
-*   [Bun](https://bun.sh) (latest version)
-*   [Node.js](https://nodejs.org/) (required for Electron)
-
-### Installation
-
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/yourusername/railgun.git
-    cd railgun
-    ```
-
-2.  Install dependencies:
-    ```bash
-    bun install
-    ```
-
-3.  Run in development mode:
-    ```bash
-    bun run dev
-    ```
-
 ## 🤝 Contributing
 
 **Railgun is currently source-available software with restricted contributions.**
@@ -64,4 +39,4 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for our full policy.
 Free to use for non-commercial purposes. No derivatives.
 See `LICENSE` for full terms and conditions.
 
-Copyright (c) 2025 Railgun Contributors.
+Copyright (c) 2026 Railgun Team.

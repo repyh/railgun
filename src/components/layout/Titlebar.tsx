@@ -11,6 +11,7 @@ import { useModal, type ModalType } from '@/contexts/ModalContext';
 import { useElectron } from '@/hooks/useElectron';
 import { useNavigate } from 'react-router-dom';
 import { MENU_CONFIG, type MenuItem, type MenuAction } from './menu';
+import railgunIcon from '@/assets/branding/railgun-logo_icon.svg';
 
 const MenuDropdown = ({ label, items, isOpen, onToggle, onAction }: { label: string, items: MenuItem[], isOpen: boolean, onToggle: () => void, onAction: (action: MenuAction) => void }) => {
     return (
@@ -101,7 +102,7 @@ export const Titlebar = () => {
                 <div className="px-3 flex items-center transition-colors cursor-default">
                     <img
                         className="select-none h-5 w-5 shrink-0"
-                        src="resources/railgun-logo_icon.svg"
+                        src={railgunIcon}
                         alt="railgun-logo"
                         style={{ width: '14px', height: '14px' }}
                     />

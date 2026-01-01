@@ -25,6 +25,7 @@ export async function createEditor(
 ) {
     const editor = new NodeEditor<Schemes>();
     const area = new AreaPlugin<Schemes, AreaExtra>(container);
+    // @ts-ignore
     const connection = new ConnectionPlugin<Schemes, AreaExtra>();
     const render = new ReactPlugin<Schemes, AreaExtra>({ createRoot });
 
