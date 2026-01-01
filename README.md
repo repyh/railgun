@@ -4,7 +4,7 @@
 
 Railgun is a powerful desktop application that allows you to create fully-featured Discord bots without writing a single line of boilerplate code. Built with modern web technologies, it offers a visual node-based editor to design commands, events, and interactions.
 
-![Railgun Interface](docs/assets/screenshot.png)
+![Railgun Interface](https://github.com/repyh/railgun/blob/main/docs/assets/main.png?raw=true)
 
 > [!IMPORTANT]
 > **Development Status: v0.1.0 - Alpha Release**
@@ -25,6 +25,31 @@ Railgun is a powerful desktop application that allows you to create fully-featur
 *   **Runtime**: [Electron](https://www.electronjs.org/) + [Bun](https://bun.sh)
 *   **Frontend**: React 19, TypeScript, Tailwind CSS v4
 *   **State/Logic**: Rete.js v2 (Node Editor)
+
+## 📦 Getting Started
+
+### Prerequisites
+
+*   [Bun](https://bun.sh) (latest version)
+*   [Node.js](https://nodejs.org/) (required for Electron)
+
+### Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/repyh/railgun.git
+    cd railgun
+    ```
+
+2.  Install dependencies:
+    ```bash
+    bun install
+    ```
+
+3.  Run in development mode:
+    ```bash
+    bun run dev
+    ```
 
 ## 🤝 Contributing
 
