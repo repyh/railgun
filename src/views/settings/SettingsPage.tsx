@@ -111,7 +111,7 @@ const SettingsPage: React.FC = () => {
                         ID: {stationId}::{activeTabId.toUpperCase()}
                     </p>
                     <p>Railgun IDE Settings v0.1.0</p>
-                    <p>© 2026 Antigravity Labs</p>
+                    <p>© 2026 Railgun Team</p>
                 </div>
             </div>
 

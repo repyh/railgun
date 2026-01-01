@@ -16,6 +16,7 @@ export interface SettingDefinition {
     options?: SettingOption[]; // For 'select'
     min?: number; // For 'number'
     max?: number;
+    step?: number;
     defaultValue?: any;
 }
 

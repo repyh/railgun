@@ -76,8 +76,10 @@ export const Titlebar = () => {
                 openModal(action.target as ModalType);
                 break;
             case 'command':
+                if (action.target === 'save-project') {
+                    window.dispatchEvent(new CustomEvent('railgun:save'));
+                }
                 console.log('Execute command:', action.target);
-                // TODO: Integrate with command palette or project bridge
                 break;
             case 'link':
                 await system.openExternalLink(action.target);

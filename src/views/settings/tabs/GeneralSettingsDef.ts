@@ -5,32 +5,24 @@ export const GeneralSettingsDef: SettingsTabDefinition = {
     label: 'General',
     groups: [
         {
-            id: 'localization',
-            title: 'Localization',
-            description: 'Regional and language preferences.',
-            settings: [
-                {
-                    key: 'general.locale',
-                    label: 'Language',
-                    description: 'The primary display language for the IDE.',
-                    type: 'select',
-                    options: [
-                        { label: 'English (US)', value: 'en' },
-                        { label: 'Indonesian', value: 'id' },
-                    ]
-                }
-            ]
-        },
-        {
             id: 'system',
             title: 'System',
             description: 'Core application behavior and performance.',
             settings: [
                 {
                     key: 'system.autoSave',
-                    label: 'Auto Save',
-                    description: 'Automatically save project changes when the editor loses focus.',
+                    label: 'Enable Auto Save',
+                    description: 'Automatically save project changes when the editor loses focus or after a delay.',
                     type: 'toggle'
+                },
+                {
+                    key: 'system.autoSaveDelay',
+                    label: 'Auto Save Delay (ms)',
+                    description: 'The amount of idle time before automatically saving changes.',
+                    type: 'number',
+                    min: 500,
+                    max: 10000,
+                    step: 500
                 }
             ]
         }

@@ -8,6 +8,7 @@ interface EditorContext {
     paste: () => Promise<void>;
     duplicate: () => Promise<void>;
     delete: () => Promise<void>;
+    save: () => Promise<void>;
 }
 
 export function useEditorShortcuts(
@@ -17,7 +18,7 @@ export function useEditorShortcuts(
     useEffect(() => {
         if (!enabled || !context) return;
 
-        const { undo, redo, copy, paste, duplicate, delete: deleteSelection } = context;
+        const { undo, redo, copy, paste, duplicate, delete: deleteSelection, save } = context;
 
         const handleKeyDown = async (e: KeyboardEvent) => {
             // Guard: Ignore if typing in an input, textarea, or contenteditable
@@ -60,6 +61,10 @@ export function useEditorShortcuts(
                         case 'KeyD':
                             e.preventDefault();
                             await duplicate();
+                            break;
+                        case 'KeyS':
+                            e.preventDefault();
+                            await save();
                             break;
                     }
                 } catch (err) {

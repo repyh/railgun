@@ -109,14 +109,38 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
         }
     };
 
-    const triggerSave = useCallback(() => {
+    const triggerSave = useCallback((force = false) => {
+        if (!settingsRef.current.system?.autoSave && !force) return;
+
         if (saveTimeout.current) clearTimeout(saveTimeout.current);
         if (setStatus) setStatus('Unsaved changes...');
 
         saveTimeout.current = setTimeout(() => {
             saveGraph();
-        }, 1000);
-    }, [setStatus, filePath, projectPath, isElectron, files]); // Added dependencies for useCallback
+        }, settingsRef.current.system?.autoSaveDelay || 1000);
+    }, [setStatus, filePath, projectPath, isElectron, files]);
+
+    // Handle Window Blur (Auto-save on window lose focus)
+    useEffect(() => {
+        const handleBlur = () => {
+            if (settingsRef.current.system?.autoSave) {
+                if (saveTimeout.current) clearTimeout(saveTimeout.current);
+                saveGraph(undefined, true); // Silent save
+            }
+        };
+
+        const handleGlobalSave = () => {
+            if (saveTimeout.current) clearTimeout(saveTimeout.current);
+            saveGraph(undefined, false); // Manual save
+        };
+
+        window.addEventListener('blur', handleBlur);
+        window.addEventListener('railgun:save', handleGlobalSave);
+        return () => {
+            window.removeEventListener('blur', handleBlur);
+            window.removeEventListener('railgun:save', handleGlobalSave);
+        };
+    }, [filePath, projectPath, isElectron, files]);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -139,7 +163,10 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                     }
                 });
 
-                editorInstanceRef.current = res;
+                editorInstanceRef.current = {
+                    ...res,
+                    save: () => saveGraph(undefined, false)
+                };
                 editorRef.current = res.editor;
                 areaRef.current = res.area;
                 cleanup = res.destroy;

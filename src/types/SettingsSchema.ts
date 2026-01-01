@@ -11,6 +11,7 @@ export interface SettingsSchema {
     };
     system: {
         autoSave: boolean;
+        autoSaveDelay: number;
         discordRPC: boolean;
     };
     rpc: { // Specific RPC config
@@ -36,6 +37,7 @@ export const DEFAULT_SETTINGS: SettingsSchema = {
     },
     system: {
         autoSave: true,
+        autoSaveDelay: 1000,
         discordRPC: true,
     },
     rpc: {
