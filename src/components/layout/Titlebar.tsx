@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-    SquareTerminal,
     Minus,
     Square,
     X,
@@ -10,22 +9,23 @@ import { cn } from '@/lib/utils';
 import { useProject } from '@/contexts/ProjectContext';
 import { useModal, type ModalType } from '@/contexts/ModalContext';
 import { useElectron } from '@/hooks/useElectron';
+import { useNavigate } from 'react-router-dom';
 import { MENU_CONFIG, type MenuItem, type MenuAction } from './menu';
 
 const MenuDropdown = ({ label, items, isOpen, onToggle, onAction }: { label: string, items: MenuItem[], isOpen: boolean, onToggle: () => void, onAction: (action: MenuAction) => void }) => {
     return (
-        <div className="relative h-full">
+        <div className="relative h-full text-[13px] titlebar-no-drag">
             <button
                 onClick={onToggle}
                 className={cn(
-                    "px-3 h-full flex items-center text-[13px] transition-colors gap-1.5",
+                    "px-3 h-full flex items-center transition-colors gap-1.5 outline-none select-none",
                     isOpen ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
                 )}
             >
                 {label}
             </button>
             {isOpen && (
-                <div className="absolute top-full left-0 w-56 bg-zinc-900 border border-zinc-800 rounded-b-md shadow-2xl py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="absolute top-full left-0 w-64 bg-zinc-900 border border-zinc-800 rounded-b-md shadow-2xl py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
                     {items.map((item, idx) => (
                         <React.Fragment key={idx}>
                             {item.divider ? (
@@ -38,13 +38,13 @@ const MenuDropdown = ({ label, items, isOpen, onToggle, onAction }: { label: str
                                     }}
                                     disabled={item.disabled}
                                     className={cn(
-                                        "w-full px-3 py-1.5 flex items-center justify-between text-[12px] transition-colors group",
+                                        "w-full px-3 py-1.5 flex items-center justify-between transition-colors group outline-none",
                                         item.disabled ? "opacity-50 cursor-not-allowed" : "text-zinc-300 hover:bg-blue-600 hover:text-white"
                                     )}
                                 >
                                     <div className="flex items-center gap-2.5">
                                         {item.icon && <item.icon size={14} className="text-zinc-500 group-hover:text-white" />}
-                                        <span>{item.label}</span>
+                                        <span className="text-[12px]">{item.label}</span>
                                     </div>
                                     {item.shortcut && <span className="text-[10px] text-zinc-500 group-hover:text-blue-100 font-mono">{item.shortcut}</span>}
                                 </button>
@@ -62,6 +62,7 @@ export const Titlebar = () => {
     const { openModal } = useModal();
     const { invoke, window: win, system } = useElectron();
     const [openMenu, setOpenMenu] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     const toggleMenu = (menu: string) => {
         setOpenMenu(openMenu === menu ? null : menu);
@@ -75,11 +76,11 @@ export const Titlebar = () => {
             case 'modal':
                 openModal(action.target as ModalType);
                 break;
-            case 'command':
-                if (action.target === 'save-project') {
-                    window.dispatchEvent(new CustomEvent('railgun:save'));
-                }
-                console.log('Execute command:', action.target);
+            case 'event':
+                window.dispatchEvent(new CustomEvent(action.target));
+                break;
+            case 'nav':
+                navigate(action.target);
                 break;
             case 'link':
                 await system.openExternalLink(action.target);
@@ -96,9 +97,14 @@ export const Titlebar = () => {
     return (
         <div className="h-[30px] shrink-0 flex items-center justify-between bg-zinc-900 border-b border-zinc-800 titlebar-drag-region select-none z-50">
             {/* Left Side: Logo & Menus */}
-            <div className="flex items-center h-full titlebar-no-drag">
-                <div className="px-3 text-blue-500 hover:text-blue-400 transition-colors cursor-default">
-                    <SquareTerminal size={16} />
+            <div className="flex items-center h-full">
+                <div className="px-3 flex items-center transition-colors cursor-default">
+                    <img
+                        className="select-none h-5 w-5 shrink-0"
+                        src="resources/railgun-logo_icon.svg"
+                        alt="railgun-logo"
+                        style={{ width: '14px', height: '14px' }}
+                    />
                 </div>
 
                 <div className="flex items-center h-full">
@@ -141,8 +147,8 @@ export const Titlebar = () => {
             </div>
 
             {/* Center: Search & Project Info */}
-            <div className="w-full flex items-center justify-center gap-2 h-full py-1 titlebar-no-drag">
-                <div className="group flex items-center bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 rounded-md px-2.5 py-0.5 min-w-[300px] transition-all cursor-text">
+            <div className="w-full flex items-center justify-center gap-2 h-full py-1">
+                <div className="group flex items-center bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 rounded-sm px-2.5 min-w-[300px] transition-all cursor-text titlebar-no-drag">
                     <Search size={12} className="text-zinc-500 group-hover:text-zinc-400 mr-2" />
                     <span className="text-[11px] text-zinc-500 group-hover:text-zinc-400 truncate max-w-[400px]">
                         {projectName ? `${projectName} - Railgun` : 'Search or type a command...'}

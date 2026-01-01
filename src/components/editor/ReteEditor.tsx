@@ -129,11 +129,29 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             saveGraph(undefined, false); // Manual save
         };
 
+        const handleGlobalUndo = () => {
+            if (editorInstanceRef.current && editorInstanceRef.current.undo) {
+                editorInstanceRef.current.undo();
+            }
+        };
+
+        const handleGlobalRedo = () => {
+            if (editorInstanceRef.current && editorInstanceRef.current.redo) {
+                editorInstanceRef.current.redo();
+            }
+        };
+
         window.addEventListener('blur', handleBlur);
         window.addEventListener('railgun:save', handleGlobalSave);
+        window.addEventListener('railgun:save-all', handleGlobalSave); // Treat same as save for now
+        window.addEventListener('railgun:undo', handleGlobalUndo);
+        window.addEventListener('railgun:redo', handleGlobalRedo);
         return () => {
             window.removeEventListener('blur', handleBlur);
             window.removeEventListener('railgun:save', handleGlobalSave);
+            window.removeEventListener('railgun:save-all', handleGlobalSave);
+            window.removeEventListener('railgun:undo', handleGlobalUndo);
+            window.removeEventListener('railgun:redo', handleGlobalRedo);
         };
     }, [filePath, projectPath, isElectron, files]);
 
