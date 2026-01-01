@@ -26,13 +26,8 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             const gridColor = settings.editor?.showGrid ? '#2a2a2e' : 'transparent';
             containerRef.current.style.setProperty('--grid-color', gridColor);
 
-            // Handle minimap visibility if we had a reference to it, but typically it is plugin based.
-            // For now we just handle grid visualization here.
-            // Minimap toggling might require removing/adding the control or hiding via CSS if we can target it.
-            const minimapEl = containerRef.current.querySelector('.minimap');
-            if (minimapEl) {
-                (minimapEl as HTMLElement).style.display = settings.editor?.minimap ? 'block' : 'none';
-            }
+            // Handle minimap visibility via CSS class
+            containerRef.current.classList.toggle('minimap-hidden', !settings.editor?.minimap);
         }
     }, [settings]);
 

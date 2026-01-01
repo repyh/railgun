@@ -98,6 +98,12 @@ svg[data-testid="connection"] path:hover {
     /* Clip rounded corners */
 }
 
+/* Visibility Control */
+.minimap-hidden .minimap,
+.minimap-hidden [data-testid="minimap"] {
+    display: none !important;
+}
+
 /* Mini Nodes */
 .minimap .mini-node,
 [data-testid="minimap"] [data-testid="node"] {
