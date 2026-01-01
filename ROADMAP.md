@@ -11,6 +11,9 @@ This document outlines the strategic development path for Railgun, transitioning
 *Status: In Progress / Near Completion*
 - [x] **AST Compiler Overhaul**: Exhaustive type support, loops, logic, and variables.
 - [x] **Mega Test Verification**: End-to-end verification of complex logic flows.
+- [x] **Slash Command Builder**:
+    - [x] UI for defining Slash Command options (Types, Required, Choices).
+    - [x] Auto-deployment logic for Slash Commands.
 - [ ] **Basic Discord Actions**: Send Message, Embeds, ephemeral replies.
 - [ ] **Simple Export**: Ability to generate a raw `.js` file from the graph.
 
@@ -31,9 +34,6 @@ This document outlines the strategic development path for Railgun, transitioning
     - Support for Button Clicks (`custom_id`).
     - Support for Modal Submits.
     - Support for Select Menus (String, User, Role, Channel).
-- [ ] **Slash Command Builder**:
-    - UI for defining Slash Command options (Types, Required, Choices).
-    - Auto-deployment logic for Slash Commands.
 
 ---
 
@@ -57,7 +57,6 @@ This document outlines the strategic development path for Railgun, transitioning
 **Focus:** clean code generation.
 - [ ] **Prettier Integration**: All generated code is formatted.
 - [ ] **TypeScript Export**: Option to generate `.ts` files instead of `.js`.
-- [ ] **Docker Support**: Generate a `Dockerfile` for easy deployment.
 
 ---
 
@@ -69,7 +68,6 @@ This document outlines the strategic development path for Railgun, transitioning
 - [ ] **Interactive Tutorial**: A walkthrough inside the app teaching the basics.
 
 ### **v0.8.0: Cloud Integration (Optional)**
-- [ ] **One-Click Deploy**: Integration with a hosting provider (or own infra) to deploy bots directly.
 - [ ] **Bot Dashboards**: A generated web dashboard for the *users* of the bot.
 
 ### **v0.9.0: Beta Release Candidate**
