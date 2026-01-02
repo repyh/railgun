@@ -8,8 +8,9 @@ import { MinimapPlugin } from 'rete-minimap-plugin';
 
 import { CustomNode } from '@/components/editor/CustomNode';
 import { CustomSocket } from '@/components/editor/CustomSocket';
+import { CustomConnection } from '@/components/editor/CustomConnection';
 import { InputControl } from '@/components/editor/InputControl';
-import { BotNode } from '@/lib/railgun-rete';
+import { BotNode, setGlobalEditor, getSocketConfig } from '@/lib/railgun-rete';
 import { EditorOperations } from './editor/EditorOperations';
 
 
@@ -24,6 +25,7 @@ export async function createEditor(
     }
 ) {
     const editor = new NodeEditor<Schemes>();
+    setGlobalEditor(editor);
     const area = new AreaPlugin<Schemes, AreaExtra>(container);
     // @ts-ignore
     const connection = new ConnectionPlugin<Schemes, AreaExtra>();
@@ -99,6 +101,30 @@ export async function createEditor(
     setTimeout(() => {
         AreaExtensions.zoomAt(area, editor.getNodes());
     }, 100);
+
+    // STRICT CONNECTION VALIDATION (Editor Logic)
+    editor.addPipe((context) => {
+        if (context.type === 'connectioncreate') {
+            const { source, sourceOutput, target, targetInput } = context.data;
+            const sourceNode = editor.getNode(source);
+            const targetNode = editor.getNode(target);
+
+            if (sourceNode && targetNode) {
+                const outputSocket = sourceNode.outputs[sourceOutput]?.socket;
+                const inputSocket = targetNode.inputs[targetInput]?.socket;
+
+                if (outputSocket && inputSocket) {
+                    const sourceConfig = getSocketConfig(outputSocket.name);
+                    const targetConfig = getSocketConfig(inputSocket.name);
+
+                    if (sourceConfig.category !== targetConfig.category) {
+                        return; // Block connection by returning undefined
+                    }
+                }
+            }
+        }
+        return context;
+    });
 
     // @ts-ignore
     area.addPipe((context) => {

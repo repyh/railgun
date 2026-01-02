@@ -57,9 +57,8 @@ svg[data-testid="connection"] {
 
 svg[data-testid="connection"] path {
     fill: none;
-    stroke: #ff0000;
-    /* Red for high visibility */
-    stroke-width: 3px;
+    stroke: var(--connection-color, #a1a1aa);
+    stroke-width: var(--stroke-width, 2px);
     pointer-events: auto;
     /* Allow clicking the path */
     cursor: pointer;
@@ -67,8 +66,7 @@ svg[data-testid="connection"] path {
 
 /* Hover Effect */
 svg[data-testid="connection"] path:hover {
-    stroke: #3b82f6;
-    stroke-width: 3px;
+    stroke: #3b82f6 !important;
 }
 
 /* Minimap Styles */
