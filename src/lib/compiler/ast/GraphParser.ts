@@ -1,11 +1,11 @@
-import { BotNode } from '../../railgun-rete';
+import type { CompilerNode, CompilerConnection } from '../graphTypes';
 import * as AST from './types';
 import { registry } from './nodes';
 import type { ParserContext } from './nodes/ParserContext';
 
 export class GraphParser implements ParserContext {
-    nodes: BotNode[];
-    connections: any[];
+    nodes: CompilerNode[];
+    connections: CompilerConnection[];
 
     // Map of Node ID to generated AST Node (for caching/reference)
     nodeMap: Map<string, AST.BaseNode> = new Map();
@@ -14,7 +14,7 @@ export class GraphParser implements ParserContext {
     private cachedExpressions: Map<string, AST.Expression> = new Map();
     private usedPlugins: Set<string> = new Set();
 
-    constructor(nodes: BotNode[], connections: any[]) {
+    constructor(nodes: CompilerNode[], connections: CompilerConnection[]) {
         this.nodes = nodes;
         this.connections = connections;
     }
@@ -31,7 +31,7 @@ export class GraphParser implements ParserContext {
         const body: AST.Statement[] = [];
 
         // 1. Find Global Functions (Custom Functions) - Process these FIRST so they are hoisted/available
-        const functionNodes = this.nodes.filter(n => n.label === 'Function Def');
+        const functionNodes = this.nodes.filter(n => n.data?._schemaId === 'functions/def' || n.label === 'Function Def');
         for (const funcNode of functionNodes) {
             const funcDecl = this.processEvent(funcNode);
             if (funcDecl) {
@@ -40,7 +40,7 @@ export class GraphParser implements ParserContext {
         }
 
         // 2. Find all Event nodes (Entry Points)
-        const eventNodes = this.nodes.filter(n => n.category === 'Event' || n.codeType === 'On Command' || n.codeType === 'On Slash Command');
+        const eventNodes = this.nodes.filter(n => n.category === 'Event' || n.codeType?.startsWith('event/') || n.data?._schemaId?.startsWith('event/'));
 
         // 3. Process each event into a FunctionDeclaration (or equivalent structure)
         for (const eventNode of eventNodes) {
@@ -61,8 +61,9 @@ export class GraphParser implements ParserContext {
      * Converts an Event Node into a special FunctionDeclaration.
      * In the AST, we treat Events as functions that the system calls.
      */
-    private processEvent(node: BotNode): AST.FunctionDeclaration | null {
-        let parser = registry.getEventParser(node.codeType || node.label);
+    private processEvent(node: CompilerNode): AST.FunctionDeclaration | null {
+        const schemaId = node.data?._schemaId || node.codeType;
+        let parser = registry.getEventParser(schemaId, node.label);
 
         // Fallback: Check standard parsers (e.g. for Function Def which is an "Event" in terms of entry point)
         if (!parser) {
@@ -86,7 +87,7 @@ export class GraphParser implements ParserContext {
      * Traverses the graph starting from a specific output socket (usually 'exec').
      * Returns a BlockStatement containing all subsequent statements.
      */
-    public traverseBlock(startNode: BotNode, outputKey: string): AST.BlockStatement {
+    public traverseBlock(startNode: CompilerNode, outputKey: string): AST.BlockStatement {
         const statements: AST.Statement[] = [];
 
         // Try to find the first node in the chain
@@ -117,7 +118,7 @@ export class GraphParser implements ParserContext {
     /**
      * Finds the next node in the execution chain by trying common output labels.
      */
-    private findNextExecutionNode(nodeId: string, preferredKey: string): BotNode | undefined {
+    private findNextExecutionNode(nodeId: string, preferredKey: string): CompilerNode | undefined {
         // ALWAYS try the preferred key first (Strict Match)
         let next = this.getNextNode(nodeId, preferredKey);
         if (next) return next;
@@ -143,9 +144,10 @@ export class GraphParser implements ParserContext {
      * Processes a single node into a Statement.
      * Handles Control Flow (If, While) and Actions.
      */
-    private processStatementNode(node: BotNode): AST.Statement | null {
+    private processStatementNode(node: CompilerNode): AST.Statement | null {
         // Try to find a parser in the registry
-        const parser = registry.getParser(node.codeType, node.label);
+        const schemaId = node.data?._schemaId || node.codeType;
+        const parser = registry.getParser(schemaId, node.label);
         if (parser) {
             const result = parser.parse(node, this, 'statement');
 
@@ -182,8 +184,9 @@ export class GraphParser implements ParserContext {
      * - If connected to another node, recursively resolve that node.
      * - If literal (control value), return Literal.
      */
-    public resolveInput(node: BotNode, key: string): AST.Expression {
+    public resolveInput(node: CompilerNode, key: string): AST.Expression {
         // 1. Check connections
+        // In CompilerConnection, source/target are Node IDs.
         const connection = this.connections.find(c => c.target === node.id && c.targetInput === key);
         if (connection) {
             const sourceNode = this.nodes.find(n => n.id === connection.source);
@@ -192,7 +195,8 @@ export class GraphParser implements ParserContext {
             }
         }
 
-        // 2. Check primary value (Data or Control)
+        // 2. Check primary value (Data)
+        // In new system, control values are in node.data
         const primaryVal = this.getNodeValue(node, key);
         if (primaryVal !== undefined && primaryVal !== null) {
             // Basic casting
@@ -223,31 +227,33 @@ export class GraphParser implements ParserContext {
         };
     }
 
-    private processValueNode(node: BotNode, outputKey: string): AST.Expression {
+    private processValueNode(node: CompilerNode, outputKey: string): AST.Expression {
         const cacheKey = `${node.id}:${outputKey}`;
         if (this.cachedExpressions.has(cacheKey)) {
             return this.cachedExpressions.get(cacheKey)!;
         }
 
+        const schemaId = node.data?._schemaId || node.codeType;
+        const label = node.label;
+
         // 1. Special Handling for Event-provided values (Entry Points)
-        if (node.category === 'Event' || node.codeType === 'On Command' || node.codeType === 'On Slash Command') {
-            const label = node.codeType || node.label;
-            if (label === 'On Message Create' && outputKey === 'message') {
+        if (schemaId?.startsWith('event/') || label === 'On Command' || label === 'On Slash Command' || node.category === 'Event') {
+            if ((schemaId === 'event/on-message-create' || label === 'On Message Create') && outputKey === 'message') {
                 const ident: AST.Expression = { type: 'Identifier', name: 'message' };
                 this.cachedExpressions.set(cacheKey, ident);
                 return ident;
             }
-            if (label === 'On Ready' && outputKey === 'client') {
+            if ((schemaId === 'event/on-ready' || label === 'On Ready') && outputKey === 'client') {
                 const ident: AST.Expression = { type: 'Identifier', name: 'client' };
                 this.cachedExpressions.set(cacheKey, ident);
                 return ident;
             }
-            if ((label === 'On Slash Command' || label === 'On Interaction Create') && outputKey === 'interaction') {
+            if ((schemaId === 'event/slash-command' || label === 'On Slash Command' || label === 'On Interaction Create') && outputKey === 'interaction') {
                 const ident: AST.Expression = { type: 'Identifier', name: 'interaction' };
                 this.cachedExpressions.set(cacheKey, ident);
                 return ident;
             }
-            if (label === 'On Command') {
+            if (schemaId === 'event/on-command' || label === 'On Command') {
                 if (outputKey === 'message') {
                     const ident: AST.Expression = { type: 'Identifier', name: 'message' };
                     this.cachedExpressions.set(cacheKey, ident);
@@ -289,7 +295,7 @@ export class GraphParser implements ParserContext {
             }
 
             // Logic for Dynamic Slash Command Options
-            if (label === 'On Slash Command') {
+            if (schemaId === 'event/slash-command' || label === 'On Slash Command') {
                 // If the key is not one of the standard ones (exec, user, channel), assume it is an option
                 if (!['exec', 'user', 'channel'].includes(outputKey)) {
                     // We need to know the type to generate the correct .getString(), .getUser(), etc.
@@ -337,7 +343,7 @@ export class GraphParser implements ParserContext {
         }
 
         // 2. Registry Lookup (Handles Primitives, Variables, and regular Value nodes)
-        const parser = registry.getParser(node.codeType, node.label);
+        const parser = registry.getParser(schemaId, label);
         if (parser) {
             // Check for custom output resolution (Modular Extensibility)
             if (parser.resolveOutput) {
@@ -368,21 +374,17 @@ export class GraphParser implements ParserContext {
         return fallback;
     }
 
-    public getNodeValue(node: BotNode, key: string): any {
+    public getNodeValue(node: CompilerNode, key: string): any {
         // Prioritize node.data (persistence)
         if (node.data && node.data[key] !== undefined) {
             return node.data[key];
-        }
-        // Fallback to controls
-        if (node.controls && node.controls[key]) {
-            return (node.controls[key] as any).value;
         }
         return undefined;
     }
 
     // --- Helpers ---
 
-    private getNextNode(nodeId: string, outputKey: string): BotNode | undefined {
+    private getNextNode(nodeId: string, outputKey: string): CompilerNode | undefined {
         const connection = this.connections.find(c => c.source === nodeId && c.sourceOutput === outputKey);
         if (!connection) return undefined;
         return this.nodes.find(n => n.id === connection.target);

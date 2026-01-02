@@ -7,13 +7,18 @@ import { ConfigTab } from '@/views/tabs/ConfigTab';
 import { ConsoleTab } from '@/views/tabs/ConsoleTab';
 import { PluginsTab } from '@/views/tabs/PluginsTab';
 import { VariablesTab } from '@/views/tabs/VariablesTab';
-import { ReteEditor } from '@/components/editor/ReteEditor';
+import FlowEditor from '@/components/editor/FlowEditor';
+import { ReactFlowProvider } from '@xyflow/react';
 import { CreateEventModal } from '@/components/modals/CreateEventModal';
 import { CreateCommandModal } from '@/components/modals/CreateCommandModal';
 import { CreateSlashCommandModal } from '@/components/modals/CreateSlashCommandModal';
 import { useProject } from '@/contexts/ProjectContext';
 import { PluginManager } from '@/lib/plugins/PluginManager';
 import { RunConfigModal } from '@/components/modals/RunConfigModal';
+import { ProblemsPanel } from '@/components/editor/ProblemsPanel';
+import { PropertyPanel } from '@/components/editor/PropertyPanel';
+import { type ValidationIssue } from '@/lib/validation/types';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 
 // Hooks
 import { useBotControl } from '@/hooks/useBotControl';
@@ -35,6 +40,11 @@ const ExplorerPage: React.FC = () => {
 
     // Editor State
     const { setStatus } = useOutletContext<any>() || {};
+    // const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null); // Removed
+    const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
+    const [isProblemsVisible, setIsProblemsVisible] = useState(false);
+    const [selectedBotNode, setSelectedBotNode] = useState<CompilerNode | null>(null);
+    const [onNodeUpdate, setOnNodeUpdate] = useState<((id: string, data: any) => void) | null>(null);
 
     // Custom Hooks
     const { activeTab, setActiveTab, selectedFile, openFile, closeFile } = useTabManager();
@@ -47,6 +57,24 @@ const ExplorerPage: React.FC = () => {
     const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
     const [isCreateCommandModalOpen, setIsCreateCommandModalOpen] = useState(false);
     const [isCreateSlashCommandModalOpen, setIsCreateSlashCommandModalOpen] = useState(false);
+
+    // Sync selected node with PropertyPanel (Virtual BotNode)
+    // useEffect(() => {
+    //     if (!selectedNodeId) {
+    //         setSelectedBotNode(null);
+    //         return;
+    //     }
+    //
+    //     // We need a way to find the node data to populate the panel
+    //     // For now, we'll assume the editor is handling data.
+    //     // The PropertyPanel expects a BotNode from railgun-rete.
+    //     // This is a bridge:
+    //     const node = new BotNode("Loading...", "Action");
+    //     node.id = selectedNodeId;
+    //     // In a real implementation, we'd need to fetch the actual node data from the editor state
+    //     // and map it to this BotNode instance.
+    //     setSelectedBotNode(node);
+    // }, [selectedNodeId]);
 
     const [isVerified, setIsVerified] = useState(false);
 
@@ -91,6 +119,11 @@ const ExplorerPage: React.FC = () => {
             }
         }
     };
+
+    const handleNodeSelection = React.useCallback((node: CompilerNode | null, updateFn?: (id: string, data: any) => void) => {
+        setSelectedBotNode(node);
+        setOnNodeUpdate(() => updateFn || null);
+    }, []);
 
     // EMPTY STATE
     if (!projectPath) {
@@ -151,7 +184,7 @@ const ExplorerPage: React.FC = () => {
             />
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 bg-background">
+            <div className="flex-1 flex flex-col min-w-0 bg-[#141416]">
                 <ExplorerTabs activeTab={activeTab} onTabChange={setActiveTab}>
                     <div className="h-4 w-px bg-zinc-800 mx-2" />
                     <BotStatusPanel
@@ -180,11 +213,62 @@ const ExplorerPage: React.FC = () => {
                     {activeTab === 'workspace' && (
                         <div className="h-full w-full relative">
                             {selectedFile ? (
-                                <ReteEditor
-                                    projectPath={projectPath!}
-                                    filePath={selectedFile!}
-                                    setStatus={setStatus}
-                                />
+                                <ReactFlowProvider>
+                                    <div className="flex h-full w-full overflow-hidden">
+                                        <div className="flex-1 relative flex flex-col h-full overflow-hidden">
+                                            <FlowEditor
+                                                key={selectedFile}
+                                                projectPath={projectPath!}
+                                                filePath={selectedFile!}
+                                                setStatus={setStatus}
+                                                onSelectionChange={handleNodeSelection}
+                                                onValidationChange={(issues) => {
+                                                    setValidationIssues(issues);
+                                                    if (issues.length > 0 && !isProblemsVisible) {
+                                                        // Auto-show problems? Maybe persistent state is better
+                                                    }
+                                                }}
+                                            />
+                                            <ProblemsPanel
+                                                issues={validationIssues}
+                                                isVisible={isProblemsVisible}
+                                                onClose={() => setIsProblemsVisible(false)}
+                                                onJumpToNode={(id) => {
+                                                    // Jump logic would need to be implemented in FlowEditor or via a ref
+                                                    console.log('Jump to', id);
+                                                }}
+                                            />
+
+                                            {/* Status Bar for Problems Toggle */}
+                                            <div className="h-6 bg-[#171719] border-t border-zinc-800 flex items-center px-4 justify-between shrink-0">
+                                                <button
+                                                    onClick={() => setIsProblemsVisible(!isProblemsVisible)}
+                                                    className="flex items-center gap-4 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                                                >
+                                                    <span className="flex items-center gap-1">
+                                                        <span className={validationIssues.filter(i => i.severity === 'error').length > 0 ? "text-red-500" : ""}>
+                                                            ⓧ {validationIssues.filter(i => i.severity === 'error').length}
+                                                        </span>
+                                                        <span className={validationIssues.filter(i => i.severity === 'warning').length > 0 ? "text-yellow-500" : ""}>
+                                                            ⚠️ {validationIssues.filter(i => i.severity === 'warning').length}
+                                                        </span>
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {selectedBotNode && (
+                                            <PropertyPanel
+                                                node={selectedBotNode}
+                                                onNodeUpdate={onNodeUpdate || undefined}
+                                                onClose={() => {
+                                                    setSelectedBotNode(null);
+                                                    setOnNodeUpdate(null);
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                </ReactFlowProvider>
                             ) : (
                                 <div className="flex items-center justify-center h-full text-zinc-500">
                                     Select an event file to edit

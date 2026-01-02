@@ -1,10 +1,10 @@
-import type { BotNode } from '@/lib/railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
 export class SplitterParser implements ASTNodeParser {
-    parse(node: BotNode, context: ParserContext, mode: 'statement' | 'expression' = 'expression'): AST.Expression | null {
+    parse(node: CompilerNode, context: ParserContext, mode: 'statement' | 'expression' = 'expression'): AST.Expression | null {
         if (mode === 'statement') return null;
 
         const inputStr = context.resolveInput(node, 'string') || { type: 'Literal', value: '' };

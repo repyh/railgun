@@ -1,10 +1,10 @@
-import type { BotNode } from '@/lib/railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
 export class FunctionDefParser implements ASTNodeParser {
-    parse(node: BotNode, context: ParserContext, mode: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
+    parse(node: CompilerNode, context: ParserContext, mode: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
         const name = context.getNodeValue(node, 'name') || `func_${node.id.replace(/-/g, '_')}`;
         const cleanName = context.sanitizeName ? context.sanitizeName(name) : name.replace(/[^a-zA-Z0-9_]/g, '_');
 
@@ -33,7 +33,7 @@ export class FunctionDefParser implements ASTNodeParser {
         } as AST.FunctionDeclaration;
     }
 
-    resolveOutput(_node: BotNode, outputKey: string, _context: ParserContext): AST.Expression | null {
+    resolveOutput(_node: CompilerNode, outputKey: string, _context: ParserContext): AST.Expression | null {
         // Handle Argument Outputs
         if (outputKey.startsWith('arg')) {
             // e.g. "arg0" -> "arg0"

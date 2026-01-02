@@ -71,86 +71,88 @@ export class ParserRegistry {
 
     private registerDefaults() {
         // --- Events ---
-        this.registerEvent('On Ready', new OnReadyParser());
-        this.registerEvent('On Message Create', new OnMessageCreateParser());
-        this.registerEvent('On Command', new OnCommandParser());
-        this.registerEvent('On Slash Command', new OnSlashCommandParser());
-        this.registerEvent('On Interaction Create', new OnInteractionCreateParser());
+        this.registerEvent('event/on-ready', new OnReadyParser());
+        this.registerEvent('event/on-message-create', new OnMessageCreateParser());
+        this.registerEvent('event/on-command', new OnCommandParser());
+        this.registerEvent('event/slash-command', new OnSlashCommandParser());
+        this.registerEvent('event/on-interaction-create', new OnInteractionCreateParser());
 
         // Aliases for Interaction Events
-        this.registerEvent('On Button Click', new OnInteractionCreateParser());
-        this.registerEvent('On Modal Submit', new OnInteractionCreateParser());
+        this.registerEvent('event/on-button-click', new OnInteractionCreateParser());
+        this.registerEvent('event/on-modal-submit', new OnInteractionCreateParser());
 
         // --- Primitives ---
-        this.register('String', new StringParser());
-        this.register('Number', new NumberParser());
-        this.register('Boolean', new BooleanParser());
+        this.register('variables/string', new StringParser());
+        this.register('variables/number', new NumberParser());
+        this.register('variables/boolean', new BooleanParser());
 
         // --- Math ---
-        this.register('Add', new AddParser());
-        this.register('Subtract', new SubtractParser());
-        this.register('Multiply', new MultiplyParser());
-        this.register('Divide', new DivideParser());
-        this.register('Modulus', new ModulusParser());
-        this.register('Power', new PowerParser());
-        this.register('Math Assignment', new MathAssignmentParser());
+        this.register('math/add', new AddParser());
+        this.register('math/subtract', new SubtractParser());
+        this.register('math/multiply', new MultiplyParser());
+        this.register('math/divide', new DivideParser());
+        this.register('math/modulus', new ModulusParser());
+        this.register('math/power', new PowerParser());
+        this.register('variables/math-assignment', new MathAssignmentParser());
 
         // --- Logic ---
-        this.register('Comparison', new ComparisonParser());
-        this.register('Logic Op', new LogicOpParser());
-        this.register('Not', new NotParser());
-        this.register('If', new IfParser());
-        this.register('While Loop', new WhileLoopParser());
-        this.register('Do-While Loop', new DoWhileLoopParser());
-        this.register('Wait', new WaitParser());
-        this.register('For Loop', new ForLoopParser());
-        this.register('Break', new BreakParser());
-        this.register('Continue', new ContinueParser());
+        this.register('logic/comparison', new ComparisonParser());
+        this.register('logic/logic-op', new LogicOpParser());
+        this.register('logic/not', new NotParser());
+        this.register('logic/branch', new IfParser());
+        this.register('logic/while-loop', new WhileLoopParser());
+        this.register('logic/do-while-loop', new DoWhileLoopParser());
+        this.register('logic/wait', new WaitParser());
+        this.register('logic/for-loop', new ForLoopParser());
+        this.register('logic/break', new BreakParser());
+        this.register('logic/continue', new ContinueParser());
 
         // --- Variables ---
-        this.register('Declare Variable', new DeclareVariableParser());
-        this.register('Set Variable', new SetVariableParser());
-        this.register('Increment', new IncrementParser());
-        this.register('Get Property', new ObjectAccessorParser());
+        this.register('variables/declare-variable', new DeclareVariableParser());
+        this.register('variables/set-variable', new SetVariableParser());
+        this.register('variables/increment', new IncrementParser());
+        this.register('variables/object-accessor', new ObjectAccessorParser());
 
         // --- Data ---
-        this.register('Array Builder', new ArrayBuilderParser());
-        this.register('Splitter', new SplitterParser());
+        this.register('data/array-builder', new ArrayBuilderParser());
+        this.register('data/splitter', new SplitterParser());
 
         // --- Actions ---
-        this.register('Console Log', new ConsoleLogParser());
-        this.register('Send Message', new SendMessageParser());
-        this.register('Construct Embed', new EmbedParser());
-        this.register('Embed Field', new EmbedFieldParser());
-        this.register('Create Button', new ButtonParser());
-        this.register('Create Action Row', new ActionRowParser());
-        this.register('Show Modal', new ShowModalParser());
-        this.register('Kick Member', new MemberActionParser('kick'));
-        this.register('Ban Member', new MemberActionParser('ban'));
-        this.register('Edit Message', new EditMessageParser());
-        this.register('Delete Message', new DeleteMessageParser());
-        this.register('Wait for Interaction', new AwaitComponentParser());
+        this.register('action/console-log', new ConsoleLogParser());
+        this.register('discord/send-message', new SendMessageParser());
+        this.register('discord/construct-embed', new EmbedParser());
+        this.register('data/embed-field', new EmbedFieldParser());
+        this.register('discord/create-button', new ButtonParser());
+        this.register('discord/create-action-row', new ActionRowParser());
+        this.register('discord/show-modal', new ShowModalParser());
+        this.register('discord/kick-member', new MemberActionParser('kick'));
+        this.register('discord/ban-member', new MemberActionParser('ban'));
+        this.register('discord/add-role', new MemberActionParser('addRole'));
+        this.register('discord/remove-role', new MemberActionParser('removeRole'));
+        this.register('discord/edit-message', new EditMessageParser());
+        this.register('discord/delete-message', new DeleteMessageParser());
+        this.register('discord/await-component', new AwaitComponentParser());
 
         // --- Functions ---
-        this.register('Function Def', new FunctionDefParser());
-        this.register('Call Function', new CallFunctionParser());
-        this.register('Return', new ReturnParser());
+        this.register('functions/def', new FunctionDefParser());
+        this.register('functions/call', new CallFunctionParser());
+        this.register('functions/return', new ReturnParser());
     }
 
     register(nodeType: string, parser: ASTNodeParser) {
         this.parsers.set(nodeType, parser);
     }
 
-    getParser(codeType: string, label: string): ASTNodeParser | undefined {
-        return this.parsers.get(codeType) || this.parsers.get(label);
+    getParser(schemaId: string, label: string): ASTNodeParser | undefined {
+        return this.parsers.get(schemaId) || this.parsers.get(label);
     }
 
     registerEvent(eventType: string, parser: ASTEventParser) {
         this.eventParsers.set(eventType, parser);
     }
 
-    getEventParser(eventType: string): ASTEventParser | undefined {
-        return this.eventParsers.get(eventType);
+    getEventParser(schemaId: string, label: string): ASTEventParser | undefined {
+        return this.eventParsers.get(schemaId) || this.eventParsers.get(label);
     }
 }
 

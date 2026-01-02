@@ -1,10 +1,10 @@
-import type { BotNode } from '@/lib/railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
 export class ComparisonParser implements ASTNodeParser {
-    parse(node: BotNode, context: ParserContext): AST.Expression {
+    parse(node: CompilerNode, context: ParserContext): AST.Expression {
         let left = context.resolveInput(node, 'inp1');
         if (left.type === 'Literal' && left.value === null) {
             left = context.resolveInput(node, 'a');

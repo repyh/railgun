@@ -1,10 +1,10 @@
-import type { BotNode } from '@/lib/railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
 export class SetVariableParser implements ASTNodeParser {
-    parse(node: BotNode, context: ParserContext): AST.Statement {
+    parse(node: CompilerNode, context: ParserContext): AST.Statement {
         let varName = context.getNodeValue(node, 'varName');
         const variableInput = context.resolveInput(node, 'variable'); // Try resolving 'variable' input
 

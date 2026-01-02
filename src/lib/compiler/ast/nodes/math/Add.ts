@@ -1,10 +1,10 @@
-import type { BotNode } from '@/lib/railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
 export class AddParser implements ASTNodeParser {
-    parse(node: BotNode, context: ParserContext): AST.Expression {
+    parse(node: CompilerNode, context: ParserContext): AST.Expression {
         const left = context.resolveInput(node, 'a');
         const right = context.resolveInput(node, 'b');
 

@@ -50,5 +50,12 @@ export const SIDEBAR_CONFIG: SidebarItem[] = [
         icon: Settings,
         path: '/settings',
         position: 'bottom'
+    },
+    {
+        id: 'flow-test',
+        label: 'Flow Test',
+        icon: GitGraph, // Reusing icon for now or need a new one
+        path: '/flow',
+        position: 'top'
     }
 ];

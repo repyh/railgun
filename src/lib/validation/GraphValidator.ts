@@ -1,12 +1,12 @@
-import type { BotNode } from '@/lib/railgun-rete';
+import type { CompilerNode, CompilerConnection } from '@/lib/compiler/graphTypes';
 import type { ValidationIssue, GraphValidatorOptions } from './types';
 
 export class GraphValidator {
-    private nodes: BotNode[];
-    private connections: any[];
+    private nodes: CompilerNode[];
+    private connections: CompilerConnection[];
     private options: GraphValidatorOptions;
 
-    constructor(nodes: BotNode[], connections: any[], options: GraphValidatorOptions = {}) {
+    constructor(nodes: CompilerNode[], connections: CompilerConnection[], options: GraphValidatorOptions = {}) {
         this.nodes = nodes;
         this.connections = connections;
         this.options = {
@@ -244,14 +244,15 @@ export class GraphValidator {
             if (node.requiredInputs && node.requiredInputs.size > 0) {
                 for (const inputKey of node.requiredInputs) {
                     const isConnected = this.connections.some(c => c.target === node.id && c.targetInput === inputKey);
+
                     // Check standard control value if not connected (for value types)
-                    // @ts-ignore
-                    const controlValue = node.controls?.[inputKey]?.value;
-                    const hasValue = controlValue && controlValue.toString().trim() !== '';
+                    // In CompilerNode, data is stored loosely in 'data' field. Use inputKey as lookup.
+                    const controlValue = node.data[inputKey];
+                    const hasValue = controlValue !== undefined && controlValue !== null && controlValue.toString().trim() !== '';
 
                     if (!isConnected && !hasValue) {
                         // Some inputs like 'member' don't have controls, so they MUST be connected.
-                        const msg = node.validationMessages.get(inputKey) || `Input '${inputKey}' is required.`;
+                        const msg = node.validationMessages?.get(inputKey) || `Input '${inputKey}' is required.`;
 
                         issues.push({
                             id: `${node.id}-req-${inputKey}`,
@@ -282,7 +283,7 @@ export class GraphValidator {
         return issues;
     }
 
-    private isEntryNode(node: BotNode): boolean {
+    private isEntryNode(node: CompilerNode): boolean {
         const inputNames = Object.keys(node.inputs || {});
         const hasExecInput = inputNames.some(name => GraphValidator.EXECUTION_PORT_NAMES.has(name));
 

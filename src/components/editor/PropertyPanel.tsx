@@ -1,33 +1,24 @@
-import { BotNode } from '@/lib/railgun-rete';
 import { Database, Terminal, Play, ArrowRight, Box, X, Plus, Trash2, CheckSquare, Square } from 'lucide-react';
 import { InspectorField, InspectorSection } from '@/components/ui/InspectorField';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
 import { useState, useEffect } from 'react';
 import { DiscordEmbedPreview } from '@/components/discord/DiscordEmbedPreview';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
+import { NodeSchemaRegistry } from '@/lib/registries/NodeSchemaRegistry';
+import type { NodeControl } from '@/lib/railgun-flow';
 
-function ControlWidget({ control, onUpdate }: { control: any, onUpdate?: () => void }) {
+function ControlWidget({ control, value, onUpdate }: { control: NodeControl, value: any, onUpdate: (val: any) => void }) {
     if (!control) return null;
-    const [value, setValue] = useState(control.value);
 
-    useEffect(() => {
-        if (control) setValue(control.value);
-    }, [control, control?.value]);
-
-    const handleChange = (v: any) => {
-        setValue(v);
-        control.setValue(v);
-        if (onUpdate) onUpdate();
-    };
-
-    if (control.options && control.options.length > 0) {
+    if (control.type === 'select' && control.props?.options) {
         return (
-            <Select value={value} onValueChange={handleChange}>
+            <Select value={String(value || '')} onValueChange={onUpdate}>
                 <SelectTrigger className="h-[24px] bg-black/20 border-black/20 text-xs w-full">
                     <SelectValue placeholder="Select..." />
                 </SelectTrigger>
                 <SelectContent>
-                    {control.options.map((opt: any) => (
+                    {control.props.options.map((opt: any) => (
                         <SelectItem key={opt.value} value={opt.value} className="text-xs">
                             {opt.label || opt.value}
                         </SelectItem>
@@ -37,21 +28,67 @@ function ControlWidget({ control, onUpdate }: { control: any, onUpdate?: () => v
         );
     }
 
+    if (control.type === 'boolean') {
+        const boolVal = value === true || value === 'true';
+        return (
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => onUpdate(!boolVal)}
+                    className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${boolVal ? 'bg-blue-500 border-blue-500' : 'bg-transparent border-zinc-600'}`}
+                >
+                    {boolVal && <CheckSquare size={12} className="text-white" />}
+                </button>
+                <span className="text-xs text-zinc-400">{boolVal ? 'True' : 'False'}</span>
+            </div>
+        );
+    }
+
     return (
         <input
             className="bg-black/20 border border-black/20 rounded-sm h-[24px] px-2 w-full text-zinc-300 text-xs focus:outline-none focus:border-blue-500/50 focus:bg-black/40 transition-all placeholder:text-zinc-700"
-            value={value}
-            placeholder="Value..."
-            onChange={(e) => handleChange(e.target.value)}
+            value={value !== undefined ? value : ''}
+            placeholder={control.props?.placeholder || "Value..."}
+            onChange={(e) => onUpdate(control.type === 'number' ? Number(e.target.value) : e.target.value)}
+            type={control.type === 'number' ? 'number' : 'text'}
         />
     );
 }
 
+// Simple fallback widget for inputs without explicit control usage in schema but allowing local values
+function SimpleInputWidget({ type, value, onUpdate }: { type: string, value: any, onUpdate: (val: any) => void }) {
+    const isNumber = type === 'Number';
+    const isBoolean = type === 'Boolean';
+
+    if (isBoolean) {
+        const boolVal = value === true || value === 'true';
+        return (
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => onUpdate(!boolVal)}
+                    className={`h-4 w-4 rounded border flex items-center justify-center transition-colors ${boolVal ? 'bg-blue-500 border-blue-500' : 'bg-transparent border-zinc-600'}`}
+                >
+                    {boolVal && <CheckSquare size={12} className="text-white" />}
+                </button>
+            </div>
+        )
+    }
+
+    return (
+        <input
+            className="bg-black/20 border border-black/20 rounded-sm h-[24px] px-2 w-full text-zinc-300 text-xs focus:outline-none focus:border-blue-500/50 focus:bg-black/40 transition-all placeholder:text-zinc-700"
+            value={value !== undefined ? value : ''}
+            placeholder={type + "..."}
+            onChange={(e) => onUpdate(isNumber ? Number(e.target.value) : e.target.value)}
+            type={isNumber ? 'number' : 'text'}
+        />
+    )
+}
+
 interface PropertyPanelProps {
-    node: BotNode | null;
-    editor?: any;
+    node: CompilerNode | null;
+    editor?: any; // ReactFlow instance or similar for looking up connections
     onClose: () => void;
-    onNodeUpdate?: () => void;
+    onNodeUpdate?: (nodeId: string, data: any) => void;
 }
 
 export function PropertyPanel(props: PropertyPanelProps) {
@@ -77,34 +114,39 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
     const [, forceUpdate] = useState(0);
     const [showPreview, setShowPreview] = useState(false);
 
+    // Resolve Schema
+    const schemaId = node?.data?._schemaId || node?.codeType;
+    const schema = NodeSchemaRegistry.get(schemaId);
+
     const triggerUpdate = () => forceUpdate(prev => prev + 1);
 
     if (!node) return null;
 
-    const inputs = Object.entries(node.inputs || {});
-    const outputs = Object.entries(node.outputs || {});
-    const controls = Object.entries(node.controls || {});
+    // Use Schema definitions if available, otherwise fallback to CompilerNode inputs/outputs (which are populated by adapter)
+    const inputs = schema?.inputs || Object.entries(node.inputs || {}).map(([key, val]) => ({ key, label: val.label, socketType: val.socket.name }));
+    const outputs = schema?.outputs || Object.entries(node.outputs || {}).map(([key, val]) => ({ key, label: val.label, socketType: val.socket.name }));
+    const controls = schema?.controls || [];
 
     const [fields, setFields] = useState<any[]>(node.data?.fields || []);
 
     useEffect(() => {
-        if (!node.data) {
-            // @ts-ignore
-            node.data = {};
+        setFields(node.data?.fields || []);
+    }, [node.id, node.data]);
+
+    const updateData = (key: string, value: any) => {
+        if (!node.data) node.data = {};
+        node.data[key] = value;
+
+        // Notify parent
+        if (onNodeUpdate) {
+            onNodeUpdate(node.id, { ...node.data });
         }
-        setFields(node.data.fields || []);
-    }, [node.id]);
+        triggerUpdate();
+    };
 
     const updateFields = (newFields: any[]) => {
-        if (!node.data) {
-            // @ts-ignore
-            node.data = {};
-        }
-
-        // @ts-ignore
-        node.data.fields = newFields;
+        updateData('fields', newFields);
         setFields(newFields);
-        triggerUpdate();
     };
 
     const addField = () => updateFields([...fields, { name: 'New Field', value: 'Value', inline: false }]);
@@ -119,19 +161,6 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
         updateFields(newFields);
     };
 
-    const handleControlUpdate = (key: string, value: any) => {
-        if ((key === 'varName' || key === 'variableName')) {
-            if (node.codeType === 'Declare Variable' || node.codeType === 'Set Variable' || node.label.startsWith('Declare Variable') || node.label.startsWith('Set Variable')) {
-                const base = node.codeType || (node.label.startsWith('Declare') ? 'Declare Variable' : 'Set Variable');
-                node.label = value ? `${base}: ${value}` : base;
-
-                if (onNodeUpdate) onNodeUpdate();
-            }
-        }
-
-        triggerUpdate();
-    };
-
     let Icon = Box;
     let accentColor = "text-zinc-400";
     switch (node.category) {
@@ -144,6 +173,9 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
         case 'Discord': Icon = Box; accentColor = "text-indigo-500"; break;
     }
 
+    // Embed Preview Helper
+    const getVal = (key: string) => node.data?.[key] || '';
+
     return (
         <>
             {/* Modal Preview Overlay */}
@@ -155,22 +187,17 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
                         </button>
                         <h3 className="text-zinc-200 font-bold mb-4 uppercase text-xs tracking-wider">Embed Preview</h3>
                         <div className="bg-[#36393f]">
-                            {(() => {
-                                const getVal = (key: string) => (node.controls?.[key] as any)?.value || '';
-                                return (
-                                    <DiscordEmbedPreview
-                                        title={getVal('title')}
-                                        description={getVal('description')}
-                                        color={getVal('color')}
-                                        author={getVal('author')}
-                                        footer={getVal('footer')}
-                                        image={getVal('image')}
-                                        thumbnail={getVal('thumbnail')}
-                                        timestamp={getVal('timestamp')}
-                                        fields={fields}
-                                    />
-                                )
-                            })()}
+                            <DiscordEmbedPreview
+                                title={getVal('title')}
+                                description={getVal('description')}
+                                color={getVal('color')}
+                                author={getVal('author')}
+                                footer={getVal('footer')}
+                                image={getVal('image')}
+                                thumbnail={getVal('thumbnail')}
+                                timestamp={getVal('timestamp')}
+                                fields={fields}
+                            />
                         </div>
                     </div>
                 </div>
@@ -182,7 +209,7 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
                     <div className="flex items-center gap-2 overflow-hidden">
                         <Icon size={14} className={accentColor} />
                         <span className="font-semibold text-zinc-300 truncate" title={node.label}>
-                            {node.label}
+                            {node.label} ({node.id.substring(0, 5)})
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -203,14 +230,15 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden bg-zinc-900 pb-10">
 
-                    {/* Properties (Controls) */}
+                    {/* Properties (Values without sockets, defined as controls in Schema) */}
                     {controls.length > 0 && (
                         <InspectorSection title="Properties">
-                            {controls.map(([key, control]: [string, any]) => (
-                                <InspectorField key={key} label={control.label || key} subLabel={control.type}>
+                            {controls.map((control) => (
+                                <InspectorField key={control.key} label={control.label || control.key} subLabel={control.type}>
                                     <ControlWidget
                                         control={control}
-                                        onUpdate={() => handleControlUpdate(key, control.value)}
+                                        value={node.data?.[control.key]}
+                                        onUpdate={(val) => updateData(control.key, val)}
                                     />
                                 </InspectorField>
                             ))}
@@ -256,10 +284,15 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
                     {/* Inputs */}
                     {inputs.length > 0 && (
                         <InspectorSection title="Inputs">
-                            {inputs.map(([key, input]: [string, any]) => {
-                                const connections = editor?.getConnections ? editor.getConnections() : [];
-                                const connection = connections.find((c: any) => c.target === node.id && c.targetInput === key);
+                            {inputs.map((input: any) => {
+                                const key = input.key;
+                                // Check connections via Editor API or assume unconnected if editor is missing
+                                // React Flow edges are { source, target, targetHandle }
+                                const connections = editor?.getEdges ? editor.getEdges() : [];
+                                const connection = connections.find((c: any) => c.target === node.id && c.targetHandle === key);
                                 const connectedNodeId = connection?.source;
+
+                                const isPrimitive = ['String', 'Number', 'Boolean'].includes(input.socketType);
 
                                 return (
                                     <InspectorField key={key} label={input.label || key}>
@@ -267,12 +300,17 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
                                             <div className="flex items-center h-[24px] bg-black/20 border border-zinc-800/50 rounded-sm px-2 w-full text-zinc-500 text-xs italic select-none overflow-hidden cursor-not-allowed" title={`Connected to ${connectedNodeId}`}>
                                                 <span className="truncate">Ref: {connectedNodeId?.substring(0, 8)}</span>
                                             </div>
-                                        ) : input.control ? (
-                                            <ControlWidget control={input.control} onUpdate={triggerUpdate} />
+                                        ) : isPrimitive ? (
+                                            // Allow manual entry for unconnected primitive inputs
+                                            <SimpleInputWidget
+                                                type={input.socketType}
+                                                value={node.data?.[key]}
+                                                onUpdate={(val) => updateData(key, val)}
+                                            />
                                         ) : (
                                             <div className="flex items-center h-[24px] bg-black/20 border border-transparent rounded-sm px-2 text-zinc-500 select-none cursor-not-allowed opacity-75">
-                                                <span className="opacity-40 mr-2 text-[10px]">{getTypeIcon(input.socket?.name)}</span>
-                                                <span className="text-xs">{input.socket?.name}</span>
+                                                <span className="opacity-40 mr-2 text-[10px]">{getTypeIcon(input.socketType)}</span>
+                                                <span className="text-xs">{input.socketType}</span>
                                             </div>
                                         )}
                                     </InspectorField>
@@ -284,22 +322,17 @@ function PropertyPanelInner({ node, editor, onClose, onNodeUpdate }: PropertyPan
                     {/* Outputs */}
                     {outputs.length > 0 && (
                         <InspectorSection title="Outputs">
-                            {outputs.map(([key, output]: [string, any]) => (
-                                <InspectorField key={key} label={output.label || key}>
+                            {outputs.map((output: any) => (
+                                <InspectorField key={output.key} label={output.label || output.key}>
                                     <div className="flex items-center h-[24px] bg-black/20 border border-transparent rounded-sm px-2 text-zinc-500 select-none justify-end">
-                                        <span className="text-xs">{output.socket?.name}</span>
-                                        <span className="opacity-40 ml-2 text-[10px]">{getTypeIcon(output.socket?.name)}</span>
+                                        <span className="text-xs">{output.socketType}</span>
+                                        <span className="opacity-40 ml-2 text-[10px]">{getTypeIcon(output.socketType)}</span>
                                     </div>
                                 </InspectorField>
                             ))}
                         </InspectorSection>
                     )}
                 </div>
-
-                {/* Footer */}
-                {/* <div className="p-4 border-t border-(--border-primary) text-xs text-(--text-secondary) text-center">
-                    Railgun v0.0.1-alpha
-                </div> */}
             </div>
         </>
     );
@@ -314,4 +347,3 @@ function getTypeIcon(type: string) {
         default: return '●';
     }
 }
-

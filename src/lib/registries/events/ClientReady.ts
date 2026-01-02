@@ -5,21 +5,15 @@ export const ClientReadyEvent: EventDefinition = {
     label: 'clientReady',
     description: 'Triggered when the bot successfully logs in and is ready.',
     nodeLabel: 'On Client Ready',
-    defaultContent: (name: string, _id: string) => ({
-        id: `event@${Date.now()}`,
+    defaultContent: () => ({
         nodes: [
             {
                 id: "root",
-                label: name || "On Client Ready",
-                data: { eventType: 'clientReady', nodeType: 'On Ready' },
-                category: "Event",
-                inputs: {},
-                outputs: {
-                    exec: { socket: { name: "Exec" } },
-                    client: { socket: { name: "Client" } }
-                }
+                type: 'universal',
+                position: { x: 100, y: 100 },
+                data: { _schemaId: 'event/on-ready' }
             }
         ],
-        connections: []
+        edges: []
     })
 };

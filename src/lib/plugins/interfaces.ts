@@ -1,4 +1,4 @@
-import type { BotNode } from '../railgun-rete';
+import type { CompilerNode } from '../compiler/graphTypes';
 // import type { StatementGenerator, ValueGenerator } from '../compiler/interfaces';
 
 export interface PluginManifest {
@@ -40,7 +40,7 @@ export interface PluginNodeDefinition {
     inputs: Record<string, { type: string, label?: string, default?: any }>;
     outputs: Record<string, { type: string, label?: string }>;
     execute?: string; // Name of function in runtime.js
-    compile?: (node: BotNode, helper: CompilerHelper) => string;
+    compile?: (node: CompilerNode, helper: CompilerHelper) => string;
 }
 
 export interface CompilerHelper {

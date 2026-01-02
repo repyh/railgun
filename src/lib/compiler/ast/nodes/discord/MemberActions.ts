@@ -1,4 +1,4 @@
-import { BotNode } from '@/lib/railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
@@ -10,7 +10,7 @@ export class MemberActionParser implements ASTNodeParser {
         this.action = action;
     }
 
-    parse(node: BotNode, context: ParserContext, mode: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
+    parse(node: CompilerNode, context: ParserContext, mode: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
         if (mode !== 'statement') return null;
 
         const member = context.resolveInput(node, 'member');

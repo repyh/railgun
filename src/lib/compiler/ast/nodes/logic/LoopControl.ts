@@ -1,10 +1,10 @@
-import type { BotNode } from '../../../../railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
 export class BreakParser implements ASTNodeParser {
-    parse(node: BotNode, _context: ParserContext): AST.BreakStatement {
+    parse(node: CompilerNode, _context: ParserContext): AST.BreakStatement {
         return {
             type: 'BreakStatement',
             sourceNodeId: node.id
@@ -13,7 +13,7 @@ export class BreakParser implements ASTNodeParser {
 }
 
 export class ContinueParser implements ASTNodeParser {
-    parse(node: BotNode, _context: ParserContext): AST.ContinueStatement {
+    parse(node: CompilerNode, _context: ParserContext): AST.ContinueStatement {
         return {
             type: 'ContinueStatement',
             sourceNodeId: node.id

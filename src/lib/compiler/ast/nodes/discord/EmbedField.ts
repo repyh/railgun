@@ -1,10 +1,10 @@
-import type { BotNode } from '@/lib/railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
 export class EmbedFieldParser implements ASTNodeParser {
-    parse(node: BotNode, context: ParserContext, mode: 'statement' | 'expression' = 'expression'): AST.Expression | null {
+    parse(node: CompilerNode, context: ParserContext, mode: 'statement' | 'expression' = 'expression'): AST.Expression | null {
         // Embed Field is strictly an expression (Value node) used by Construct Embed
         if (mode === 'statement') return null;
 

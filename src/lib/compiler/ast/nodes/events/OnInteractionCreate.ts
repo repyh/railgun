@@ -1,14 +1,14 @@
-import type { BotNode } from '../../../../railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTEventParser } from '../EventParser';
 import type { ParserContext } from '../ParserContext';
 
 export class OnInteractionCreateParser implements ASTEventParser {
-    parse(node: BotNode, context: ParserContext): AST.FunctionDeclaration {
+    parse(node: CompilerNode, context: ParserContext): AST.FunctionDeclaration {
         const body = context.traverseBlock(node, 'exec');
         return {
             type: 'FunctionDeclaration',
-            id: { type: 'Identifier', name: context.sanitizeName(node.label || 'OnInteractionCreate') },
+            id: { type: 'Identifier', name: context.sanitizeName(node.codeType || 'OnInteractionCreate') },
             params: [{ type: 'Identifier', name: 'interaction' }],
             body,
             async: true,

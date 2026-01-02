@@ -94,7 +94,7 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
     onTabChange
 }) => {
     return (
-        <div className="w-64 shrink-0 border-r border-zinc-800 bg-zinc-900/30 flex flex-col">
+        <div className="w-64 shrink-0 border-r border-zinc-800 bg-[#171719] flex flex-col">
             <div className="h-12 flex items-center px-4 border-b border-zinc-800 shrink-0">
                 <Button variant="ghost" size="icon" onClick={onNavigateBack} className="mr-2 h-7 w-7 text-zinc-500 hover:text-white" title="Back to Dashboard">
                     <Files size={16} />

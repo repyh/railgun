@@ -1,11 +1,11 @@
-import type { BotNode } from '../../../../railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTEventParser } from '../EventParser';
 import type { ParserContext } from '../ParserContext';
 
 export class OnSlashCommandParser implements ASTEventParser {
-    parse(node: BotNode, context: ParserContext): AST.FunctionDeclaration {
-        const cmdName = node.data?.name || node.label || 'OnSlashCommand';
+    parse(node: CompilerNode, context: ParserContext): AST.FunctionDeclaration {
+        const cmdName = node.data?.name || node.codeType || 'OnSlashCommand';
         const body = context.traverseBlock(node, 'exec');
 
         return {

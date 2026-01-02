@@ -6,21 +6,14 @@ export const InteractionCreateEvent: EventDefinition = {
     description: 'Triggered when a user uses a slash command.',
     nodeLabel: 'On Slash Command',
     defaultContent: (name: string, _id: string) => ({
-        id: `event@${Date.now()}`,
         nodes: [
             {
                 id: "root",
-                label: name || "On Slash Command",
-                data: { eventType: 'interactionCreate', nodeType: 'On Slash Command' },
-                category: "Event",
-                inputs: {},
-                outputs: {
-                    exec: { socket: { name: "Exec" } },
-                    user: { socket: { name: "User" } },
-                    channel: { socket: { name: "Channel" } }
-                }
+                type: 'universal',
+                position: { x: 100, y: 100 },
+                data: { _schemaId: 'event/slash-command', name: name }
             }
         ],
-        connections: []
+        edges: []
     })
 };

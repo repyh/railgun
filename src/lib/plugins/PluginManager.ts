@@ -1,12 +1,8 @@
 import type { Plugin, PluginContext, PluginManifest, PluginNodeDefinition } from './interfaces';
 import { registry as ASTRegistry } from '../compiler/ast/nodes/index';
 import { DynamicASTNodeAdapter } from './DynamicASTNodeAdapter';
-// import { Registry } from '../compiler/Registry';
-import { nodeRegistry } from '../registries/NodeRegistry';
-// @ts-ignore
-import { BotNode, Sockets, InputControl } from '../railgun-rete';
-// @ts-ignore
-import { ClassicPreset } from 'rete';
+import { NodeSchemaRegistry } from '../registries/NodeSchemaRegistry';
+import type { NodeSchema, NodeControl } from '../railgun-flow';
 
 const fs = window.require('fs');
 const path = window.require('path');
@@ -72,23 +68,12 @@ export class PluginManager {
 
     static unloadAll() {
         console.log(`[PluginManager] Unloading ${this.plugins.size} plugins...`);
-        //@ts-ignore
-        for (const [id, plugin] of this.plugins) {
+        for (const [, plugin] of this.plugins) {
             if (plugin.registeredItems) {
-                // Unregister Nodes
-                for (const label of plugin.registeredItems.nodes) {
-                    nodeRegistry.unregister(label);
+                // Unregister Nodes from Schema Registry
+                for (const schemaId of plugin.registeredItems.nodes) {
+                    NodeSchemaRegistry.unregister(schemaId);
                 }
-                // Unregister Statements
-                /*
-                for (const label of plugin.registeredItems.statements) {
-                    // Registry.unregisterStatement(label);
-                }
-                // Unregister Values
-                for (const cat of plugin.registeredItems.values) {
-                    // Registry.unregisterValue(cat);
-                }
-                */
             }
         }
         this.plugins.clear();
@@ -155,18 +140,18 @@ export class PluginManager {
             // Create Context
             const ctx: PluginContext = {
                 registerNode: (def) => {
-                    this.registerNode(manifest.id, def);
-                    registeredItems.nodes.push(def.label);
+                    const schemaId = this.registerNode(manifest.id, def);
+                    registeredItems.nodes.push(schemaId);
                 },
-                registerStatement: (label, _gen) => {
+                registerStatement: (_label, _gen) => {
                     // Registry.registerStatement(label, gen);
                     console.warn('[PluginManager] registerStatement not supported in AST compiler yet');
-                    registeredItems.statements.push(label);
+                    registeredItems.statements.push(_label);
                 },
-                registerValue: (cat, _gen) => {
+                registerValue: (_cat, _gen) => {
                     // Registry.registerValue(cat, gen);
                     console.warn('[PluginManager] registerValue not supported in AST compiler yet');
-                    registeredItems.values.push(cat);
+                    registeredItems.values.push(_cat);
                 }
             };
 
@@ -201,14 +186,83 @@ export class PluginManager {
         }
     }
 
-    static registerNode(pluginId: string, def: PluginNodeDefinition) {
-        const factory = () => this.createDynamicNode(def);
-
-        nodeRegistry.register({
+    static registerNode(pluginId: string, def: PluginNodeDefinition): string {
+        const schemaId = `plugin/${pluginId}/${def.label.replace(/\s+/g, '-').toLowerCase()}`;
+        // Create NodeSchema from Plugin Definition
+        const schema: NodeSchema = {
+            id: schemaId,
             label: def.label,
             category: def.category,
-            factory: factory
-        });
+            inputs: [],
+            outputs: [],
+            controls: []
+        };
+
+        // Map Inputs
+        if (def.inputs) {
+            Object.entries(def.inputs).forEach(([key, conf]) => {
+                let socketType = 'Any';
+
+                // Map legacy types to new socket types
+                if (conf.type === 'exec') socketType = 'Exec';
+                else if (conf.type === 'string') socketType = 'String';
+                else if (conf.type === 'number') socketType = 'Number';
+                else if (conf.type === 'boolean') socketType = 'Boolean';
+                else socketType = 'Any'; // Default
+
+                schema.inputs.push({
+                    key,
+                    label: conf.label || key,
+                    socketType
+                });
+
+                // Generate Control if primitive type and not exec
+                // This allows plugin nodes to have editable properties
+                if (conf.type !== 'exec') {
+                    // Infer control type
+                    let controlType: NodeControl['type'] = 'text';
+                    if (conf.type === 'number') controlType = 'number';
+                    if (conf.type === 'boolean') controlType = 'boolean';
+
+                    schema.controls.push({
+                        key,
+                        type: controlType,
+                        label: conf.label || key,
+                        props: {
+                            placeholder: conf.default ? String(conf.default) : undefined
+                        }
+                    });
+                    // Set default data
+                    if (!schema.defaultData) schema.defaultData = {};
+                    if (conf.default !== undefined) {
+                        schema.defaultData[key] = conf.default;
+                    }
+                }
+            });
+        }
+
+        // Map Outputs
+        if (def.outputs) {
+            Object.entries(def.outputs).forEach(([key, conf]) => {
+                let socketType = 'Any';
+
+                // Map legacy types
+                if (conf.type === 'exec') socketType = 'Exec';
+                else if (conf.type === 'string') socketType = 'String';
+                else if (conf.type === 'number') socketType = 'Number';
+                else if (conf.type === 'boolean') socketType = 'Boolean';
+                else socketType = 'Any'; // Default
+
+                schema.outputs.push({
+                    key,
+                    label: conf.label || key,
+                    socketType
+                });
+            });
+        }
+
+        // Register Schema
+        NodeSchemaRegistry.register(schema);
 
         // Register AST Parser Logic
         if (def.execute) {
@@ -218,43 +272,7 @@ export class PluginManager {
         } else {
             console.warn(`[PluginManager] Node ${def.label} has no execute function, AST generation will emit comments.`);
         }
-    }
 
-    private static createDynamicNode(def: PluginNodeDefinition): BotNode {
-        const node = new BotNode(def.label, def.category);
-
-        // Inputs
-        if (def.inputs) {
-            for (const [key, conf] of Object.entries(def.inputs)) {
-                let socket = Sockets.Any;
-                if (conf.type === 'exec') socket = Sockets.Exec;
-                else if (conf.type === 'string') socket = Sockets.String;
-                else if (conf.type === 'number') socket = Sockets.Number;
-                else if (conf.type === 'boolean') socket = Sockets.Boolean;
-
-                node.addInput(key, new ClassicPreset.Input(socket, conf.label || key));
-
-                // Add control if not exec
-                if (conf.type !== 'exec') {
-                    const typeMap: Record<string, string> = { 'string': 'text', 'number': 'number', 'boolean': 'text' };
-                    node.addControl(key, new InputControl(conf.default || '', conf.label || key, typeMap[conf.type] || 'text'));
-                }
-            }
-        }
-
-        // Outputs
-        if (def.outputs) {
-            for (const [key, conf] of Object.entries(def.outputs)) {
-                let socket = Sockets.Any;
-                if (conf.type === 'exec') socket = Sockets.Exec;
-                else if (conf.type === 'string') socket = Sockets.String;
-                else if (conf.type === 'number') socket = Sockets.Number;
-                else if (conf.type === 'boolean') socket = Sockets.Boolean;
-
-                node.addOutput(key, new ClassicPreset.Output(socket, conf.label || key));
-            }
-        }
-
-        return node;
+        return schemaId;
     }
 }

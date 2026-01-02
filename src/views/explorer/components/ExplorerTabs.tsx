@@ -11,7 +11,7 @@ interface ExplorerTabsProps {
 
 export const ExplorerTabs: React.FC<ExplorerTabsProps> = ({ activeTab, onTabChange, children }) => {
     return (
-        <div className="h-12 flex items-center bg-zinc-900 border-b border-zinc-800 px-1 gap-4">
+        <div className="h-12 flex items-center bg-[#171719] border-b border-zinc-800 px-1 gap-4">
 
             {/* Primary Navigation */}
             <div className="flex items-center gap-1 p-1 bg-zinc-950/50 rounded-lg border border-zinc-800/50">

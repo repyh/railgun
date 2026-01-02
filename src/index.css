@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@import './styles/rete.css';
-
 @theme {
     --color-border: #27272a;
     /* zinc-800 */
@@ -89,4 +87,52 @@ body {
 
 .titlebar-no-drag {
     -webkit-app-region: no-drag;
+}
+
+/* React Flow Overrides */
+.react-flow__controls {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    background: #18181b !important;
+    border: 1px solid #27272a !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5) !important;
+}
+
+.react-flow__controls-button {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: none !important;
+    width: 28px !important;
+    height: 28px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #a1a1aa !important;
+    transition: all 0.2s !important;
+    border-radius: 4px !important;
+}
+
+.react-flow__controls-button:hover {
+    background: #27272a !important;
+    color: #ffffff !important;
+}
+
+.react-flow__controls-button svg {
+    fill: currentColor !important;
+    width: 14px !important;
+    height: 14px !important;
+}
+
+.react-flow__minimap {
+    background-color: #18181b !important;
+    border: 1px solid #27272a !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5) !important;
+}
+
+.react-flow__minimap-mask {
+    fill: rgba(0, 0, 0, 0.4) !important;
 }

@@ -1,10 +1,10 @@
-import type { BotNode } from '@/lib/railgun-rete';
+import type { CompilerNode } from '@/lib/compiler/graphTypes';
 import * as AST from '../../types';
 import type { ASTEventParser } from '../EventParser';
 import type { ParserContext } from '../ParserContext';
 
 export class OnReadyParser implements ASTEventParser {
-    parse(node: BotNode, context: ParserContext): AST.FunctionDeclaration {
+    parse(node: CompilerNode, context: ParserContext): AST.FunctionDeclaration {
         const body = context.traverseBlock(node, 'exec');
         return {
             type: 'FunctionDeclaration',

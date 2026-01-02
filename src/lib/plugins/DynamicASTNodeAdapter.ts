@@ -1,7 +1,7 @@
 import type { ASTNodeParser } from '../compiler/ast/nodes/NodeParser';
 import type { ParserContext } from '../compiler/ast/nodes/ParserContext';
 import * as AST from '../compiler/ast/types';
-import type { BotNode } from '../railgun-rete';
+import type { CompilerNode } from '../compiler/graphTypes';
 import type { PluginNodeDefinition } from './interfaces';
 
 export class DynamicASTNodeAdapter implements ASTNodeParser {
@@ -16,7 +16,7 @@ export class DynamicASTNodeAdapter implements ASTNodeParser {
         this.def = def;
     }
 
-    parse(node: BotNode, context: ParserContext, expectedType?: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
+    parse(node: CompilerNode, context: ParserContext, expectedType?: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
         if (!this.def.execute) {
             return {
                 type: 'CommentStatement',
@@ -45,10 +45,7 @@ export class DynamicASTNodeAdapter implements ASTNodeParser {
         }
 
         // 2. Build Call Expression to runtime
-        // We assume the runtime is exposed via a global or imported variable. 
-        // For now, let's assume `plugins.pluginId.funcName(args)` or similar.
-        // Actually, looking at implementation plan: `plugin_pluginId.funcName(args)`
-
+        // We assume `plugin_pluginId.funcName(args)`
         const safePluginId = this.pluginId.replace(/[^a-zA-Z0-9_]/g, '_');
         const pluginVarName = `plugin_${safePluginId}`;
 
@@ -70,9 +67,6 @@ export class DynamicASTNodeAdapter implements ASTNodeParser {
 
         // 3. Return based on expected type
         if (expectedType === 'statement') {
-            // Check if it has outputs other than exec. If so, it might yield a value.
-            // But if requested as statement, wrap in ExpressionStatement.
-
             const awaitExpr: AST.AwaitExpression = {
                 type: 'AwaitExpression',
                 argument: callExpr
@@ -81,7 +75,6 @@ export class DynamicASTNodeAdapter implements ASTNodeParser {
             const hasDataOutputs = this.def.outputs && Object.values(this.def.outputs).some(o => o.type !== 'exec');
 
             if (hasDataOutputs) {
-                // let res_NODEID = await ...
                 const resultVar = `res_${node.id.replace(/-/g, '_')}`;
                 return {
                     type: 'VariableDeclaration',
@@ -113,7 +106,7 @@ export class DynamicASTNodeAdapter implements ASTNodeParser {
         }
     }
 
-    resolveOutput(node: BotNode, outputKey: string, context: ParserContext): AST.Expression | null {
+    resolveOutput(node: CompilerNode, outputKey: string, context: ParserContext): AST.Expression | null {
         // Prepare the base object expression
         let baseObject: AST.Expression;
 
