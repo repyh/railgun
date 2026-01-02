@@ -13,5 +13,9 @@ export function createObjectAccessorNode(): BotNode {
     // Outputs
     node.addOutput('value', new ClassicPreset.Output(Sockets.Any, 'Value'));
 
+    // Validation
+    node.requireInput('object', 'Object input is required.');
+    node.requireInput('property', 'Property Path is required.');
+
     return node;
 }

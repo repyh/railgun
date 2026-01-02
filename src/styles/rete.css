@@ -123,3 +123,14 @@ svg[data-testid="connection"] path:hover {
     border-radius: 4px;
     box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
 }
+
+/* Validation Feedback */
+.node.node-error {
+    box-shadow: 0 0 0 2px #ef4444, 0 8px 24px rgba(239, 68, 68, 0.2) !important;
+    transition: box-shadow 0.2s ease;
+}
+
+.node.node-warning {
+    box-shadow: 0 0 0 2px #eab308, 0 8px 24px rgba(234, 179, 8, 0.2) !important;
+    transition: box-shadow 0.2s ease;
+}

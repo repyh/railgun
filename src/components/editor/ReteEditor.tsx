@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createEditor } from '@/lib/defaultEditor';
 import { Compiler } from '@/lib/compiler';
+import { GraphValidator } from '@/lib/validation/GraphValidator';
+import type { ValidationIssue } from '@/lib/validation/types';
 import { Button } from '@/components/ui/Button';
-import { Play, Undo2, Redo2 } from 'lucide-react';
+import { Play, Undo2, Redo2, AlertCircle } from 'lucide-react';
 import { BotNode, InputControl, Sockets } from '@/lib/railgun-rete';
 import { ClassicPreset } from 'rete';
 import { ContextMenu } from '@/components/editor/ContextMenu';
@@ -11,6 +13,7 @@ import { nodeRegistry } from '@/lib/registries/NodeRegistry';
 import { AreaExtensions } from 'rete-area-plugin';
 import { useElectron } from '@/hooks/useElectron';
 import { PropertyPanel } from '@/components/editor/PropertyPanel';
+import { ProblemsPanel } from '@/components/editor/ProblemsPanel';
 import { useEditorShortcuts } from '@/hooks/useEditorShortcuts';
 
 import { useSettings } from '@/contexts/SettingsContext';
@@ -59,6 +62,11 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     //@ts-ignore
     const [tick, setTick] = useState(0); // Force re-render on graph changes
+
+    // Validation State
+    const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
+    const [showProblems, setShowProblems] = useState(true);
+    const validationTimeout = useRef<NodeJS.Timeout | null>(null);
 
     const selectedNode = editorRef.current?.getNodes().find((n: any) => n.id === selectedNodeId) || null;
 
@@ -114,6 +122,53 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             saveGraph();
         }, settingsRef.current.system?.autoSaveDelay || 1000);
     }, [setStatus, filePath, projectPath, isElectron, files]);
+
+    // Graph Validation Effect
+    useEffect(() => {
+        if (!editorRef.current) return;
+
+        if (validationTimeout.current) clearTimeout(validationTimeout.current);
+
+        validationTimeout.current = setTimeout(() => {
+            try {
+                const nodes = editorRef.current.getNodes();
+                const connections = editorRef.current.getConnections();
+
+                // Run Validation
+                const validator = new GraphValidator(nodes, connections);
+                const issues = validator.validate();
+                setValidationIssues(issues);
+
+                // Update node visuals
+                if (areaRef.current) {
+                    nodes.forEach((n: any) => {
+                        const view = areaRef.current.nodeViews.get(n.id);
+                        if (view) {
+                            const nodeIssues = issues.filter(i => i.nodeId === n.id);
+                            const hasError = nodeIssues.some(i => i.severity === 'error');
+                            const hasWarning = nodeIssues.some(i => i.severity === 'warning');
+
+                            // Basic class toggling
+                            if (hasError) {
+                                view.element.classList.add('node-error');
+                                view.element.classList.remove('node-warning');
+                            } else if (hasWarning) {
+                                view.element.classList.add('node-warning');
+                                view.element.classList.remove('node-error');
+                            } else {
+                                view.element.classList.remove('node-error');
+                                view.element.classList.remove('node-warning');
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Validation failed", e);
+            }
+
+        }, 500); // 500ms debounce
+
+    }, [tick, editorRef.current]);
 
     // Handle Window Blur (Auto-save on window lose focus)
     useEffect(() => {
@@ -444,6 +499,15 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
         }
     };
 
+    const handleJumpToNode = async (nodeId: string) => {
+        if (!editorRef.current || !areaRef.current) return;
+        const node = editorRef.current.getNode(nodeId);
+        if (node) {
+            await AreaExtensions.zoomAt(areaRef.current, [node]);
+            setSelectedNodeId(nodeId);
+        }
+    };
+
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
         const rect = containerRef.current!.getBoundingClientRect();
@@ -498,6 +562,18 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {/* Problems Toggle */}
+                    <Button
+                        onClick={() => setShowProblems(!showProblems)}
+                        variant="ghost"
+                        size="icon"
+                        className={`h-6 px-2 gap-1.5 text-xs font-medium ${validationIssues.length > 0 ? 'text-red-400 hover:text-red-300' : 'text-zinc-500'}`}
+                        title="Toggle Problems View"
+                    >
+                        <AlertCircle size={12} />
+                        {validationIssues.length > 0 && <span>{validationIssues.length}</span>}
+                    </Button>
+
                     <div className="flex items-center border-r border-zinc-800 pr-2 mr-2 gap-1">
                         <Button
                             onClick={() => editorInstanceRef.current?.undo()}
@@ -527,23 +603,35 @@ export function ReteEditor({ projectPath, filePath, setStatus }: { projectPath: 
             </div>
 
             {/* Main Workspace Area (Canvas + Property Panel) */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex overflow-hidden relative">
 
                 {/* Canvas */}
-                <div className="flex-1 relative bg-[#1a1a1d] min-w-0">
-                    <div
-                        ref={containerRef}
-                        className="absolute inset-0 w-full h-full rete-background"
-                        onContextMenu={handleContextMenu}
-                        onClick={handleCloseMenu}
-                    />
+                <div className="flex-1 relative bg-[#1a1a1d] min-w-0 flex flex-col">
+                    <div className="flex-1 relative">
+                        <div
+                            ref={containerRef}
+                            className="absolute inset-0 w-full h-full rete-background"
+                            onContextMenu={handleContextMenu}
+                            onClick={handleCloseMenu}
+                        />
 
-                    {menuVisible && (
-                        <ContextMenu
-                            x={menuPosition.x}
-                            y={menuPosition.y}
-                            onClose={handleCloseMenu}
-                            onSelect={handleAddNode}
+                        {menuVisible && (
+                            <ContextMenu
+                                x={menuPosition.x}
+                                y={menuPosition.y}
+                                onClose={handleCloseMenu}
+                                onSelect={handleAddNode}
+                            />
+                        )}
+                    </div>
+
+                    {/* Problems Panel Integration */}
+                    {showProblems && (
+                        <ProblemsPanel
+                            issues={validationIssues}
+                            isVisible={showProblems}
+                            onClose={() => setShowProblems(false)}
+                            onJumpToNode={handleJumpToNode}
                         />
                     )}
                 </div>

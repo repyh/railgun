@@ -21,6 +21,10 @@ export class BotNode extends ClassicPreset.Node {
     public height!: number;
     public width!: number;
 
+    // Validation Metadata
+    public requiredInputs: Set<string> = new Set();
+    public validationMessages: Map<string, string> = new Map();
+
     constructor(label: string, category: NodeCategory = 'Action') {
         super(label);
         this.category = category;
@@ -28,6 +32,18 @@ export class BotNode extends ClassicPreset.Node {
         this.width = 200;
         this.height = 120;
     }
+
+    public requireInput(key: string, message?: string) {
+        this.requiredInputs.add(key);
+        if (message) this.validationMessages.set(key, message);
+        return this; // Chainable
+    }
+
+    /**
+     * Optional custom validation logic.
+     * Can be overridden by subclasses to implement complex rules.
+     */
+    public validate?(connections: any[]): { id: string, message: string, severity: 'error' | 'warning' }[];
 }
 
 /**
