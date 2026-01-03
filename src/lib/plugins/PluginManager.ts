@@ -4,13 +4,27 @@ import { DynamicASTNodeAdapter } from './DynamicASTNodeAdapter';
 import { NodeSchemaRegistry } from '../registries/NodeSchemaRegistry';
 import type { NodeSchema, NodeControl } from '../railgun-flow';
 
-const fs = window.require('fs');
-const path = window.require('path');
-const { app } = window.require('@electron/remote');
+// Environment detection
+const isRenderer = typeof globalThis !== 'undefined' && !!(globalThis as any).window;
+
+// Use a dynamic require to avoid bundler issues in renderer process
+const getModule = (id: string) => {
+    const globalObj = globalThis as any;
+    if (isRenderer && globalObj.window?.require) {
+        return globalObj.window.require(id);
+    }
+    // @ts-ignore - 'require' exists in Electron main process
+    return typeof require !== 'undefined' ? require(id) : undefined;
+};
+
+const fs = getModule('fs');
+const path = getModule('path');
+const electron = getModule('electron');
+const app = isRenderer ? getModule('@electron/remote')?.app : electron?.app;
 
 export class PluginManager {
     static plugins: Map<string, Plugin> = new Map();
-    static libraryDir = path.join(app.getPath('documents'), 'railgun', 'plugins');
+    static libraryDir = app ? path.join(app.getPath('documents'), 'railgun', 'plugins') : '';
     static activePluginsDir = PluginManager.libraryDir;
 
     static async init(projectPath?: string) {
@@ -127,8 +141,10 @@ export class PluginManager {
                 return;
             }
 
-            delete window.require.cache[window.require.resolve(entryPath)];
-            const pluginModule = window.require(entryPath);
+            const globalObj = globalThis as any;
+            const safeRequire = (isRenderer && globalObj.window?.require) ? globalObj.window.require : require;
+            delete safeRequire.cache[safeRequire.resolve(entryPath)];
+            const pluginModule = safeRequire(entryPath);
 
             // Track registered items
             const registeredItems = {

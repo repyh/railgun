@@ -73,12 +73,18 @@ export class GraphParser implements ParserContext {
                 // ASTNodeParser signature: parse(node, context, mode) -> AST.Statement | ...
 
                 // FunctionDefParser is an ASTNodeParser.
-                return (stdParser as any).parse(node, this, 'statement') as AST.FunctionDeclaration;
+                const func = (stdParser as any).parse(node, this, 'statement') as AST.FunctionDeclaration;
+                if (func) func.sourceNodeId = node.id;
+                return func;
             }
         }
 
         if (parser) {
-            return parser.parse(node, this);
+            const result = parser.parse(node, this);
+            if (result) {
+                result.sourceNodeId = node.id;
+            }
+            return result;
         }
         return null;
     }
@@ -166,7 +172,9 @@ export class GraphParser implements ParserContext {
                     'ReturnStatement',
                     'BlockStatement'
                 ].includes(result.type)) {
-                    return result as AST.Statement;
+                    const stmt = result as AST.Statement;
+                    stmt.sourceNodeId = node.id;
+                    return stmt;
                 }
             }
         }

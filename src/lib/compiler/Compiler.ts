@@ -53,8 +53,6 @@ export class Compiler {
 
         if (errors.length > 0) {
             console.error('[Railgun Compiler] Validation Errors:', errors);
-            // In the future, throw here or return an error object.
-            // For now, generate a file with the errors as comments to be safe.
             const errorBlock = errors.map(e => `// ERROR: ${e.message} (Node: ${e.nodeId})`).join('\n');
             return `/* COMPILATION FAILED - VALIDATION ERRORS */\n\n${errorBlock}`;
         }
@@ -62,6 +60,7 @@ export class Compiler {
         // 3. Code Generation: AST -> Code Strings
         const printer = new CodePrinter();
 
+        // We need to track the Global Code lines to offset the main body map
         const globalStmts: string[] = [];
         // 3a. Inject Plugin Imports
         const pluginStrategy = new PluginInjectionStrategy();
@@ -69,6 +68,7 @@ export class Compiler {
         globalStmts.push(...pluginStmts);
 
         let eventFunctionBody = '';
+        let eventBodyMap: Record<number, string> = {}; // Local map for the body
 
         // Metadata extraction
         let eventName = 'default-cmd';
@@ -92,10 +92,49 @@ export class Compiler {
                     // A. Extract Parameters
                     eventParams = func.params.map(p => p.name);
 
-                    // B. Extract Body Code
-                    // We print the body block " { ... } " and strip the braces to get the inner content
-                    const bodyCode = printer.print(func.body, 1);
-                    eventFunctionBody = bodyCode.trim().replace(/^{/, '').replace(/}$/, '').trim();
+                    // B. Extract Body Code & Map
+                    // We use `printer.build` to get the map.
+                    // Note: func.body is a BlockStatement. build() will wrap it in { ... } lines.
+                    // We usually strip the outer braces for the Wrapper.
+                    const bodyResult = printer.build(func.body);
+
+                    // Simple Strip: remove first and last line (braces)
+                    // The map keys need to be adjusted.
+                    // Lines 0 (Build output starts at index 0? No, usually line 1 if split)
+                    // printer.build returns code string. property lines array inside was internal.
+
+                    const rawBodyLines = bodyResult.code.split('\n');
+                    // Strip first and last syntax lines ({ and })
+                    // We assume standard BlockStatement printing format:
+                    // {
+                    //    stmt...
+                    // }
+                    const strippedLines = rawBodyLines.slice(1, -1);
+                    eventFunctionBody = strippedLines.map(l => l.replace(/^    /, '')).join('\n'); // Unindent once
+
+                    // Adjust map:
+                    // Original Line 2 becomes New Line 1.
+                    // We also need to filter out the braces lines (1 and N).
+                    // Also unindenting doesn't change line number mapping logic unless we map columns.
+
+                    const startLine = 2;
+                    // If length is 3. { (1), stmt (2), } (3).
+                    // We want Line 2. 
+                    // loop limit: line < length. (line < 3 -> 2).
+                    // Wait, previous code was: endLine = rawBodyLines.length - 1; 
+                    // If length 3, endLine 2. line < 2. Excludes 2.
+                    // So we want line < rawBodyLines.length.
+
+                    const limitLine = rawBodyLines.length;
+
+                    Object.entries(bodyResult.map).forEach(([lineStr, nodeId]) => {
+                        const line = parseInt(lineStr);
+                        if (line >= startLine && line < limitLine) {
+                            // Map to new relative line
+                            const newLine = line - 1; // Line 2 -> Line 1
+                            eventBodyMap[newLine] = nodeId;
+                        }
+                    });
 
                     // C. Extract Metadata
                     if (eventNode) {
@@ -113,28 +152,24 @@ export class Compiler {
             }
 
             // Regular global statement
+            // Ideally we map these too, but for now we focus on the main event body
             globalStmts.push(printer.print(stmt));
         }
 
         const globalCode = globalStmts.join('\n\n');
 
-        // 4. Transform: Wrap code in the specific strategy (Slash vs Legacy vs Event)
+        // 4. Transform: Wrap code in the specific strategy
         let strategy: WrapperStrategy;
-
         switch (this.fileType as string) {
-            case 'slash_command':
-                strategy = new SlashCommandStrategy();
-                break;
-            case 'event':
-                strategy = new EventStrategy();
-                break;
-            case 'command':
-            default:
-                strategy = new LegacyCommandStrategy();
-                break;
+            case 'slash_command': strategy = new SlashCommandStrategy(); break;
+            case 'event': strategy = new EventStrategy(); break;
+            case 'command': default: strategy = new LegacyCommandStrategy(); break;
         }
 
-        const wrappedMain = strategy.wrap(eventFunctionBody, {
+        // We generate the wrapper to find offsets
+        // To find the specific offset where bodyCode was inserted, we can use a marker.
+        const marker = '/*__BODY_MARKER__*/';
+        const templateWithMarker = strategy.wrap(marker, {
             eventName,
             eventParams,
             isAsync,
@@ -143,14 +178,67 @@ export class Compiler {
             once
         });
 
-        // 5. Final Assembly
-        const finalCode = [
-            '// Generated by Railgun AST Compiler',
-            globalCode,
-            wrappedMain
-        ].filter(s => s.trim()).join('\n\n');
+        const [header] = templateWithMarker.split(marker);
 
-        console.log('[Railgun Compiler] Compilation successful.');
-        return finalCode;
+        // Count lines in header
+        const headerLines = header.split('\n').length - 1;
+        // Be careful. 'Foo\nBar'.split('\n').length is 2. 'Foo\n'.split('\n').length is 2 (last is empty).
+        // The marker is likely on a line by itself or indented. 
+        // e.g. "execute: .. {\n    /*MARKER*/\n"
+
+        // Calculate Global Offset
+        // Final layout:
+        // // Generated... (1 line)
+        // Global Code
+        // \n\n (2? lines) or just joined.
+        // Wrapped Code
+
+        // Let's Assemble first
+        const banner = '// Generated by Railgun AST Compiler';
+
+        // Let's build the final map.
+        const finalMap: Record<number, string> = {};
+
+        // Calculate offsets correctly by constructing the preceding content
+        const preParts = [banner, globalCode].filter(s => s && s.trim().length > 0);
+        let preString = preParts.join('\n\n');
+
+        // Add the separator that allows the wrapped code to be appended
+        // (Only if there is preceding content)
+        if (preString.length > 0) {
+            preString += '\n\n';
+        }
+
+        // The base offset is the number of lines consumed by preceding content
+        // (split length - 1 gives the 0-based index of the next line, equivalent to count of full lines before)
+        const baseOffset = preString.length > 0 ? preString.split('\n').length - 1 : 0;
+
+        // Apply Header Offset
+        // The body starts at: baseOffset + headerLines
+        const totalBodyOffset = baseOffset + headerLines;
+
+        // Shift body map
+        Object.entries(eventBodyMap).forEach(([lineStr, nodeId]) => {
+            const line = parseInt(lineStr);
+            const finalLine = line + totalBodyOffset;
+            finalMap[finalLine] = nodeId;
+        });
+
+        const realWrappedCode = strategy.wrap(eventFunctionBody, {
+            eventName,
+            eventParams,
+            isAsync,
+            description,
+            options: eventNode?.data?.options as any[] || [],
+            once
+        });
+
+        const finalCode = preString + realWrappedCode;
+
+        // Append Source Map
+        const mapComment = `\n//# railgun_source_map=${JSON.stringify(finalMap)}`;
+
+        console.log('[Railgun Compiler] Compilation successful with Source Map.');
+        return finalCode + mapComment;
     }
 }

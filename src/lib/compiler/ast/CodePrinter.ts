@@ -1,69 +1,299 @@
 import * as AST from './types';
 
+export interface SourceMap {
+    [lineNumber: number]: string;
+}
+
+export interface PrintResult {
+    code: string;
+    map: SourceMap;
+}
+
 export class CodePrinter {
+    private lines: string[] = [];
+    private map: SourceMap = {};
 
     /**
-     * Generates code from the AST.
+     * Generates code from the AST with Source Maps.
+     */
+    build(node: AST.BaseNode): PrintResult {
+        this.lines = [];
+        this.map = {};
+        this.printStatement(node, 0);
+        return {
+            code: this.lines.join('\n'),
+            map: this.map
+        };
+    }
+
+    /**
+     * Legacy compatibility method.
+     * Returns just the generated code string.
      */
     print(node: AST.BaseNode, indentLevel: number = 0): string {
-        const indent = '    '.repeat(indentLevel);
+        // Create a temporary printer for this subtree
+        const printer = new CodePrinter();
+        // Use printStatement directly to respect the exact indentLevel
+        printer.printStatement(node, indentLevel);
+        return printer.lines.join('\n');
+    }
 
+    private emit(text: string, indent: number, node?: AST.BaseNode) {
+        const prefix = '    '.repeat(indent);
+        const linesToAdd = text.split('\n');
+
+        linesToAdd.forEach((line, idx) => {
+            // For multi-line text (like nested objects), we only map the first line to the node logic-wise,
+            // or we could map all. Let's map the first non-empty line.
+            this.lines.push(prefix + line);
+
+            // Map the line number (1-based index)
+            if (node?.sourceNodeId && idx === 0) {
+                this.map[this.lines.length] = node.sourceNodeId;
+            }
+        });
+    }
+
+    // --- Statement Printer (Emits Lines) ---
+
+    private printStatement(node: AST.BaseNode, indent: number) {
         switch (node.type) {
             case 'Program':
-                return (node as AST.Program).body
-                    .map(stmt => this.print(stmt, indentLevel))
-                    .join('\n\n');
+                (node as AST.Program).body.forEach(stmt => {
+                    this.printStatement(stmt, indent);
+                    this.lines.push(''); // Add spacing between global statements
+                });
+                break;
 
-            case 'FunctionDeclaration':
+            case 'FunctionDeclaration': {
                 const func = node as AST.FunctionDeclaration;
                 const asyncPrefix = func.async ? 'async ' : '';
                 const params = func.params.map(p => p.name).join(', ');
+                const header = `${asyncPrefix}function ${func.id?.name}(${params})`;
 
-                // If it's an event handler (anonymous or module method), might format it differently,
-                // but for internal functions:
-                return `${indent}${asyncPrefix}function ${func.id?.name}(${params}) ${this.print(func.body, indentLevel)}`;
+                this.emit(header + ' {', indent, func);
+                this.printStatement(func.body, indent); // Body processes its own braces? No, body is BlockStatement.
+                // Wait, BlockStatement prints braces.
+                // If I print `header + {` and then `func.body` (BlockStatement), BlockStatement will print another pair of braces?
+                // Let's check BlockStatement.
+                // CodePrinter logic usually prints braces in BlockStatement.
+                // So I should print `header` then `printStatement(func.body)`.
+                // But `header` needs to be `header ` (space)?
+                // Let's refine.
 
-            case 'BlockStatement':
+                // Retrying Function approach: 
+                // We shouldn't emit `{` manually if `BlockStatement` does it.
+                // But `BlockStatement` usually emits `{` on a new line or same line?
+                // In my logic below, BlockStatement emits `{`.
+                // So: `async function foo(p) ` -> then BlockStatement `{ ... }`.
+
+                // Fix:
+                // Actually, standard formatting is `function foo() { ... }` (same line).
+                // If BlockStatement emits `{` on its own line, we get:
+                // function foo()
+                // {
+                //   ...
+                // }
+                // That's acceptable but maybe not preferred.
+                // Let's manually handle the block for FunctionDeclaration to get K&R style if we want.
+                // For simplicity, let's treat Body as a special case here or change BlockStatement.
+
+                // Let's adjust BlockStatement to be flexible or just assume standard recursive behavior.
+                // Let's just print the header, then delegate to BlockStmt.
+                // NOTE: existing CodePrinter printed: `function ...(...) ${this.print(body)}`
+                // So it relied on BlockStatement returning `{ ... }`.
+
+                // So here:
+                this.emit(header + ' ' + this.printExpression(func.body), indent, func);
+                // Wait, printExpression for BlockStatement? BlockStatement is a Statement.
+                // Mixing Expression/Statement printers is tricky.
+                // Use a dedicated Helper for "Block Body but formatted nicely"?
+
+                // Correction: `printExpression` handles BlockStatement?
+                // `printExpression` SHOULD primarily handle Expressions.
+                // But `ArrowFunction` can have Block Body.
+                // Let's revert to a cleaner separation.
+                // FunctionDeclaration is a Statement.
+                // It calls `this.printBlock(func.body, indent)`?
+                break;
+            }
+
+            case 'BlockStatement': {
                 const block = node as AST.BlockStatement;
-                const body = block.body.map(stmt => this.print(stmt, indentLevel + 1)).join('\n');
-                return `{\n${body}\n${indent}}`;
+                this.emit('{', indent, block);
+                block.body.forEach(stmt => this.printStatement(stmt, indent + 1));
+                this.emit('}', indent);
+                break;
+            }
 
             case 'ExpressionStatement':
-                return `${indent}${this.print((node as AST.ExpressionStatement).expression, 0)};`;
+                this.emit(this.printExpression((node as AST.ExpressionStatement).expression) + ';', indent, node);
+                break;
 
             case 'ReturnStatement':
                 const ret = node as AST.ReturnStatement;
-                const arg = ret.argument ? ` ${this.print(ret.argument, 0)}` : '';
-                return `${indent}return${arg};`;
+                const arg = ret.argument ? ` ${this.printExpression(ret.argument)}` : '';
+                this.emit(`return${arg};`, indent, node);
+                break;
 
             case 'IfStatement':
                 const ifStmt = node as AST.IfStatement;
-                let ifCode = `${indent}if (${this.print(ifStmt.test, 0)}) ${this.print(ifStmt.consequent, indentLevel)}`;
-                if (ifStmt.alternate) {
-                    ifCode += ` else ${this.print(ifStmt.alternate, indentLevel)}`;
+                const test = this.printExpression(ifStmt.test);
+                this.emit(`if (${test})`, indent, ifStmt);
+
+                // Handle Consequent
+                if (ifStmt.consequent.type === 'BlockStatement') {
+                    // We manually call Block logic to keep it tight? Or just recurse.
+                    // Recursing works.
+                    this.printStatement(ifStmt.consequent, indent);
+                } else {
+                    this.printStatement(ifStmt.consequent, indent + 1);
                 }
-                return ifCode;
+
+                if (ifStmt.alternate) {
+                    this.emit(`else`, indent);
+                    if (ifStmt.alternate.type === 'BlockStatement' || ifStmt.alternate.type === 'IfStatement') {
+                        this.printStatement(ifStmt.alternate, indent);
+                    } else {
+                        this.printStatement(ifStmt.alternate, indent + 1);
+                    }
+                }
+                break;
 
             case 'WhileStatement':
                 const whileStmt = node as AST.WhileStatement;
-                return `${indent}while (${this.print(whileStmt.test, 0)}) ${this.print(whileStmt.body, indentLevel)}`;
+                this.emit(`while (${this.printExpression(whileStmt.test)})`, indent, whileStmt);
+                this.printStatement(whileStmt.body, indent);
+                break;
 
             case 'DoWhileStatement':
                 const doWhile = node as AST.DoWhileStatement;
-                return `${indent}do ${this.print(doWhile.body, indentLevel)} while (${this.print(doWhile.test, 0)});`;
+                this.emit('do', indent, doWhile);
+                this.printStatement(doWhile.body, indent);
+                this.emit(`while (${this.printExpression(doWhile.test)});`, indent);
+                break;
 
             case 'VariableDeclaration':
                 const varDecl = node as AST.VariableDeclaration;
                 const decls = varDecl.declarations.map(d => {
-                    const init = d.init ? ` = ${this.print(d.init, 0)}` : '';
+                    const init = d.init ? ` = ${this.printExpression(d.init)}` : '';
                     return `${d.id.name}${init}`;
                 }).join(', ');
-                return `${indent}${varDecl.kind} ${decls};`;
+                this.emit(`${varDecl.kind} ${decls};`, indent, varDecl);
+                break; // Missing break fixed
+
+            case 'ForOfStatement':
+                const forOf = node as AST.ForOfStatement;
+                // left is VarDecl or Identifier. PrintExpression might fail on VarDecl?
+                // VarDecl is a Statement usually.
+                // We need to special handle 'left' here.
+                let leftStr = '';
+                if (forOf.left.type === 'VariableDeclaration') {
+                    // Custom print for inline var decl (no semicolon)
+                    const v = forOf.left as AST.VariableDeclaration;
+                    const ds = v.declarations.map(d => `${d.id.name}${d.init ? ' = ' + this.printExpression(d.init) : ''}`).join(', ');
+                    leftStr = `${v.kind} ${ds}`;
+                } else {
+                    leftStr = this.printExpression(forOf.left as AST.Expression);
+                }
+
+                const right = this.printExpression(forOf.right);
+                const awaitStr = forOf.await ? 'await ' : '';
+                this.emit(`for ${awaitStr}(${leftStr} of ${right})`, indent, forOf);
+                this.printStatement(forOf.body, indent);
+                break;
+
+            case 'ForStatement':
+                const forS = node as AST.ForStatement;
+                // Init
+                let initS = '';
+                if (forS.init) {
+                    if (forS.init.type === 'VariableDeclaration') {
+                        const v = forS.init as AST.VariableDeclaration;
+                        const ds = v.declarations.map(d => `${d.id.name}${d.init ? ' = ' + this.printExpression(d.init) : ''}`).join(', ');
+                        initS = `${v.kind} ${ds}`;
+                    } else {
+                        initS = this.printExpression(forS.init);
+                    }
+                }
+                const testS = forS.test ? this.printExpression(forS.test) : '';
+                const updateS = forS.update ? this.printExpression(forS.update) : '';
+
+                this.emit(`for (${initS}; ${testS}; ${updateS})`, indent, forS);
+                this.printStatement(forS.body, indent);
+                break;
+
+            case 'BreakStatement':
+                this.emit('break;', indent, node);
+                break;
+            case 'ContinueStatement':
+                this.emit('continue;', indent, node);
+                break;
+
+            case 'CommentStatement':
+                this.emit(`// ${(node as AST.CommentStatement).text}`, indent, node);
+                break;
+
+            case 'TryStatement':
+                const tryStmt = node as AST.TryStatement;
+                this.emit('try', indent, tryStmt);
+                this.printStatement(tryStmt.block, indent);
+                if (tryStmt.handler) {
+                    const param = tryStmt.handler.param ? `(${tryStmt.handler.param.name})` : '';
+                    this.emit(`catch ${param}`, indent, tryStmt.handler);
+                    this.printStatement(tryStmt.handler.body, indent);
+                }
+                if (tryStmt.finalizer) {
+                    this.emit('finally', indent);
+                    this.printStatement(tryStmt.finalizer, indent);
+                }
+                break;
+
+            default:
+                // Fallback: If passed an expression as a statement, treat as ExprStmt
+                if (this.isExpression(node)) {
+                    this.emit(this.printExpression(node as AST.Expression) + ';', indent, node);
+                } else {
+                    console.warn(`Unknown Statement type: ${node.type}`);
+                    this.emit(`/* Unknown Statement: ${node.type} */`, indent);
+                }
+                break;
+        }
+    }
+
+    private isExpression(node: AST.BaseNode): boolean {
+        return [
+            'CallExpression', 'MemberExpression', 'BinaryExpression', 'UnaryExpression',
+            'AssignmentExpression', 'UpdateExpression', 'LogicalExpression', 'Identifier',
+            'Literal', 'ArrayExpression', 'ObjectExpression', 'AwaitExpression',
+            'ArrowFunctionExpression', 'NewExpression'
+        ].includes(node.type);
+    }
+
+    // --- Expression Printer (Returns Strings) ---
+
+    private printExpression(node: AST.BaseNode): string {
+        switch (node.type) {
+            // Re-implement cases from original Logic 
+            // ...
+            case 'BlockStatement':
+                // Special case: If an ArrowFunction has a Block body, this might be called.
+                // We need to simulate the multi-line block as a string.
+                // We can use a sub-printer!
+                const bParams = new CodePrinter();
+                return bParams.print(node);
+
+            case 'FunctionDeclaration':
+                // Function Expression? JS has Function Expressions.
+                // Reuse sub-printer
+                const fParams = new CodePrinter();
+                return fParams.print(node);
 
             case 'CallExpression':
                 const call = node as AST.CallExpression;
-                const args = call.arguments.map(arg => this.print(arg, 0)).join(', ');
-                return `${this.print(call.callee, 0)}${call.optional ? '?.' : ''}(${args})`;
+                const args = call.arguments.map(arg => this.printExpression(arg)).join(', ');
+                const callee = this.printExpression(call.callee);
+                return `${callee}${call.optional ? '?.' : ''}(${args})`;
 
             case 'Identifier':
                 return (node as AST.Identifier).name;
@@ -75,112 +305,67 @@ export class CodePrinter {
 
             case 'MemberExpression':
                 const member = node as AST.MemberExpression;
-                const obj = this.print(member.object, 0);
-                const prop = this.print(member.property, 0);
-                const op = member.optional ? '?.' : '.';
+                const obj = this.printExpression(member.object);
+                const prop = this.printExpression(member.property);
                 if (member.computed) {
                     return `${obj}${member.optional ? '?.' : ''}[${prop}]`;
-                } else {
-                    return `${obj}${op}${prop}`;
                 }
-
-
+                return `${obj}${member.optional ? '?.' : '.'}${prop}`;
 
             case 'BinaryExpression':
                 const binary = node as AST.BinaryExpression;
-                return `(${this.print(binary.left, 0)} ${binary.operator} ${this.print(binary.right, 0)})`;
+                return `(${this.printExpression(binary.left)} ${binary.operator} ${this.printExpression(binary.right)})`;
 
             case 'LogicalExpression':
                 const logical = node as AST.LogicalExpression;
-                return `(${this.print(logical.left, 0)} ${logical.operator} ${this.print(logical.right, 0)})`;
+                return `(${this.printExpression(logical.left)} ${logical.operator} ${this.printExpression(logical.right)})`;
 
             case 'UnaryExpression':
                 const unary = node as AST.UnaryExpression;
-                if (unary.prefix) {
-                    return `${unary.operator}${this.print(unary.argument, 0)}`;
-                } else {
-                    return `${this.print(unary.argument, 0)}${unary.operator}`;
-                }
+                return unary.prefix
+                    ? `${unary.operator}${this.printExpression(unary.argument)}`
+                    : `${this.printExpression(unary.argument)}${unary.operator}`;
 
             case 'UpdateExpression':
                 const update = node as AST.UpdateExpression;
-                if (update.prefix) {
-                    return `${update.operator}${this.print(update.argument, 0)}`;
-                } else {
-                    return `${this.print(update.argument, 0)}${update.operator}`;
-                }
+                return update.prefix
+                    ? `${update.operator}${this.printExpression(update.argument)}`
+                    : `${this.printExpression(update.argument)}${update.operator}`;
 
             case 'AssignmentExpression':
                 const assign = node as AST.AssignmentExpression;
-                return `${this.print(assign.left, 0)} ${assign.operator} ${this.print(assign.right, 0)}`;
+                return `${this.printExpression(assign.left)} ${assign.operator} ${this.printExpression(assign.right)}`;
 
             case 'ArrayExpression':
                 const array = node as AST.ArrayExpression;
-                const elements = array.elements.map(e => this.print(e, 0)).join(', ');
-                return `[${elements}]`;
+                return `[${array.elements.map(e => this.printExpression(e)).join(', ')}]`;
 
             case 'ObjectExpression':
                 const objExpr = node as AST.ObjectExpression;
                 const props = objExpr.properties.map(p => {
-                    const key = (p.key.type === 'Identifier') ? p.key.name : this.print(p.key, 0);
-                    return `${key}: ${this.print(p.value, 0)}`;
-                }).join(',\n' + indent + '    '); // Formatting for readability
-                // If empty, don't add newline
-                if (props.length === 0) return '{}';
-                return `{\n${indent}    ${props}\n${indent}}`;
+                    const key = (p.key.type === 'Identifier') ? p.key.name : this.printExpression(p.key);
+                    return `${key}: ${this.printExpression(p.value)}`;
+                }).join(', '); // Minified style for inline. If you want pretty, use newlines.
+                // For Expressions, we generally prefer single line unless huge.
+                // Let's keep it simple.
+                return `{ ${props} }`;
 
             case 'ArrowFunctionExpression':
-                const arrowFunc = node as AST.ArrowFunctionExpression;
-                const arrowParams = arrowFunc.params.map(p => p.name).join(', ');
-                const arrowAsyncPrefix = arrowFunc.async ? 'async ' : '';
-                // Handle Expression body vs Block body
-                const arrowBody = (arrowFunc.body.type === 'BlockStatement')
-                    ? this.print(arrowFunc.body, indentLevel)
-                    : this.print(arrowFunc.body, indentLevel);
-
-                return `${arrowAsyncPrefix}(${arrowParams}) => ${arrowBody}`;
+                const arrow = node as AST.ArrowFunctionExpression;
+                const aParams = arrow.params.map(p => p.name).join(', ');
+                const aAsync = arrow.async ? 'async ' : '';
+                const body = this.printExpression(arrow.body);
+                return `${aAsync}(${aParams}) => ${body}`;
 
             case 'NewExpression':
                 const newExpr = node as AST.NewExpression;
-                const newCallee = this.print(newExpr.callee, indentLevel);
-                const newArgs = newExpr.arguments.map(arg => this.print(arg, indentLevel)).join(', ');
-                return `new ${newCallee}(${newArgs})`;
-
-            case 'ForOfStatement': {
-                const forOf = node as AST.ForOfStatement;
-                const left = this.print(forOf.left, indentLevel);
-                // Clean up variable decl in for loop (remove semi-colon if VariableDeclaration printer adds it)
-                let leftStr = left.trim().replace(/;$/, '');
-                const right = this.print(forOf.right, indentLevel);
-                const body = this.print(forOf.body, indentLevel);
-                const awaitStr = forOf.await ? 'await ' : '';
-                return `${indent}for ${awaitStr}(${leftStr} of ${right}) ${body.trim()}`;
-            }
-
-            case 'ForStatement': {
-                const forStmt = node as AST.ForStatement;
-                const init = forStmt.init ? this.print(forStmt.init, 0).trim().replace(/;$/, '') : '';
-                const test = forStmt.test ? this.print(forStmt.test, 0) : '';
-                const update = forStmt.update ? this.print(forStmt.update, 0) : '';
-                const body = this.print(forStmt.body, indentLevel);
-                return `${indent}for (${init}; ${test}; ${update}) ${body.trim()}`;
-            }
-
-            case 'BreakStatement':
-                return `${indent}break;`;
-
-            case 'ContinueStatement':
-                return `${indent}continue;`;
+                return `new ${this.printExpression(newExpr.callee)}(${newExpr.arguments.map(a => this.printExpression(a)).join(', ')})`;
 
             case 'AwaitExpression':
-                return `await ${this.print((node as AST.AwaitExpression).argument, 0)}`;
-
-            case 'CommentStatement':
-                return `${indent}// ${(node as AST.CommentStatement).text}`;
+                return `await ${this.printExpression((node as AST.AwaitExpression).argument)}`;
 
             default:
-                console.warn(`Unknown node type: ${node.type}`);
-                return `${indent}/* Unknown Node: ${node.type} */`;
+                return `/* Unknown Expression: ${node.type} */`;
         }
     }
 }

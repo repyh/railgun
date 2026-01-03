@@ -65,10 +65,10 @@ export class ProjectIPC extends BaseIPC {
         }
 
         const projectPath = result.filePaths[0];
-        const botmConfigPath = path.join(projectPath, 'events', 'project.railgun');
+        const botmConfigPath = path.join(projectPath, 'railgun.config.json');
 
         if (!existsSync(botmConfigPath)) {
-            return { canceled: false, error: 'Invalid project: project.railgun not found.' };
+            return { canceled: false, error: 'Invalid project: railgun.config.json not found.' };
         }
 
         const name = path.basename(projectPath);
@@ -90,24 +90,24 @@ export class ProjectIPC extends BaseIPC {
     }
 
     async readProjectConfig(projectPath: string): Promise<any> {
-        const configPath = path.join(projectPath, 'events', 'project.railgun');
+        const configPath = path.join(projectPath, 'railgun.config.json');
         if (!existsSync(configPath)) return null;
         try {
             const raw = await fs.readFile(configPath, 'utf-8');
             return JSON.parse(raw);
         } catch (e) {
-            console.error('Failed to read project.railgun', e);
+            console.error('Failed to read railgun.config.json', e);
             return null;
         }
     }
 
     async saveProjectConfig(projectPath: string, config: any): Promise<boolean> {
-        const configPath = path.join(projectPath, 'events', 'project.railgun');
+        const configPath = path.join(projectPath, 'railgun.config.json');
         try {
             await fs.writeFile(configPath, JSON.stringify(config, null, 2));
             return true;
         } catch (e) {
-            console.error('Failed to save project.railgun', e);
+            console.error('Failed to save railgun.config.json', e);
             return false;
         }
     }

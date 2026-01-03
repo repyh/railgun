@@ -317,10 +317,14 @@ export default function FlowEditor({ projectPath, filePath, setStatus, onSelecti
             const { nodes: reteNodes, connections: reteConnections } = ReactFlowAdapter.toCompilerData(nodes, edges);
 
             // 2. Compile
+            let fileType: any = 'command';
+            if (filePath.includes('slash')) fileType = 'slash_command';
+            else if (filePath.includes('events')) fileType = 'event';
+
             const compiler = new Compiler({
                 nodes: reteNodes,
                 connections: reteConnections,
-                fileType: filePath.includes('slash') ? 'slash_command' : 'command'
+                fileType: fileType
             });
 
             const code = compiler.compile();

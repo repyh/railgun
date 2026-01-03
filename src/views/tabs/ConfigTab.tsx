@@ -228,12 +228,12 @@ export const ConfigTab: React.FC<ConfigTabProps> = ({ projectPath }) => {
                     ))}
 
                     {/* Fallback for unknown keys (optional, but good for not losing data) */}
-                    {Object.keys(config).filter(k => k !== 'config' && !defaultConfigSchema.groups.some(g => g.fields.some(f => f.key === k))).length > 0 && (
+                    {Object.keys(config).filter(k => k !== 'config' && k !== 'nodes' && k !== 'edges' && !defaultConfigSchema.groups.some(g => g.fields.some(f => f.key === k))).length > 0 && (
                         <div className="mt-8 pt-8 border-t border-zinc-800/50">
                             <h4 className="text-sm font-medium text-zinc-500 mb-4">Additional Settings (Unrecognized)</h4>
                             <div className="space-y-4 opacity-75">
                                 {Object.keys(config)
-                                    .filter(k => k !== 'config' && !defaultConfigSchema.groups.some(g => g.fields.some(f => f.key === k)))
+                                    .filter(k => k !== 'config' && k !== 'nodes' && k !== 'edges' && !defaultConfigSchema.groups.some(g => g.fields.some(f => f.key === k)))
                                     .map(key => (
                                         <div key={key} className="space-y-1">
                                             <Label className="text-zinc-400">{key}</Label>
