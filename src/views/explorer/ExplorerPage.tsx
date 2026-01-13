@@ -29,6 +29,7 @@ import { useTabManager } from '@/hooks/useTabManager';
 import { ExplorerSidebar } from './components/ExplorerSidebar';
 import { ExplorerTabs } from './components/ExplorerTabs';
 import { BotStatusPanel } from './components/BotStatusPanel';
+import { PluginViewHost } from '@/components/plugins/PluginViewHost';
 import { FileKey } from 'lucide-react';
 
 // Services
@@ -58,27 +59,9 @@ const ExplorerPage: React.FC = () => {
     const [isCreateCommandModalOpen, setIsCreateCommandModalOpen] = useState(false);
     const [isCreateSlashCommandModalOpen, setIsCreateSlashCommandModalOpen] = useState(false);
 
-    // Sync selected node with PropertyPanel (Virtual BotNode)
-    // useEffect(() => {
-    //     if (!selectedNodeId) {
-    //         setSelectedBotNode(null);
-    //         return;
-    //     }
-    //
-    //     // We need a way to find the node data to populate the panel
-    //     // For now, we'll assume the editor is handling data.
-    //     // The PropertyPanel expects a BotNode from railgun-rete.
-    //     // This is a bridge:
-    //     const node = new BotNode("Loading...", "Action");
-    //     node.id = selectedNodeId;
-    //     // In a real implementation, we'd need to fetch the actual node data from the editor state
-    //     // and map it to this BotNode instance.
-    //     setSelectedBotNode(node);
-    // }, [selectedNodeId]);
-
     const [isVerified, setIsVerified] = useState(false);
 
-    // 1. Verify Project Exists
+    // Verify Project Exists
     useEffect(() => {
         setIsVerified(false); // Reset on path change
         if (projectPath) {
@@ -101,7 +84,7 @@ const ExplorerPage: React.FC = () => {
         }
     }, [projectPath, navigate]);
 
-    // 2. Initialize Plugins (ONLY after verification)
+    // Initialize Plugins
     useEffect(() => {
         if (projectPath && isVerified) {
             PluginManager.init(projectPath);
@@ -281,6 +264,16 @@ const ExplorerPage: React.FC = () => {
                     {activeTab === 'packages' && <PackagesTab projectPath={projectPath} />}
                     {activeTab === 'plugins' && <PluginsTab />}
                     {activeTab === 'variables' && <VariablesTab projectPath={projectPath} />}
+
+                    {/* Dynamic Plugin Page */}
+                    {activeTab.startsWith('plugin:') && (
+                        <div className="h-full w-full bg-background overflow-hidden relative">
+                            <PluginViewHost
+                                viewId={activeTab.replace('plugin:', '')}
+                                setStatus={setStatus}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 

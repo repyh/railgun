@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout, Settings, Package, Plug, Terminal as TerminalIcon } from 'lucide-react';
 import { TabButton } from '@/components/ui/TabButton';
 import type { TabType } from '@/hooks/useTabManager';
+import { PluginToolbar } from './PluginToolbar';
 
 interface ExplorerTabsProps {
     activeTab: TabType;
@@ -57,6 +58,8 @@ export const ExplorerTabs: React.FC<ExplorerTabsProps> = ({ activeTab, onTabChan
                     Console
                 </TabButton>
             </div>
+
+            <PluginToolbar activeTab={activeTab} onTabChange={onTabChange} />
 
             <div className="flex-1" />
 

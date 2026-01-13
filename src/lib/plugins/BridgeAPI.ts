@@ -3,9 +3,6 @@ import type { RailgunBridge } from './interfaces';
 /**
  * BridgeAPI creates a secure, scoped bridge between the Railgun app
  * and the plugin environment.
- * 
- * Lead: The Professor (Architecture)
- * Assistant: The White Hat (Security)
  */
 export class BridgeAPI {
     /**
@@ -17,10 +14,6 @@ export class BridgeAPI {
         // @ts-ignore - window.electronAPI is defined in vite-env.d.ts
         const electron = window.electronAPI;
 
-        /**
-         * Professor's Note: Path validation is critical to enforce the "Project Sandbox".
-         * White Hat's Note: Do not rely solely on string.includes('..'), but it's a good first line of defense.
-         */
         const validatePath = (path: string) => {
             if (path.includes('../') || path.includes('..\\') || path.startsWith('..')) {
                 throw new Error(`[Security Violation] Access denied to path: ${path}. Plugins are restricted to the project workspace.`);
@@ -68,7 +61,6 @@ export class BridgeAPI {
                 },
 
                 getLatestBuildLog(): string[] {
-                    // TODO: Connect to a central log store if needed
                     return [];
                 }
             },

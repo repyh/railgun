@@ -38,7 +38,7 @@ export const PluginViewHost = ({ viewId, setStatus }: PluginViewHostProps) => {
             setError(null);
 
             try {
-                // Professor's Note: Creating a fresh bridge instance for this view's lifecycle.
+                // Creating a fresh bridge instance for this view's lifecycle.
                 const bridge = BridgeAPI.create(projectPath, setStatus);
                 const cleanup = view.mounter(containerRef.current, bridge);
                 return () => {
