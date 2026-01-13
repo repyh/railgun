@@ -1,18 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { DynamicViewRegistry } from '@/lib/plugins/DynamicViewRegistry';
-import type { RailgunBridge } from '@/lib/plugins/interfaces';
+import { BridgeAPI } from '@/lib/plugins/BridgeAPI';
+import { useProject } from '@/contexts/ProjectContext';
 
 interface PluginViewHostProps {
     viewId: string;
+    setStatus: (status: string) => void;
 }
 
 /**
  * PluginViewHost acts as the 'Single Div' container for plugin UI.
  * It handles the lifecycle of the plugin's mount function.
  */
-export const PluginViewHost = ({ viewId }: PluginViewHostProps) => {
+export const PluginViewHost = ({ viewId, setStatus }: PluginViewHostProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [error, setError] = useState<string | null>(null);
+    const { projectPath } = useProject();
 
     useEffect(() => {
         const view = DynamicViewRegistry.getView(viewId);
@@ -27,32 +30,17 @@ export const PluginViewHost = ({ viewId }: PluginViewHostProps) => {
         }
 
         if (containerRef.current) {
+            if (!projectPath) {
+                setError("No project active. Please open or create a project first.");
+                return;
+            }
+
             setError(null);
-            // Stub API for now - will be replaced in Phase 4
-            const stubAPI: RailgunBridge = {
-                workspace: {
-                    projectPath: '',
-                    readFile: async () => '',
-                    writeFile: async () => { },
-                    listFiles: async () => []
-                },
-                compiler: {
-                    build: async () => ({ success: true, message: 'Stub' }),
-                    getLatestBuildLog: () => []
-                },
-                terminal: {
-                    write: () => { },
-                    writeLine: () => { },
-                    execute: () => { }
-                },
-                ui: {
-                    showNotification: () => { },
-                    setStatusBar: () => { }
-                }
-            };
 
             try {
-                const cleanup = view.mounter(containerRef.current, stubAPI);
+                // Professor's Note: Creating a fresh bridge instance for this view's lifecycle.
+                const bridge = BridgeAPI.create(projectPath, setStatus);
+                const cleanup = view.mounter(containerRef.current, bridge);
                 return () => {
                     if (typeof cleanup === 'function') {
                         cleanup();
@@ -66,7 +54,7 @@ export const PluginViewHost = ({ viewId }: PluginViewHostProps) => {
                 setError(`Mount Error: ${String(err)}`);
             }
         }
-    }, [viewId]);
+    }, [viewId, projectPath, setStatus]);
 
     if (error) {
         return (

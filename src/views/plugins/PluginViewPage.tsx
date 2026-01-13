@@ -1,8 +1,9 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useOutletContext } from 'react-router-dom';
 import { PluginViewHost } from '@/components/plugins/PluginViewHost';
 
 const PluginViewPage = () => {
     const { viewId } = useParams<{ viewId: string }>();
+    const { setStatus } = useOutletContext<{ setStatus: (s: string) => void }>();
 
     if (!viewId) {
         return (
@@ -14,7 +15,7 @@ const PluginViewPage = () => {
 
     return (
         <div className="h-full w-full bg-background overflow-hidden">
-            <PluginViewHost viewId={viewId} />
+            <PluginViewHost viewId={viewId} setStatus={setStatus} />
         </div>
     );
 };
