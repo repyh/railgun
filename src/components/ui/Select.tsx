@@ -98,7 +98,7 @@ const SelectContent: React.FC<{ children: React.ReactNode; className?: string }>
 
     return createPortal(
         <>
-            <div className="fixed inset-0 z-[9999]" onClick={() => context.setOpen(false)} />
+            <div className="fixed inset-0 z-9999" onClick={() => context.setOpen(false)} />
             <div
                 style={{
                     position: 'fixed',
