@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { SquareTerminal, Command, Puzzle } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { SquareTerminal, Command } from 'lucide-react';
 
 import { PluginManager } from '@/lib/plugins/PluginManager';
 import { useElectron } from '@/hooks/useElectron';
-import { useDynamicViews } from '@/hooks/useDynamicViews';
 import { ConsolePanel } from '@/components/console/ConsolePanel';
 import { Titlebar } from '@/components/layout/Titlebar';
 import { ModalProvider, useModal } from '@/contexts/ModalContext';
@@ -75,7 +73,6 @@ export const MainLayoutInner = () => {
     const [appVersion, setAppVersion] = useState<string>('0.0.0');
     const [status, setStatus] = useState('Ready');
     const [isConsoleOpen, setIsConsoleOpen] = useState(false);
-    const dynamicViews = useDynamicViews();
 
     useEffect(() => {
         // Init Plugins
@@ -136,26 +133,6 @@ export const MainLayoutInner = () => {
                         ))}
 
                         {/* Plugin Dynamic Views */}
-                        {dynamicViews.filter((v: any) => v.target === 'sidebar').map((view: any) => {
-                            // Try to resolve icon, fallback to Puzzle
-                            const Icon = (LucideIcons as any)[view.icon || ''] || Puzzle;
-                            const path = `/plugin/${view.id}`;
-                            const active = location.pathname === path;
-
-                            return (
-                                <ActivityBarItem
-                                    key={view.id}
-                                    item={{
-                                        id: view.id,
-                                        label: view.label,
-                                        icon: Icon,
-                                        position: 'top'
-                                    }}
-                                    active={active}
-                                    onClick={() => navigate(path)}
-                                />
-                            );
-                        })}
                     </div>
                     <div className="w-full space-y-1">
                         {bottomItems.map(item => (

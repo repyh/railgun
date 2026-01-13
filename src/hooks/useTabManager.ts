@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 
-export type TabType = 'workspace' | 'packages' | 'config' | 'console' | 'plugins' | 'variables';
+export type TabType = 'workspace' | 'packages' | 'config' | 'console' | 'plugins' | 'variables' | string;
 
 export function useTabManager() {
     const { activeFile, setActiveFile } = useProject();
