@@ -4,6 +4,7 @@ export const SetVariableSchema: NodeSchema = {
     id: 'variables/set',
     label: 'Set Variable',
     category: 'Variables',
+    description: 'Writes a value to a local variable.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'variable', label: 'Variable', socketType: 'Any' },

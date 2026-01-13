@@ -4,6 +4,7 @@ export const ShowModalSchema: NodeSchema = {
     id: 'discord/show-modal',
     label: 'Show Modal',
     category: 'Discord',
+    description: 'Displays a modal popup interaction.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'target', label: 'Interaction', socketType: 'Any', required: true, validationMessage: 'Interaction is required.' },

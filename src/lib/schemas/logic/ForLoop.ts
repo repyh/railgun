@@ -4,11 +4,11 @@ export const ForLoopSchema: NodeSchema = {
     id: 'logic/for-loop',
     label: 'For Loop',
     category: 'Logic',
+    description: 'Standard numeric for loop.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'start', label: 'Start Index', socketType: 'Number' },
-        { key: 'end', label: 'End Index', socketType: 'Number' },
-        { key: 'updateFunc', label: 'Update Logic (Func)', socketType: 'Function' } // Note: socketType 'Function' needs verification if it exists in current types
+        { key: 'end', label: 'End Index', socketType: 'Number' }
     ],
     outputs: [
         { key: 'completed', label: 'Completed', socketType: 'Exec' },

@@ -4,7 +4,7 @@ export const OnReadySchema: NodeSchema = {
     id: 'event/on-ready',
     label: 'On Ready',
     category: 'Event',
-    hideFromPalette: true,
+    description: 'Triggered when the bot starts up.',
     inputs: [],
     outputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },

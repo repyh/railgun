@@ -4,6 +4,7 @@ export const SplitterSchema: NodeSchema = {
     id: 'data/splitter',
     label: 'Splitter',
     category: 'Data',
+    description: 'Splits values into multiple outputs.',
     inputs: [
         { key: 'value', label: 'Value', socketType: 'Any' }
     ],

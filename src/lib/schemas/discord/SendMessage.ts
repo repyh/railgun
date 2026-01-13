@@ -4,18 +4,19 @@ export const SendMessageSchema: NodeSchema = {
     id: 'discord/send-message',
     label: 'Send Message',
     category: 'Discord',
+    description: 'Sends a message to a channel.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
-        { key: 'target', label: 'Channel / Interaction', socketType: 'Any', required: true, validationMessage: 'Target is required.' },
-        { key: 'content', label: 'Content', socketType: 'String' }, // Custom validation in legacy: Content OR Embed required
-        { key: 'embeds', label: 'Embeds', socketType: 'Embed' },
-        { key: 'components', label: 'Components', socketType: 'ActionRow' }
+        { key: 'channelId', label: 'Channel ID', socketType: 'String' },
+        { key: 'content', label: 'Content', socketType: 'String' },
+        { key: 'embed', label: 'Embed', socketType: 'Embed' },
+        { key: 'components', label: 'Action Row', socketType: 'ActionRow' }
     ],
     outputs: [
-        { key: 'exec', label: 'Exec', socketType: 'Exec' },
-        { key: 'message', label: 'Message', socketType: 'Any' }
+        { key: 'exec_out', label: 'Then', socketType: 'Exec' },
+        { key: 'message', label: 'Sent Message', socketType: 'Any' }
     ],
     controls: [
-        { key: 'content', label: 'Content', type: 'text', props: { placeholder: 'Hello World...' } }
+        { key: 'content', label: 'Message Content', type: 'text' }
     ]
 };

@@ -4,6 +4,7 @@ export const ArrayBuilderSchema: NodeSchema = {
     id: 'data/array-builder',
     label: 'Array Builder',
     category: 'Data',
+    description: 'Creates array from items.',
     inputs: [
         { key: 'item1', label: 'Item 1', socketType: 'Any' },
         { key: 'item2', label: 'Item 2', socketType: 'Any' },

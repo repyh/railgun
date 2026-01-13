@@ -4,6 +4,7 @@ export const BanMemberSchema: NodeSchema = {
     id: 'discord/ban-member',
     label: 'Ban Member',
     category: 'Discord',
+    description: 'Bans a member from the server.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'member', label: 'Member', socketType: 'Any', required: true, validationMessage: 'Member is required.' },

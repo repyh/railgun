@@ -1,6 +1,5 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { NodeSchemaRegistry } from '@/lib/registries/NodeSchemaRegistry';
-import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
 
 interface FlowContextMenuProps {
@@ -66,7 +65,7 @@ export function FlowContextMenu({ position, onClose, onAddNode }: FlowContextMen
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[300px] p-1">
+            <div className="flex-1 overflow-y-auto max-h-[300px] px-1">
                 {Object.keys(groupedSchemas).length === 0 && (
                     <div className="px-4 py-8 text-center text-xs text-zinc-500">
                         No nodes found for "{searchQuery}"
@@ -74,16 +73,21 @@ export function FlowContextMenu({ position, onClose, onAddNode }: FlowContextMen
                 )}
                 {Object.entries(groupedSchemas).map(([category, schemas]) => (
                     <div key={category}>
-                        <div className="px-3 py-1.5 bg-zinc-900/50 text-zinc-500 text-[10px] font-bold uppercase tracking-wider sticky top-0 backdrop-blur-sm">
+                        <div className="px-3 py-1.5 bg-zinc-900 text-zinc-500 text-[10px] font-bold uppercase sticky top-0">
                             {category}
                         </div>
                         {schemas.map(schema => (
                             <div
                                 key={schema.id}
-                                className="px-4 py-1.5 text-xs text-zinc-300 hover:bg-blue-600 hover:text-white cursor-pointer transition-colors flex items-center gap-2"
+                                className="px-4 py-2 text-xs text-zinc-300 hover:bg-blue-600 hover:text-white cursor-pointer transition-colors flex flex-col gap-0.5 group"
                                 onClick={() => onAddNode(schema.id, position)}
                             >
-                                {schema.label}
+                                <span className="font-medium">{schema.label}</span>
+                                {schema.description && (
+                                    <span className="text-[9px] text-zinc-500 group-hover:text-blue-100 transition-colors line-clamp-1">
+                                        {schema.description}
+                                    </span>
+                                )}
                             </div>
                         ))}
                     </div>

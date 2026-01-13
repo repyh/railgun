@@ -4,6 +4,7 @@ export const SetGlobalVariableSchema: NodeSchema = {
     id: 'variables/set-global',
     label: 'Set Global Var',
     category: 'Variables',
+    description: 'Writes a value to persistent storage.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'value', label: 'Value', socketType: 'Any' }
@@ -12,6 +13,6 @@ export const SetGlobalVariableSchema: NodeSchema = {
         { key: 'exec_out', label: 'Exec', socketType: 'Exec' }
     ],
     controls: [
-        { key: 'varName', label: 'Variable Name', type: 'text', props: { defaultValue: '' } }
+        { key: 'varName', label: 'Variable Name', type: 'text' }
     ]
 };

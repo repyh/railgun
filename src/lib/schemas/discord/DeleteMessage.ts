@@ -4,6 +4,7 @@ export const DeleteMessageSchema: NodeSchema = {
     id: 'discord/delete-message',
     label: 'Delete Message',
     category: 'Discord',
+    description: 'Deletes a message.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'message', label: 'Message (Target)', socketType: 'Any', required: true, validationMessage: 'Target Message is required.' }

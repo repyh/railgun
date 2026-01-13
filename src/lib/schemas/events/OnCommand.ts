@@ -2,16 +2,17 @@ import type { NodeSchema } from '@/lib/railgun-flow';
 
 export const OnCommandSchema: NodeSchema = {
     id: 'event/on-command',
-    label: 'On Command',
+    label: 'On Message Command',
     category: 'Event',
-    hideFromPalette: true,
+    description: 'Triggered by legacy message commands.',
     inputs: [],
     outputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'message', label: 'Message', socketType: 'Any' },
-        { key: 'rawArgs', label: 'Raw Args', socketType: 'Any' } // Array
+        { key: 'author', label: 'Author', socketType: 'Any' },
+        { key: 'args', label: 'Arguments', socketType: 'Array' }
     ],
     controls: [
-        { key: 'name', label: 'Command Name', type: 'text' }
+        { key: 'command', label: 'Command Name', type: 'text' }
     ]
 };

@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { CustomHandle } from './CustomHandle';
 import { X } from 'lucide-react';
 
-// @ts-ignore
 export const UniversalNode = memo(({ id, data, selected }: NodeProps<BotFlowNode>) => {
     const { deleteElements } = useReactFlow();
     const schemaId = data._schemaId;
@@ -28,33 +27,20 @@ export const UniversalNode = memo(({ id, data, selected }: NodeProps<BotFlowNode
     const validationStatus = data.validationStatus as 'error' | 'warning' | undefined;
     const validationMessage = data.validationMessage as string | undefined;
 
-    let accentColor = 'border-l-zinc-700';
-    // Match colors from CustomNode
-    switch (schema.category) {
-        case 'Event': accentColor = 'border-l-rose-500'; break;
-        case 'Action': accentColor = 'border-l-blue-500'; break;
-        case 'Logic': accentColor = 'border-l-yellow-500'; break;
-        case 'Variable': accentColor = 'border-l-emerald-500'; break;
-        case 'Function': accentColor = 'border-l-purple-500'; break;
-        case 'Math': accentColor = 'border-l-orange-500'; break;
-        default: accentColor = 'border-l-zinc-700'; break;
-    }
-
     return (
         <div
             className={cn(
-                "min-w-[180px] bg-[#0c0c0e] border border-l-2 rounded-sm transition-all relative group shadow-sm hover:shadow-md",
-                accentColor,
-                selected ? "ring-1 ring-blue-500 border-zinc-700" : "border-zinc-800",
-                validationStatus === 'error' && "ring-1 ring-red-500",
-                validationStatus === 'warning' && "ring-1 ring-yellow-500"
+                "min-w-[180px] bg-[#0c0c0e]/90 backdrop-blur-sm border rounded-lg transition-all relative group shadow-2xl",
+                selected ? "ring-2 ring-blue-500/40 border-zinc-600 bg-[#0f0f12]" : "border-zinc-800/80 hover:border-zinc-700",
+                validationStatus === 'error' && "ring-2 ring-red-500/40 border-red-900/50",
+                validationStatus === 'warning' && "ring-2 ring-yellow-500/40 border-yellow-900/50"
             )}
         >
-            {/* Validation Message Tooltip-ish */}
+            {/* Validation Message Tooltip */}
             {validationMessage && (
                 <div className={cn(
-                    "absolute -top-8 left-0 right-0 px-2 py-1 text-xs text-white rounded opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none",
-                    validationStatus === 'error' ? "bg-red-600" : "bg-yellow-600"
+                    "absolute -top-9 left-0 right-0 px-2 py-1.5 text-[10px] text-white rounded-md opacity-0 group-hover:opacity-100 transition-all z-50 pointer-events-none transform translate-y-1 group-hover:translate-y-0",
+                    validationStatus === 'error' ? "bg-red-600 shadow-lg shadow-red-900/20" : "bg-yellow-600 shadow-lg shadow-yellow-900/20"
                 )}>
                     {validationMessage}
                 </div>
@@ -62,14 +48,14 @@ export const UniversalNode = memo(({ id, data, selected }: NodeProps<BotFlowNode
 
             {/* HEADER */}
             <div className={cn(
-                "h-8 px-3 flex items-center gap-2 border-b border-white/5",
-                schema.category === 'Event' ? "bg-rose-500/20 text-rose-400" :
-                    schema.category === 'Action' ? "bg-blue-500/20 text-blue-400" :
-                        schema.category === 'Logic' ? "bg-yellow-500/20 text-yellow-400" :
-                            schema.category === 'Variable' ? "bg-emerald-500/20 text-emerald-400" :
-                                "bg-zinc-800/50 text-zinc-300"
+                "h-9 px-3 flex items-center gap-2 border-b border-white/5 rounded-t-lg",
+                schema.category === 'Event' ? "bg-rose-500/10 text-rose-400" :
+                    schema.category === 'Action' ? "bg-blue-500/10 text-blue-400" :
+                        schema.category === 'Logic' ? "bg-yellow-500/10 text-yellow-400" :
+                            schema.category === 'Variable' ? "bg-emerald-500/10 text-emerald-400" :
+                                "bg-zinc-800/30 text-zinc-300"
             )}>
-                <div className="font-bold text-[11px] tracking-tight uppercase opacity-80 flex-1 truncate select-none">
+                <div className="font-bold text-[10px] tracking-[0.05em] uppercase opacity-70 flex-1 truncate select-none">
                     {schema.label}
                 </div>
 
@@ -79,7 +65,7 @@ export const UniversalNode = memo(({ id, data, selected }: NodeProps<BotFlowNode
 
                 {/* Delete Button */}
                 <button
-                    className="text-white/40 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded"
+                    className="text-white/20 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 p-1 rounded-md"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={onDelete}
                 >
@@ -88,26 +74,25 @@ export const UniversalNode = memo(({ id, data, selected }: NodeProps<BotFlowNode
             </div>
 
             {/* BODY - INPUTS & OUTPUTS */}
-            <div className="p-3 grid grid-cols-[auto_1fr_auto] gap-x-4">
+            <div className="p-4 grid grid-cols-[1fr_auto_1fr] gap-x-4">
 
                 {/* LEFT COLUMN: INPUTS */}
-                <div className="flex flex-col gap-3 min-w-[20px]">
+                <div className="flex flex-col gap-4">
                     {schema.inputs.map((input: FlowSocket) => {
                         const isExec = input.socketType === 'Exec';
                         return (
-                            <div key={input.key} className="relative flex items-center h-4">
-                                {/* HANDLE - Positioned absolute left */}
+                            <div key={input.key} className="relative flex items-center h-4 group/socket">
                                 <CustomHandle
                                     type="target"
                                     position={Position.Left}
                                     id={input.key}
                                     socketType={input.socketType}
-                                    className="-ml-5"
+                                    className="-ml-6"
                                 />
 
                                 <span className={cn(
-                                    "font-mono text-[10px] select-none",
-                                    isExec ? "text-white font-bold" : "text-zinc-400"
+                                    "text-[10px] select-none transition-colors",
+                                    isExec ? "text-white font-semibold" : "text-zinc-500 group-hover/socket:text-zinc-300"
                                 )}>
                                     {input.label}
                                 </span>
@@ -116,29 +101,28 @@ export const UniversalNode = memo(({ id, data, selected }: NodeProps<BotFlowNode
                     })}
                 </div>
 
-                {/* MIDDLE COLUMN - Just Spacer or controls if mixed (not doing mixed for now) */}
-                <div className="min-w-[10px]" />
+                {/* MIDDLE SPACER */}
+                <div className="w-4" />
 
                 {/* RIGHT COLUMN: OUTPUTS */}
-                <div className="flex flex-col gap-3 items-end min-w-[20px]">
+                <div className="flex flex-col gap-4 items-end">
                     {schema.outputs.map((output) => {
                         const isExec = output.socketType === 'Exec';
                         return (
-                            <div key={output.key} className="relative flex items-center justify-end h-4">
+                            <div key={output.key} className="relative flex items-center justify-end h-4 group/socket">
                                 <span className={cn(
-                                    "font-mono text-[10px] text-right select-none",
-                                    isExec ? "text-white font-bold" : "text-zinc-400"
+                                    "text-[10px] text-right select-none transition-colors",
+                                    isExec ? "text-white font-semibold" : "text-zinc-500 group-hover/socket:text-zinc-300"
                                 )}>
                                     {output.label}
                                 </span>
 
-                                {/* HANDLE */}
                                 <CustomHandle
                                     type="source"
                                     position={Position.Right}
                                     id={output.key}
                                     socketType={output.socketType}
-                                    className="-mr-5"
+                                    className="-mr-6"
                                 />
                             </div>
                         );

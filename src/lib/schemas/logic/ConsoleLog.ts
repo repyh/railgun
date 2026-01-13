@@ -4,6 +4,7 @@ export const ConsoleLogSchema: NodeSchema = {
     id: 'action/console-log',
     label: 'Console Log',
     category: 'Action',
+    description: 'Prints values to the console.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'msg', label: 'Message', socketType: 'String' }

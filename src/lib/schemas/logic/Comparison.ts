@@ -4,9 +4,10 @@ export const ComparisonSchema: NodeSchema = {
     id: 'logic/comparison',
     label: 'Comparison',
     category: 'Logic',
+    description: 'Compares two values.',
     inputs: [
-        { key: 'a', label: 'A', socketType: 'Any' },
-        { key: 'b', label: 'B', socketType: 'Any' }
+        { key: 'a', label: 'Value A', socketType: 'Any' },
+        { key: 'b', label: 'Value B', socketType: 'Any' }
     ],
     outputs: [
         { key: 'result', label: 'Result', socketType: 'Boolean' }
@@ -14,16 +15,14 @@ export const ComparisonSchema: NodeSchema = {
     controls: [
         {
             key: 'op', label: 'Operator', type: 'select', props: {
-                defaultValue: '===',
+                defaultValue: '==',
                 options: [
-                    { value: '==', label: 'Val Equal (==)' },
-                    { value: '===', label: 'Strict Equal (===)' },
-                    { value: '!=', label: 'Val Not Equal (!=)' },
-                    { value: '!==', label: 'Strict Not Equal (!==)' },
-                    { value: '>', label: 'Greater Than (>)' },
-                    { value: '<', label: 'Less Than (<)' },
-                    { value: '>=', label: 'Greater/Equal (>=)' },
-                    { value: '<=', label: 'Less/Equal (<=)' }
+                    { value: '==', label: 'Equal' },
+                    { value: '!=', label: 'Not Equal' },
+                    { value: '>', label: 'Greater Than' },
+                    { value: '<', label: 'Less Than' },
+                    { value: '>=', label: 'Greater or Equal' },
+                    { value: '<=', label: 'Less or Equal' }
                 ]
             }
         }

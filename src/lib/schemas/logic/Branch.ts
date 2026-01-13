@@ -4,6 +4,7 @@ export const BranchSchema: NodeSchema = {
     id: 'logic/branch',
     label: 'If',
     category: 'Logic',
+    description: 'Directs the flow based on a boolean condition (True or False).',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'condition', label: 'Condition', socketType: 'Boolean' }

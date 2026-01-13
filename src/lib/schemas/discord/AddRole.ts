@@ -4,6 +4,7 @@ export const AddRoleSchema: NodeSchema = {
     id: 'discord/add-role',
     label: 'Add Role',
     category: 'Discord',
+    description: 'Assigns a role to a member.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'member', label: 'Member', socketType: 'Any', required: true, validationMessage: 'Member is required.' },

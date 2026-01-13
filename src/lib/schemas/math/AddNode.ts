@@ -4,6 +4,7 @@ export const AddSchema: NodeSchema = {
     id: 'math/add',
     label: 'Add',
     category: 'Math',
+    description: 'Adds two values.',
     inputs: [
         { key: 'a', label: 'A', socketType: 'Number' },
         { key: 'b', label: 'B', socketType: 'Number' }

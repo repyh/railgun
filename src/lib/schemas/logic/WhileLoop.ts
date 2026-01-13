@@ -4,6 +4,7 @@ export const WhileLoopSchema: NodeSchema = {
     id: 'logic/while-loop',
     label: 'While Loop',
     category: 'Logic',
+    description: 'Standard while loop.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'condition', label: 'Condition', socketType: 'Boolean' }

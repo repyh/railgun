@@ -4,22 +4,15 @@ export const IncrementSchema: NodeSchema = {
     id: 'variables/increment',
     label: 'Increment',
     category: 'Variables',
+    description: 'Increases a numeric variable.',
     inputs: [
-        { key: 'exec', label: 'Exec', socketType: 'Exec' },
-        { key: 'variable', label: 'Variable Name', socketType: 'String' }
-    ],
-    outputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' }
     ],
+    outputs: [
+        { key: 'exec_out', label: 'Exec', socketType: 'Exec' }
+    ],
     controls: [
-        {
-            key: 'op', label: 'Operator', type: 'select', props: {
-                defaultValue: '++',
-                options: [
-                    { value: '++', label: 'Increment (++)' },
-                    { value: '--', label: 'Decrement (--)' }
-                ]
-            }
-        }
+        { key: 'varName', label: 'Variable Name', type: 'text' },
+        { key: 'amount', label: 'Amount', type: 'number', props: { defaultValue: 1 } }
     ]
 };

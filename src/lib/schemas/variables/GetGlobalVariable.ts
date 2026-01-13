@@ -4,11 +4,12 @@ export const GetGlobalVariableSchema: NodeSchema = {
     id: 'variables/get-global',
     label: 'Get Global Var',
     category: 'Variables',
+    description: 'Reads a value from persistent storage.',
     inputs: [],
     outputs: [
         { key: 'value', label: 'Value', socketType: 'Any' }
     ],
     controls: [
-        { key: 'varName', label: 'Variable Name', type: 'text', props: { defaultValue: '' } }
+        { key: 'varName', label: 'Variable Name', type: 'text' }
     ]
 };

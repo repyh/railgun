@@ -4,6 +4,7 @@ export const ObjectAccessorSchema: NodeSchema = {
     id: 'variables/object-accessor',
     label: 'Get Property',
     category: 'Variables',
+    description: 'Accesses object property.',
     inputs: [
         { key: 'object', label: 'Object', socketType: 'Any' }
     ],

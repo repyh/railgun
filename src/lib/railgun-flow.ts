@@ -1,6 +1,5 @@
 import type { Node } from '@xyflow/react';
 
-
 export type SocketCategory = 'exec' | 'data';
 
 export interface SocketTypeConfig {
@@ -35,7 +34,6 @@ export function getSocketConfig(name: string): SocketTypeConfig {
     return SOCKET_CONFIG[name] || SOCKET_CONFIG['Any'];
 }
 
-
 export interface FlowSocket {
     key: string;
     label: string;
@@ -56,6 +54,7 @@ export interface NodeSchema {
     id: string; // e.g. 'discord/send-message'
     label: string;
     category: string; // 'Discord', 'Logic', 'Variable'
+    description?: string;
     inputs: FlowSocket[];
     outputs: FlowSocket[];
     controls: NodeControl[];
@@ -67,7 +66,6 @@ export interface NodeSchema {
 export type BotNodeData = {
     _schemaId: string; // The schema ID to render with (e.g. 'discord/send-message')
     [key: string]: any; // User control values: { content: "hello", ... }
-    // We can also store "inputs" connection status here if needed, but usually edges handle that
 };
 
 export type BotFlowNode = Node<BotNodeData>;

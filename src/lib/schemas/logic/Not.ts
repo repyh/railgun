@@ -4,6 +4,7 @@ export const NotSchema: NodeSchema = {
     id: 'logic/not',
     label: 'Not',
     category: 'Logic',
+    description: 'Inverts a boolean value.',
     inputs: [
         { key: 'value', label: 'Value', socketType: 'Boolean' }
     ],

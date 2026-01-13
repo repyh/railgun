@@ -4,6 +4,7 @@ export const KickMemberSchema: NodeSchema = {
     id: 'discord/kick-member',
     label: 'Kick Member',
     category: 'Discord',
+    description: 'Kicks a member from the server.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
         { key: 'member', label: 'Member', socketType: 'Any', required: true, validationMessage: 'Member is required.' },

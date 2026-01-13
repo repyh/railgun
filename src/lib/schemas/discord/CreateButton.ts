@@ -4,6 +4,7 @@ export const CreateButtonSchema: NodeSchema = {
     id: 'discord/create-button',
     label: 'Create Button',
     category: 'Discord',
+    description: 'Creates a button component.',
     inputs: [
         { key: 'label', label: 'Label', socketType: 'String' },
         { key: 'customId', label: 'Custom ID', socketType: 'String' },

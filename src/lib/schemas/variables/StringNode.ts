@@ -4,6 +4,7 @@ export const StringSchema: NodeSchema = {
     id: 'variables/string',
     label: 'String',
     category: 'Variables',
+    description: 'String constant.',
     inputs: [],
     outputs: [
         { key: 'output', label: 'Value', socketType: 'String' }

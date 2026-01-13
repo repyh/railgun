@@ -31,6 +31,8 @@ import { NodeSchemaRegistry } from '@/lib/registries/NodeSchemaRegistry';
 import type { ValidationIssue } from '@/lib/validation/types';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { ShortcutHelper } from './ShortcutHelper';
+import { HelpCircle } from 'lucide-react';
 
 
 interface OnSelectionChangeParams {
@@ -60,6 +62,9 @@ export default function FlowEditor({ projectPath, filePath, setStatus, onSelecti
     const { settings } = useSettings();
     const lastSavedState = useRef<string>('');
     const { undo, redo, takeSnapshot, canUndo, canRedo, setInitialState } = useUndoRedo();
+    const [clipboard, setClipboard] = useState<{ nodes: any[], edges: any[] } | null>(null);
+    const { addNodes, addEdges, fitView } = useReactFlow();
+    const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
     const nodeTypes = useMemo(() => ({ universal: UniversalNode }), []);
 
@@ -354,24 +359,128 @@ export default function FlowEditor({ projectPath, filePath, setStatus, onSelecti
         }
     };
 
+    const duplicateNodes = useCallback((nodesToDuplicate: any[]) => {
+        if (nodesToDuplicate.length === 0) return;
+
+        const newNodeIds = new Map();
+        const duplicatedNodes = nodesToDuplicate.map((node) => {
+            const newId = uuidv4();
+            newNodeIds.set(node.id, newId);
+            return {
+                ...node,
+                id: newId,
+                position: { x: node.position.x + 30, y: node.position.y + 30 },
+                selected: true,
+            };
+        });
+
+        // Duplicate edges between selected nodes
+        const selectedNodeIds = new Set(nodesToDuplicate.map((n) => n.id));
+        const edgesToDuplicate = edges.filter(
+            (edge) => selectedNodeIds.has(edge.source) && selectedNodeIds.has(edge.target)
+        );
+
+        const duplicatedEdges = edgesToDuplicate.map((edge) => ({
+            ...edge,
+            id: uuidv4(),
+            source: newNodeIds.get(edge.source),
+            target: newNodeIds.get(edge.target),
+            selected: true,
+        }));
+
+        // Deselect current nodes
+        setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+        setEdges((eds) => eds.map((e) => ({ ...e, selected: false })));
+
+        addNodes(duplicatedNodes);
+        addEdges(duplicatedEdges);
+        takeSnapshot();
+    }, [edges, setNodes, setEdges, addNodes, addEdges, takeSnapshot]);
+
+    const copyNodes = useCallback(() => {
+        const selectedNodes = nodes.filter((n) => n.selected);
+        if (selectedNodes.length === 0) return;
+
+        const selectedNodeIds = new Set(selectedNodes.map((n) => n.id));
+        const selectedEdges = edges.filter(
+            (e) => selectedNodeIds.has(e.source) && selectedNodeIds.has(e.target)
+        );
+
+        setClipboard({ nodes: selectedNodes, edges: selectedEdges });
+    }, [nodes, edges]);
+
+    const pasteNodes = useCallback(() => {
+        if (!clipboard) return;
+        duplicateNodes(clipboard.nodes);
+    }, [clipboard, duplicateNodes]);
+
+    const selectAll = useCallback(() => {
+        setNodes((nds) => nds.map((n) => ({ ...n, selected: true })));
+        setEdges((eds) => eds.map((e) => ({ ...e, selected: true })));
+    }, [setNodes, setEdges]);
+
+    const zoomToFit = useCallback(() => {
+        fitView({ padding: 0.2, duration: 400 });
+    }, [fitView]);
+
     // Keyboard Shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            // Avoid shortcuts when typing in inputs
+            if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
+
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key.toLowerCase()) {
+                    case 's':
+                        e.preventDefault();
+                        handleSave();
+                        break;
+                    case 'z':
+                        e.preventDefault();
+                        if (e.shiftKey) redo();
+                        else undo();
+                        break;
+                    case 'y':
+                        e.preventDefault();
+                        redo();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        duplicateNodes(nodes.filter(n => n.selected));
+                        break;
+                    case 'c':
+                        // Only capture if selection exists, otherwise let browser handle
+                        if (nodes.some(n => n.selected)) {
+                            e.preventDefault();
+                            copyNodes();
+                        }
+                        break;
+                    case 'v':
+                        if (clipboard) {
+                            e.preventDefault();
+                            pasteNodes();
+                        }
+                        break;
+                    case 'a':
+                        e.preventDefault();
+                        selectAll();
+                        break;
+                    case 'f':
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            zoomToFit();
+                        }
+                        break;
+                }
+            } else if (e.key.toLowerCase() === 'h' && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
-                handleSave();
-            } else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-                e.preventDefault();
-                undo();
-            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
-                e.preventDefault();
-                redo();
+                setIsShortcutsOpen(prev => !prev);
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [projectPath, filePath, handleSave, undo, redo]);
+    }, [projectPath, filePath, handleSave, undo, redo, nodes, duplicateNodes, copyNodes, pasteNodes, selectAll, zoomToFit, clipboard]);
 
 
 
@@ -424,6 +533,16 @@ export default function FlowEditor({ projectPath, filePath, setStatus, onSelecti
                     <Button onClick={handleCompile} size="sm" className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white gap-2 py-0 h-6 text-[10px] uppercase tracking-wider font-semibold border border-zinc-700 shadow-sm transition-all active:scale-95">
                         <Play size={10} fill="currentColor" />
                         Compile
+                    </Button>
+
+                    <Button
+                        onClick={() => setIsShortcutsOpen(true)}
+                        variant="ghost"
+                        size="icon"
+                        title="Keyboard Shortcuts (H)"
+                        className="h-6 w-6 text-zinc-500 hover:text-zinc-300 ml-1"
+                    >
+                        <HelpCircle size={14} />
                     </Button>
                 </div>
             </div>
@@ -484,6 +603,11 @@ export default function FlowEditor({ projectPath, filePath, setStatus, onSelecti
                             onAddNode={onAddNode}
                         />
                     )}
+
+                    <ShortcutHelper
+                        isOpen={isShortcutsOpen}
+                        onClose={() => setIsShortcutsOpen(false)}
+                    />
                 </ReactFlow>
             </div>
         </div>

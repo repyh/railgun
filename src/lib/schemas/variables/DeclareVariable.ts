@@ -1,18 +1,18 @@
 import type { NodeSchema } from '@/lib/railgun-flow';
 
 export const DeclareVariableSchema: NodeSchema = {
-    id: 'variables/declare',
+    id: 'variables/declare-variable',
     label: 'Declare Variable',
     category: 'Variables',
+    description: 'Initializes a new local variable.',
     inputs: [
         { key: 'exec', label: 'Exec', socketType: 'Exec' },
-        { key: 'value', label: 'Initial Value', socketType: 'Any' }
+        { key: 'initialValue', label: 'Initial Value', socketType: 'Any' }
     ],
     outputs: [
-        { key: 'exec_out', label: 'Exec', socketType: 'Exec' },
-        { key: 'variable', label: 'Variable', socketType: 'Any' }
+        { key: 'exec_out', label: 'Exec', socketType: 'Exec' }
     ],
     controls: [
-        { key: 'varName', label: 'Variable Name', type: 'text', props: { defaultValue: '' } }
+        { key: 'varName', label: 'Variable Name', type: 'text', props: { defaultValue: 'myVar' } }
     ]
 };

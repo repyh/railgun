@@ -4,6 +4,7 @@ export const NumberSchema: NodeSchema = {
     id: 'variables/number',
     label: 'Number',
     category: 'Variables',
+    description: 'Number constant.',
     inputs: [],
     outputs: [
         { key: 'output', label: 'Value', socketType: 'Number' }
