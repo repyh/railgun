@@ -11,7 +11,6 @@ export class FileSystemIPC extends BaseIPC {
     async write(projectPath: string, filePath: string, content: string): Promise<boolean> {
         const absolutePath = path.join(projectPath, filePath);
 
-        // Security check
         if (!absolutePath.startsWith(projectPath)) {
             console.error('Security Error: Attempted to write outside project directory', absolutePath);
             return false;
@@ -80,7 +79,6 @@ export class FileSystemIPC extends BaseIPC {
             }
             await fs.unlink(absolutePath);
 
-            // Special cleanup for botm compiled files
             if (filePath.endsWith('.railgun.json')) {
                 const compiledPath = absolutePath.replace('.railgun.json', '.js');
                 if (existsSync(compiledPath)) {

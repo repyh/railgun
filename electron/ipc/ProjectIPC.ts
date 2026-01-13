@@ -20,7 +20,6 @@ export class ProjectIPC extends BaseIPC {
     }
 
     async createProject(data: ProjectData): Promise<{ success: boolean; message?: string }> {
-        // ... (keep existing implementation, this is just context)
         const projectPath = path.join(data.path, data.name);
 
         try {
@@ -36,7 +35,6 @@ export class ProjectIPC extends BaseIPC {
                 template: data.template
             });
 
-            // Add to history
             await HistoryManager.addToRecent(data.name, projectPath);
 
             return { success: true, message: projectPath };

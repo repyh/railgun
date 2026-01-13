@@ -42,7 +42,6 @@ export class PluginIPC extends BaseIPC {
             }
             await fs.cp(sourcePath, destPath, { recursive: true });
 
-            // Handle Dependencies
             const manifestPath = path.join(destPath, 'manifest.json');
             if (existsSync(manifestPath)) {
                 const manifestContent = await fs.readFile(manifestPath, 'utf-8');
@@ -51,7 +50,6 @@ export class PluginIPC extends BaseIPC {
                 if (manifest.requirements) {
                     const isBun = existsSync(path.join(projectPath, 'bun.lockb'));
                     for (const [pkg, version] of Object.entries(manifest.requirements)) {
-                        // Strict validation: Allow only alphanumeric, dashes, dots, and common version chars
                         const safePkg = pkg.replace(/[^a-zA-Z0-9\-_/@]/g, '');
                         const safeVersion = String(version).replace(/[^a-zA-Z0-9\-_./^~*]/g, '');
 

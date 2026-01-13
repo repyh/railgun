@@ -2,12 +2,15 @@ import { BaseIPC } from './BaseIPC';
 import { spawn, ChildProcess } from 'child_process';
 import { BrowserWindow, app } from 'electron';
 import * as path from 'path';
+import { StorageProvider } from '../storage/StorageProvider';
 
 export class BotProcessIPC extends BaseIPC {
     private botProcess: ChildProcess | null = null;
+    private provider: StorageProvider;
 
     constructor() {
         super();
+        this.provider = new StorageProvider();
         app.on('before-quit', () => {
             if (this.botProcess) {
                 console.log('[BotProcess] App quitting, killing bot process...');
@@ -33,15 +36,42 @@ export class BotProcessIPC extends BaseIPC {
         try {
             await this.clearLogs();
             console.log(`[BotProcess] Starting bot at: ${projectPath}`);
-            const entryPoint = path.join(projectPath, 'index.js'); // Assuming index.js is the entry
 
-            // Merge current env with provided secrets
-            const env = { ...process.env, ...envVariables, FORCE_COLOR: '1' };
+            let secrets: Record<string, string> = {};
+            const secretsJson = await this.provider.read('secrets', 'secrets.json');
+            if (secretsJson) {
+                try {
+                    secrets = JSON.parse(secretsJson);
+                } catch (e) {
+                    console.error('[BotProcess] Failed to parse secrets.json');
+                }
+            }
 
-            // Spawn the process
-            // We use 'node' command. Ensure node is in PATH or bundle it? 
-            // For dev tool usage, we assume user has Node. 
-            // In v1.0, we might need a bundled node or similar.
+            if (!secrets.DISCORD_TOKEN) {
+                return { success: false, error: 'DISCORD_TOKEN not found in configuration.' };
+            }
+
+            const allowedKeys = [
+                'PATH', 'Path', 'SYSTEMROOT', 'SystemRoot',
+                'TEMP', 'TMP', 'HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA',
+                'NODE_ENV', 'TERM', 'LANG'
+            ];
+
+            const sanitizedEnv: Record<string, string> = {};
+            for (const key of allowedKeys) {
+                if (process.env[key]) {
+                    sanitizedEnv[key] = process.env[key] as string;
+                }
+            }
+
+            const env = {
+                ...sanitizedEnv,
+                ...secrets,     // Injects DISCORD_TOKEN
+                ...envVariables, // Injects user overrides
+                FORCE_COLOR: '1',
+                RAILGUN_PROJECT_PATH: projectPath
+            };
+
             this.botProcess = spawn('node', ['.'], {
                 cwd: projectPath,
                 env,
