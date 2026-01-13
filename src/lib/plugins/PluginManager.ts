@@ -2,6 +2,7 @@ import type { Plugin, PluginContext, PluginManifest, PluginNodeDefinition } from
 import { registry as ASTRegistry } from '../compiler/ast/nodes/index';
 import { DynamicASTNodeAdapter } from './DynamicASTNodeAdapter';
 import { NodeSchemaRegistry } from '../registries/NodeSchemaRegistry';
+import { DynamicViewRegistry } from './DynamicViewRegistry';
 import type { NodeSchema, NodeControl } from '../railgun-flow';
 
 // Environment detection
@@ -88,6 +89,8 @@ export class PluginManager {
                 for (const schemaId of plugin.registeredItems.nodes) {
                     NodeSchemaRegistry.unregister(schemaId);
                 }
+                // Unregister Views
+                DynamicViewRegistry.unregisterPluginViews(plugin.manifest.id);
             }
         }
         this.plugins.clear();
@@ -142,6 +145,7 @@ export class PluginManager {
             }
 
             const globalObj = globalThis as any;
+            // @ts-ignore
             const safeRequire = (isRenderer && globalObj.window?.require) ? globalObj.window.require : require;
             delete safeRequire.cache[safeRequire.resolve(entryPath)];
             const pluginModule = safeRequire(entryPath);
@@ -150,7 +154,8 @@ export class PluginManager {
             const registeredItems = {
                 nodes: [] as string[],
                 statements: [] as string[],
-                values: [] as string[]
+                values: [] as string[],
+                views: [] as string[]
             };
 
             // Create Context
@@ -168,8 +173,25 @@ export class PluginManager {
                     // Registry.registerValue(cat, gen);
                     console.warn('[PluginManager] registerValue not supported in AST compiler yet');
                     registeredItems.values.push(_cat);
+                },
+                registerView: (viewId, mounter) => {
+                    const finalId = `${manifest.id}.${viewId}`;
+                    DynamicViewRegistry.setMounter(finalId, mounter);
+                    registeredItems.views.push(finalId);
                 }
             };
+
+            // Pre-register views from manifest
+            if (manifest.views) {
+                for (const viewDef of manifest.views) {
+                    const finalId = `${manifest.id}.${viewDef.id}`;
+                    DynamicViewRegistry.register({
+                        ...viewDef,
+                        id: finalId,
+                        pluginId: manifest.id
+                    });
+                }
+            }
 
             // Initialize Plugin
             if (typeof pluginModule === 'function') {
