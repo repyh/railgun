@@ -1,5 +1,5 @@
 {
-    "id": "railgun.debug-toolkit",
+    "id": "railgun-debug-toolkit",
     "name": "Debug Toolkit",
     "version": "1.0.0",
     "description": "A demo plugin showing off dynamic views and the Railgun Bridge API.",
@@ -13,7 +13,7 @@
     },
     "views": [
         {
-            "id": "railgun.debug-toolkit.view",
+            "id": "railgun-debug-toolkit-view",
             "label": "Debug Tools",
             "icon": "Wrench",
             "target": "sidebar"

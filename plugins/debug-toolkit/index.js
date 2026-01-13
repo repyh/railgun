@@ -1,5 +1,5 @@
 module.exports = (ctx) => {
-    ctx.registerView('railgun.debug-toolkit.view', (container, bridge) => {
+    ctx.registerView('railgun-debug-toolkit-view', (container, bridge) => {
         // Create UI
         container.innerHTML = `
             <div style="padding: 16px; color: #e4e4e7; height: 100%; display: flex; flex-direction: column;">
