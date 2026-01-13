@@ -150,7 +150,7 @@ const ExplorerPage: React.FC = () => {
     if (projectPath && !isVerified) {
         return (
             <div className="h-full w-full flex flex-col items-center justify-center bg-background animate-in fade-in duration-200">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500 border-r-2 border-transparent mb-4" />
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500 border-r-2 border-r-zinc-900/10 mb-4" />
                 <p className="text-zinc-500 text-sm">Verifying project...</p>
             </div>
         );
@@ -327,9 +327,9 @@ const ExplorerPage: React.FC = () => {
                     setIsRunConfigOpen(open);
                     if (!open) setRunBotAfterConfig(false);
                 }}
-                onSave={(secrets) => {
+                onSave={() => {
                     if (runBotAfterConfig) {
-                        startBot(secrets);
+                        startBot();
                     }
                 }}
             />

@@ -1,24 +1,8 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter
-} from '@/components/ui/Dialog';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/Select';
-import { FolderOpen, ChevronRight, ChevronDown } from 'lucide-react';
+import React, { useMemo } from 'react';
 import { useElectron } from '@/hooks/useElectron';
+import { useSettings } from '@/contexts/SettingsContext';
+import { ModalBuilder } from '@/components/ui/modal-builder/ModalBuilder';
+import { type ModalSchema } from '@/lib/modal-builder/types';
 
 interface CreateProjectModalProps {
     open: boolean;
@@ -27,150 +11,106 @@ interface CreateProjectModalProps {
 }
 
 export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ open, onOpenChange, onCreateProject }) => {
-    const [name, setName] = useState('');
-    const [path, setPath] = useState('');
-    const [showAdvanced, setShowAdvanced] = useState(false);
-    const [runtime, setRuntime] = useState('nodejs');
-    const [template, setTemplate] = useState('typescript');
-    const [isLoading, setIsLoading] = useState(false);
-    const { isElectron, window: win, project } = useElectron();
+    const { isElectron, project } = useElectron();
+    const { settings, updateSettings } = useSettings();
 
-    const handleBrowse = async () => {
+    const SCHEMA: ModalSchema = useMemo(() => ({
+        id: 'create-project',
+        title: 'Create New Project',
+        description: 'Configure your new Discord bot project.',
+        submitLabel: 'Create Project',
+        size: 'md',
+        fields: [
+            {
+                id: 'name',
+                label: 'Project Name',
+                type: 'text',
+                required: true,
+                placeholder: 'MyAwesomeBot'
+            },
+            {
+                id: 'path',
+                label: 'Location',
+                type: 'path-browse',
+                required: true,
+                placeholder: 'Select a directory...'
+            },
+            {
+                id: 'setDefault',
+                label: 'Persistence',
+                type: 'toggle',
+                placeholder: 'Set as default project location',
+                description: 'Future projects will start with this path.'
+            },
+            {
+                id: 'runtime',
+                label: 'Runtime',
+                type: 'select',
+                defaultValue: 'nodejs',
+                options: [
+                    { label: 'Node.js (v20+)', value: 'nodejs' },
+                    { label: 'Bun (Experimental)', value: 'bun' }
+                ]
+            },
+            {
+                id: 'template',
+                label: 'Template',
+                type: 'select',
+                defaultValue: 'typescript',
+                options: [
+                    { label: 'TypeScript (Recommended)', value: 'typescript' },
+                    { label: 'JavaScript (CommonJS)', value: 'javascript' },
+                    { label: 'Empty Project', value: 'empty' }
+                ]
+            }
+        ]
+    }), []);
+
+    const initialData = useMemo(() => ({
+        name: '',
+        path: settings.system.defaultProjectPath || '',
+        runtime: 'nodejs',
+        template: 'typescript',
+        setDefault: false
+    }), [settings.system.defaultProjectPath, open]);
+
+    const handleCreate = async (data: any) => {
+        const { name, path, runtime, template, setDefault } = data;
+
         if (isElectron) {
-            try {
-                const selectedPath = await win.selectDirectory();
-                if (selectedPath) {
-                    setPath(selectedPath);
-                }
-            } catch (error) {
-                console.error('Failed to select directory:', error);
+            // Save as default if requested
+            if (setDefault) {
+                updateSettings('system', { defaultProjectPath: path });
             }
-        } else {
-            alert('Directory selection is only available in the Electron app.');
-        }
-    };
 
-    const handleCreate = async () => {
-        if (!name || !path) return;
+            const result = await project.create({
+                name,
+                path,
+                runtime,
+                template
+            });
 
-        setIsLoading(true);
-        try {
-            console.log('Creating project:', { name, path, runtime, template });
-
-            if (isElectron) {
-                const result = await project.create({
-                    name,
-                    path,
-                    runtime,
-                    template
-                });
-
-                if (result.success) {
-                    onOpenChange(false);
-                    if (onCreateProject) {
-                        // The backend returns the FULL path in the message field on success
-                        const fullPath = result.message || path;
-                        onCreateProject(name, fullPath);
-                    }
-                } else {
-                    console.error('Failed to create project:', result.message);
-                    // TODO: Show error toast
+            if (result.success) {
+                if (onCreateProject) {
+                    const fullPath = result.message || path;
+                    onCreateProject(name, fullPath);
                 }
+                onOpenChange(false);
+            } else {
+                console.error('Failed to create project:', result.message);
+                // In a real app, show a toast here.
+                alert('Failed to create project: ' + result.message);
             }
-        } catch (error) {
-            console.error('Error creating project:', error);
-        } finally {
-            setIsLoading(false);
         }
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle>Create New Project</DialogTitle>
-                    <DialogDescription>
-                        Configure your new Discord bot project.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="grid gap-4 py-4 px-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="name">Project Name</Label>
-                        <Input
-                            id="name"
-                            placeholder="MyAwesomeBot"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="path">Location</Label>
-                        <div className="flex gap-2">
-                            <Input
-                                id="path"
-                                value={path}
-                                readOnly
-                                placeholder="Select a directory..."
-                                className="flex-1 font-mono text-xs"
-                            />
-                            <Button variant="outline" size="icon" onClick={handleBrowse} title="Browse">
-                                <FolderOpen className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <button
-                            type="button"
-                            onClick={() => setShowAdvanced(!showAdvanced)}
-                            className="flex items-center text-xs text-blue-400 hover:text-blue-300 transition-colors focus:outline-none"
-                        >
-                            {showAdvanced ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                            Advanced Options
-                        </button>
-
-                        {showAdvanced && (
-                            <div className="mt-3 grid gap-4 p-3 border border-zinc-800 rounded-md bg-zinc-900/50 animate-in slide-in-from-top-2 fade-in">
-                                <div className="grid gap-2">
-                                    <Label>Runtime</Label>
-                                    <Select value={runtime} onValueChange={setRuntime}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select Runtime" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="nodejs">Node.js (v20+)</SelectItem>
-                                            <SelectItem value="bun">Bun (Experimental)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label>Template</Label>
-                                    <Select value={template} onValueChange={setTemplate}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select Template" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="javascript">JavaScript (CommonJS)</SelectItem>
-                                            <SelectItem value="typescript">TypeScript (Recommended)</SelectItem>
-                                            <SelectItem value="empty">Empty Project</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isLoading}>Cancel</Button>
-                    <Button onClick={handleCreate} disabled={!name || !path || isLoading}>
-                        {isLoading ? 'Creating...' : 'Create Project'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <ModalBuilder
+            schema={SCHEMA}
+            open={open}
+            onOpenChange={onOpenChange}
+            onSubmit={handleCreate}
+            initialData={initialData}
+        />
     );
 };

@@ -1,9 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import { Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ModalBuilder } from '@/components/ui/modal-builder/ModalBuilder';
+import { type ModalSchema } from '@/lib/modal-builder/types';
 
 interface RunConfigModalProps {
     open: boolean;
@@ -11,15 +8,18 @@ interface RunConfigModalProps {
     onSave?: (secrets: Record<string, string>) => void;
 }
 
-export function RunConfigModal({ open, onOpenChange, onSave }: RunConfigModalProps) {
-    const [token, setToken] = useState('');
-    const [clientId, setClientId] = useState('');
-    const [guildId, setGuildId] = useState('');
-    const [showToken, setShowToken] = useState(false);
+export const RunConfigModal: React.FC<RunConfigModalProps> = ({ open, onOpenChange, onSave }) => {
+    const [initialData, setInitialData] = useState<Record<string, string>>({
+        DISCORD_TOKEN: '',
+        CLIENT_ID: '',
+        GUILD_ID: ''
+    });
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const loadSecrets = async () => {
             if (open) {
+                setIsLoading(true);
                 // @ts-ignore
                 const storage = window.electronAPI?.storage;
                 if (!storage) return;
@@ -41,12 +41,16 @@ export function RunConfigModal({ open, onOpenChange, onSave }: RunConfigModalPro
                     }
 
                     if (parsed) {
-                        setToken(parsed.DISCORD_TOKEN || '');
-                        setClientId(parsed.CLIENT_ID || '');
-                        setGuildId(parsed.GUILD_ID || '');
+                        setInitialData({
+                            DISCORD_TOKEN: parsed.DISCORD_TOKEN || '',
+                            CLIENT_ID: parsed.CLIENT_ID || '',
+                            GUILD_ID: parsed.GUILD_ID || ''
+                        });
                     }
                 } catch (e) {
                     console.error('Failed to load secrets', e);
+                } finally {
+                    setIsLoading(false);
                 }
             }
         };
@@ -54,78 +58,58 @@ export function RunConfigModal({ open, onOpenChange, onSave }: RunConfigModalPro
         loadSecrets();
     }, [open]);
 
-    const handleSave = async () => {
-        const secrets = {
-            DISCORD_TOKEN: token,
-            CLIENT_ID: clientId,
-            GUILD_ID: guildId,
-        };
+    const SCHEMA: ModalSchema = useMemo(() => ({
+        id: 'run-config',
+        title: 'Run Configuration',
+        description: 'Configure bot secrets and identifiers.',
+        submitLabel: 'Save Configuration',
+        fields: [
+            {
+                id: 'DISCORD_TOKEN',
+                label: 'Discord Token',
+                type: 'password',
+                required: true,
+                placeholder: 'Enter your bot token...'
+            },
+            {
+                id: 'CLIENT_ID',
+                label: 'Client ID',
+                type: 'text',
+                required: true,
+                placeholder: '123456789...'
+            },
+            {
+                id: 'GUILD_ID',
+                label: 'Dev Guild ID (Optional)',
+                type: 'text',
+                placeholder: '123456789...'
+            }
+        ]
+    }), []);
+
+    const handleSave = async (data: any) => {
         // @ts-ignore
-        await window.electronAPI?.storage.setSecrets(JSON.stringify(secrets));
-        if (onSave) onSave(secrets);
-        onOpenChange(false);
+        const storage = window.electronAPI?.storage;
+        if (!storage) return;
+
+        try {
+            await storage.setSecrets(JSON.stringify(data, null, 2));
+            if (onSave) onSave(data);
+            onOpenChange(false);
+        } catch (e) {
+            console.error('Failed to save secrets', e);
+            alert('Failed to save configuration');
+        }
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle>Run Configuration</DialogTitle>
-                </DialogHeader>
-
-                <div className="grid gap-4 py-4 px-6">
-                    <div className="grid gap-2">
-                        <Label htmlFor="token">Discord Token</Label>
-                        <div className="relative">
-                            <Input
-                                id="token"
-                                type={showToken ? 'text' : 'password'}
-                                value={token}
-                                onChange={(e) => setToken(e.target.value)}
-                                placeholder=".................................................................."
-                                className="pr-10"
-                            />
-                            <button
-                                onClick={() => setShowToken(!showToken)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-                            >
-                                {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="clientId">Client ID</Label>
-                        <Input
-                            id="clientId"
-                            type="text"
-                            value={clientId}
-                            onChange={(e) => setClientId(e.target.value)}
-                            placeholder="123456789..."
-                        />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="guildId">Dev Guild ID (Optional)</Label>
-                        <Input
-                            id="guildId"
-                            type="text"
-                            value={guildId}
-                            onChange={(e) => setGuildId(e.target.value)}
-                            placeholder="123456789..."
-                        />
-                    </div>
-                </div>
-
-                <DialogFooter>
-                    <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSave}>
-                        Save Configuration
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <ModalBuilder
+            schema={SCHEMA}
+            open={open}
+            onOpenChange={onOpenChange}
+            onSubmit={handleSave}
+            initialData={initialData}
+            isLoading={isLoading}
+        />
     );
-}
+};
