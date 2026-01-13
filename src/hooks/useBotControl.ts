@@ -27,44 +27,27 @@ export function useBotControl(projectPath: string | null, setStatus?: (msg: stri
         return cleanup;
     }, [isElectron, bot]);
 
-    const startBot = useCallback(async (secrets?: Record<string, string>) => {
-        if (!projectPath || !isElectron) return;
-
-        // If secrets not passed, try to get from storage
-        let env = secrets;
-        if (!env) {
-            // @ts-ignore
-            const storage = window.electronAPI?.storage;
-            if (storage) {
-                try {
-                    const stored = await storage.getSecrets();
-                    if (stored) {
-                        env = JSON.parse(stored);
-                    } else {
-                        // Migration: Load from legacy localStorage
-                        const legacy = localStorage.getItem('railgun_secrets');
-                        if (legacy) {
-                            env = JSON.parse(legacy);
-                            await storage.setSecrets(legacy);
-                            console.log("[useBotControl] Migrated secrets from localStorage.");
-                        }
-                    }
-                } catch { }
-            }
-        }
-
-        // Return false if secrets missing, so UI can handle (e.g., open dialog)
-        if (!env || !env.DISCORD_TOKEN) {
-            return { success: false, missingSecrets: true };
-        }
+    const startBot = useCallback(async (customEnv?: Record<string, string>): Promise<{
+        success: boolean;
+        error?: string;
+        missingSecrets?: boolean;
+    }> => {
+        if (!projectPath || !isElectron) return { success: false, error: 'Not initialized' };
 
         try {
-            const result = await bot.start(projectPath, env);
+            // We no longer pass secrets from the frontend to avoid exposing them over IPC.
+            // The backend (BotProcessIPC) now securely reads them from encrypted storage.
+            const result = await bot.start(projectPath, customEnv);
+
             if (result.success) {
                 if (setStatus) setStatus('Bot Started');
                 return { success: true };
             } else {
-                return { success: false, error: result.error };
+                return {
+                    success: false,
+                    error: result.error,
+                    missingSecrets: result.missingSecrets
+                };
             }
         } catch (e: any) {
             return { success: false, error: e.message || 'Unknown error' };

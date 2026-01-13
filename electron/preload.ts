@@ -74,6 +74,8 @@ const api = {
         write: (category: string, key: string, data: string) => ipcRenderer.invoke('storage:write', category, key, data),
         list: (category: string) => ipcRenderer.invoke('storage:list', category),
         getPath: (category: string) => ipcRenderer.invoke('storage:getPath', category),
+        getBotConfig: (projectPath: string) => ipcRenderer.invoke('storage:getBotConfig', projectPath),
+        setBotConfig: (projectPath: string, data: string) => ipcRenderer.invoke('storage:setBotConfig', projectPath, data),
     }
 };
 

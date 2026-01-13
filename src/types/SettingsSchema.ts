@@ -14,6 +14,7 @@ export interface SettingsSchema {
         autoSaveDelay: number;
         discordRPC: boolean;
         stationId: string;
+        defaultProjectPath: string;
     };
     rpc: { // Specific RPC config
         enabled: boolean;
@@ -41,6 +42,7 @@ export const DEFAULT_SETTINGS: SettingsSchema = {
         autoSaveDelay: 1000,
         discordRPC: true,
         stationId: '',
+        defaultProjectPath: '',
     },
     rpc: {
         enabled: true,

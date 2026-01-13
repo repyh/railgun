@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import { safeStorage } from 'electron';
 import { PathResolver, type DataCategory } from './PathResolver';
 
 export class StorageProvider {
@@ -32,6 +33,17 @@ export class StorageProvider {
 
         try {
             if (!existsSync(filePath)) return null;
+
+            if (category === 'secrets' && safeStorage.isEncryptionAvailable()) {
+                const buffer = await fs.readFile(filePath);
+                try {
+                    return safeStorage.decryptString(buffer);
+                } catch (e) {
+                    console.error(`[StorageProvider] Decryption failed for secrets. File may be corrupted or from another user.`);
+                    return null;
+                }
+            }
+
             return await fs.readFile(filePath, 'utf-8');
         } catch (e) {
             console.error(`[StorageProvider] Failed to read ${category}/${key}:`, e);
@@ -60,7 +72,12 @@ export class StorageProvider {
                 }
             }
 
-            await fs.writeFile(filePath, data, 'utf-8');
+            if (category === 'secrets' && safeStorage.isEncryptionAvailable()) {
+                const encrypted = safeStorage.encryptString(data);
+                await fs.writeFile(filePath, encrypted);
+            } else {
+                await fs.writeFile(filePath, data, 'utf-8');
+            }
         } catch (e) {
             console.error(`[StorageProvider] Failed to write ${category}/${key}:`, e);
             throw e;
