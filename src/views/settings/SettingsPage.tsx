@@ -17,10 +17,11 @@ SettingsTabRegistry.register(RPCSettingsDef);
 
 const SettingsPage: React.FC = () => {
     const navigate = useNavigate();
-    const { resetSettings } = useSettings();
+    const { settings, resetSettings } = useSettings();
     const [activeTabId, setActiveTabId] = useState<string>('general');
     const [searchQuery, setSearchQuery] = useState('');
 
+    const stationId = settings.system?.stationId || 'INITIALIZING...';
     const tabs = SettingsTabRegistry.getTabs();
 
     // Simple filter for sidebar categories
@@ -37,15 +38,6 @@ const SettingsPage: React.FC = () => {
             resetSettings();
         }
     };
-
-    // Generate or get a persistent Station ID
-    const [stationId] = useState(() => {
-        const stored = localStorage.getItem('railgun_station_id');
-        if (stored) return stored;
-        const newId = 'STN-' + Math.random().toString(36).substring(2, 9).toUpperCase();
-        localStorage.setItem('railgun_station_id', newId);
-        return newId;
-    });
 
     return (
         <div className="flex h-full bg-background animate-in fade-in zoom-in-95 duration-200">

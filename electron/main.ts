@@ -10,6 +10,7 @@ import { BotProcessIPC } from './ipc/BotProcessIPC';
 import { TitlebarIPC } from './ipc/TitlebarIPC';
 import { DiscordRPCIPC } from './ipc/DiscordRPCIPC';
 import { RuntimeIPC } from './ipc/RuntimeIPC';
+import { StorageIPC } from './ipc/StorageIPC';
 import { ipcMain } from 'electron';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -116,6 +117,7 @@ app.whenReady().then(() => {
     new TitlebarIPC().register();
     new DiscordRPCIPC().register();
     new RuntimeIPC().register();
+    new StorageIPC().register();
 
     // Standard Application Menu for Copy/Paste/DevTools
     const template: any[] = [

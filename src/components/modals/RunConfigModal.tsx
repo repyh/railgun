@@ -18,28 +18,50 @@ export function RunConfigModal({ open, onOpenChange, onSave }: RunConfigModalPro
     const [showToken, setShowToken] = useState(false);
 
     useEffect(() => {
-        if (open) {
-            const stored = localStorage.getItem('railgun_secrets');
-            if (stored) {
+        const loadSecrets = async () => {
+            if (open) {
+                // @ts-ignore
+                const storage = window.electronAPI?.storage;
+                if (!storage) return;
+
                 try {
-                    const parsed = JSON.parse(stored);
-                    setToken(parsed.DISCORD_TOKEN || '');
-                    setClientId(parsed.CLIENT_ID || '');
-                    setGuildId(parsed.GUILD_ID || '');
+                    let secretsStr = await storage.getSecrets();
+                    let parsed = null;
+
+                    if (secretsStr) {
+                        parsed = JSON.parse(secretsStr);
+                    } else {
+                        // Migration
+                        const legacy = localStorage.getItem('railgun_secrets');
+                        if (legacy) {
+                            parsed = JSON.parse(legacy);
+                            await storage.setSecrets(legacy);
+                            console.log("[RunConfigModal] Migrated secrets to file system.");
+                        }
+                    }
+
+                    if (parsed) {
+                        setToken(parsed.DISCORD_TOKEN || '');
+                        setClientId(parsed.CLIENT_ID || '');
+                        setGuildId(parsed.GUILD_ID || '');
+                    }
                 } catch (e) {
-                    console.error('Failed to parse secrets', e);
+                    console.error('Failed to load secrets', e);
                 }
             }
-        }
+        };
+
+        loadSecrets();
     }, [open]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const secrets = {
             DISCORD_TOKEN: token,
             CLIENT_ID: clientId,
             GUILD_ID: guildId,
         };
-        localStorage.setItem('railgun_secrets', JSON.stringify(secrets));
+        // @ts-ignore
+        await window.electronAPI?.storage.setSecrets(JSON.stringify(secrets));
         if (onSave) onSave(secrets);
         onOpenChange(false);
     };

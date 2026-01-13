@@ -30,13 +30,25 @@ export function useBotControl(projectPath: string | null, setStatus?: (msg: stri
     const startBot = useCallback(async (secrets?: Record<string, string>) => {
         if (!projectPath || !isElectron) return;
 
-        // If secrets not passed, try to get from storage (compatibility with ExplorerPage logic)
+        // If secrets not passed, try to get from storage
         let env = secrets;
         if (!env) {
-            const stored = localStorage.getItem('railgun_secrets');
-            if (stored) {
+            // @ts-ignore
+            const storage = window.electronAPI?.storage;
+            if (storage) {
                 try {
-                    env = JSON.parse(stored);
+                    const stored = await storage.getSecrets();
+                    if (stored) {
+                        env = JSON.parse(stored);
+                    } else {
+                        // Migration: Load from legacy localStorage
+                        const legacy = localStorage.getItem('railgun_secrets');
+                        if (legacy) {
+                            env = JSON.parse(legacy);
+                            await storage.setSecrets(legacy);
+                            console.log("[useBotControl] Migrated secrets from localStorage.");
+                        }
+                    }
                 } catch { }
             }
         }

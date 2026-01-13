@@ -62,6 +62,18 @@ const api = {
         const handler = (_: any, log: any) => callback(log);
         ipcRenderer.on('bot:log', handler);
         return () => ipcRenderer.removeListener('bot:log', handler);
+    },
+
+    // Storage
+    storage: {
+        getConfig: () => ipcRenderer.invoke('storage:getConfig'),
+        setConfig: (data: string) => ipcRenderer.invoke('storage:setConfig', data),
+        getSecrets: () => ipcRenderer.invoke('storage:getSecrets'),
+        setSecrets: (data: string) => ipcRenderer.invoke('storage:setSecrets', data),
+        read: (category: string, key: string) => ipcRenderer.invoke('storage:read', category, key),
+        write: (category: string, key: string, data: string) => ipcRenderer.invoke('storage:write', category, key, data),
+        list: (category: string) => ipcRenderer.invoke('storage:list', category),
+        getPath: (category: string) => ipcRenderer.invoke('storage:getPath', category),
     }
 };
 
