@@ -15,7 +15,7 @@
     "typescript"
   ],
   "target": "web",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "concurrently -n \"REACT,ELECTRON\" -c \"cyan,magenta\" \"bun run dev:react\" \"wait-on tcp:3000 && bun run dev:electron\"",
     "dev:react": "vite",

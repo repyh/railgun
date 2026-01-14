@@ -27,3 +27,6 @@ dist-app
 *.njsproj
 *.sln
 *.sw?
+
+# Agent
+.agent/
