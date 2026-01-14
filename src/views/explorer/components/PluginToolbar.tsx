@@ -11,7 +11,7 @@ interface PluginToolbarProps {
 
 export const PluginToolbar: React.FC<PluginToolbarProps> = ({ activeTab, onTabChange }) => {
     const dynamicViews = useDynamicViews();
-    const toolbarViews = dynamicViews.filter((v: any) => v.target === 'sidebar');
+    const toolbarViews = dynamicViews.filter((v: any) => v.target === 'toolbar');
 
     if (toolbarViews.length === 0) return null;
 

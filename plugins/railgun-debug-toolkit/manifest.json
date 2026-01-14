@@ -16,7 +16,7 @@
             "id": "railgun-debug-toolkit-view",
             "label": "Debug Tools",
             "icon": "Wrench",
-            "target": "sidebar"
+            "target": "toolbar"
         }
     ]
 }
