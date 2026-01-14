@@ -1,4 +1,3 @@
-import React from 'react';
 import { ModalBuilder } from '@/components/ui/modal-builder/ModalBuilder';
 import { type ModalSchema } from '@/lib/modal-builder/types';
 

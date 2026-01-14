@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import {
     BaseEdge,
-    EdgeLabelRenderer,
     getBezierPath,
     type EdgeProps,
 } from '@xyflow/react';

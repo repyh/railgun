@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BotConfig, DEFAULT_BOT_CONFIG } from '@/types/BotConfig';
+import { type BotConfig, DEFAULT_BOT_CONFIG } from '@/types/BotConfig';
 
 interface UseBotConfigResult {
     config: BotConfig;

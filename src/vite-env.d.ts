@@ -45,8 +45,23 @@ interface ElectronAPI {
     onTermData: (callback: (data: string) => void) => () => void;
     onBotStatus: (callback: (status: 'running' | 'stopped') => void) => () => void;
     onBotLog: (callback: (log: any) => void) => () => void;
+
+    // Storage
+    storage: {
+        getConfig: () => Promise<string | null>;
+        setConfig: (data: string) => Promise<boolean>;
+        getSecrets: () => Promise<string | null>;
+        setSecrets: (data: string) => Promise<boolean>;
+        read: (category: string, key: string) => Promise<string | null>;
+        write: (category: string, key: string, data: string) => Promise<boolean>;
+        list: (category: string) => Promise<string[]>;
+        getPath: (category: string) => Promise<string>;
+        getBotConfig: (projectPath: string) => Promise<string | null>;
+        setBotConfig: (projectPath: string, data: string) => Promise<boolean>;
+    };
 }
 
 interface Window {
     electronAPI: ElectronAPI;
+    require?: (module: string) => any;
 }

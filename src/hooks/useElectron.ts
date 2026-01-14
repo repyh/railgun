@@ -1,53 +1,5 @@
 import { useCallback, useMemo } from 'react';
 
-export interface ElectronAPI {
-    invoke: (channel: string, ...args: any[]) => Promise<any>;
-    on: (channel: string, func: (...args: any[]) => void) => void;
-    off: (channel: string, func: (...args: any[]) => void) => void;
-
-    // Window
-    minimizeWindow: () => Promise<void>;
-    toggleMaximizeWindow: () => Promise<void>;
-    closeWindow: () => Promise<void>;
-
-    // System
-    readPackageJson: (path: string) => Promise<any>;
-    installPackage: (path: string, name: string, isDev?: boolean) => Promise<void>;
-    uninstallPackage: (path: string, name: string) => Promise<void>;
-
-    // Runtime
-    checkRuntime: () => Promise<{ node: any, bun: any }>;
-    installBun: () => Promise<boolean>;
-
-    // Files
-    readFile: (path: string, file: string) => Promise<string | null>;
-    saveFile: (path: string, file: string, content: string) => Promise<boolean>;
-    deleteFile: (path: string, file: string) => Promise<boolean>;
-    listFiles: (path: string, dir: string) => Promise<string[]>;
-
-    // Config
-    readProjectConfig: (path: string) => Promise<any>;
-    saveProjectConfig: (path: string, config: any) => Promise<boolean>;
-
-    // Plugins
-    listInstalledPlugins: (path: string) => Promise<string[]>;
-    installPlugin: (path: string, id: string) => Promise<void>;
-    uninstallPlugin: (path: string, id: string) => Promise<void>;
-
-    // Terminal / Bot
-    installDependencies: (path: string, type: 'nodejs' | 'bun') => Promise<void>;
-
-    onTermData: (callback: (data: string) => void) => () => void;
-    onBotStatus: (callback: (status: 'running' | 'stopped') => void) => () => void;
-    onBotLog: (callback: (log: any) => void) => () => void;
-
-    // Direct IPC
-    openExternalLink: (url: string) => Promise<void>;
-    getAppVersion: () => Promise<string>;
-    getNodeVersion: () => Promise<string>;
-    selectDirectory: () => Promise<string | null>;
-}
-
 export interface UseElectronReturn {
     isElectron: boolean;
     invoke: (channel: string, ...args: any[]) => Promise<any>;

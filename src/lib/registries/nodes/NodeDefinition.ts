@@ -1,6 +1,6 @@
-import { BotNode } from '@/lib/railgun-rete';
+import { type BotFlowNode } from '@/lib/railgun-flow';
 
-export type NodeFactory = () => BotNode;
+export type NodeFactory = () => BotFlowNode;
 
 export interface NodeDefinition {
     label: string;
