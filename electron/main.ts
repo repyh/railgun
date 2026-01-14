@@ -1,3 +1,22 @@
+// --- RUNTIME ALIAS RESOLVER ---
+// This allows Electron to resolve the "@/ " path alias at runtime in the compiled dist-electron folder.
+(function () {
+    const Module = require('module');
+    const path = require('path');
+    const originalResolveFilename = Module._resolveFilename;
+
+    Module._resolveFilename = function (request: string, parent: any, isMain: boolean) {
+        if (request.startsWith('@/')) {
+            const relativePath = request.slice(2);
+            // In dist-electron, 'main.js' is in 'electron/', and 'src/' is a sibling.
+            // So @/ -> ../src/
+            const absolutePath = path.resolve(__dirname, '..', 'src', relativePath);
+            return originalResolveFilename.call(this, absolutePath, parent, isMain);
+        }
+        return originalResolveFilename.call(this, request, parent, isMain);
+    };
+})();
+
 import { app, BrowserWindow, Menu } from 'electron';
 import path from 'path';
 import { SystemIPC } from './ipc/SystemIPC';
@@ -42,7 +61,7 @@ const createSplashWindow = () => {
         }
     });
 
-    splashWindow.loadFile(path.join(__dirname, 'splash.html'));
+    splashWindow.loadFile(path.join(__dirname, '../splash.html'));
 
     splashWindow.once('ready-to-show', () => {
         splashWindow?.show();
@@ -71,7 +90,7 @@ const createMainWindow = () => {
 
     // Check if we are packed (production) or in development
     if (app.isPackaged) {
-        mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+        mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'));
     } else {
         mainWindow.loadURL('http://localhost:3000');
         mainWindow.webContents.openDevTools();
