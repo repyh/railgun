@@ -67,7 +67,7 @@ export class ProjectService {
                 };
             }
 
-            return await createFileFn('slash_commands', name, defaultContent);
+            return await createFileFn('commands', name, defaultContent);
         } catch (error) {
             console.error('Failed to create slash command:', error);
             throw error;

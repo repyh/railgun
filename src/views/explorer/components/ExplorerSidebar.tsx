@@ -66,7 +66,6 @@ interface ExplorerSidebarProps {
     onDeleteFile: (file: string) => void;
     onRefresh?: () => void;
     onOpenCreateCommand: (e: React.MouseEvent) => void;
-    onOpenCreateSlashCommand: (e: React.MouseEvent) => void;
     onOpenCreateEvent: (e: React.MouseEvent) => void;
     onNavigateBack: () => void;
 
@@ -86,7 +85,6 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
     onFileClick,
     onDeleteFile,
     onOpenCreateCommand,
-    onOpenCreateSlashCommand,
     onOpenCreateEvent,
     onNavigateBack,
     onRefresh,
@@ -121,8 +119,8 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                             key={file}
                             label={file}
                             icon={FileCode}
-                            active={activeTab === 'workspace' && selectedFile === file}
-                            onClick={() => onFileClick(file)}
+                            active={activeTab === 'workspace' && selectedFile === `.railgun/${file}`}
+                            onClick={() => onFileClick(`.railgun/${file}`)}
                         />
                     ))}
 
@@ -146,13 +144,13 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                                 key={file}
                                 label={file.replace('.railgun', '')}
                                 icon={FileCode}
-                                active={activeTab === 'workspace' && selectedFile === `commands/${file}`}
-                                onClick={() => onFileClick(`commands/${file}`)}
+                                active={activeTab === 'workspace' && selectedFile === `src/commands/${file}`}
+                                onClick={() => onFileClick(`src/commands/${file}`)}
                                 action={
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onDeleteFile(`commands/${file}`);
+                                            onDeleteFile(`src/commands/${file}`);
                                         }}
                                         className="text-zinc-500 hover:text-red-400 p-1 rounded"
                                     >
@@ -164,41 +162,37 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                     </TreeItem>
 
                     <div className="mt-2" />
-                    <TreeItem
-                        label="Slash Commands"
-                        icon={Terminal}
-                        action={
-                            <button onClick={onOpenCreateSlashCommand} className="hover:bg-zinc-700 p-0.5 rounded text-zinc-400 hover:text-white">
-                                <Plus size={12} />
-                            </button>
-                        }
-                    >
-                        {slashCommandFiles.length === 0 && (
-                            <div className="text-xs text-zinc-600 italic px-2 py-1">No slash commands found</div>
-                        )}
-                        {slashCommandFiles.map(file => (
+                    {slashCommandFiles.length > 0 && (
+                        <>
                             <TreeItem
-                                key={file}
-                                label={file.replace('.railgun', '')}
+                                label="Legacy Slash Commands"
                                 icon={Terminal}
-                                active={activeTab === 'workspace' && selectedFile === `slash_commands/${file}`}
-                                onClick={() => onFileClick(`slash_commands/${file}`)}
-                                action={
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onDeleteFile(`slash_commands/${file}`);
-                                        }}
-                                        className="text-zinc-500 hover:text-red-400 p-1 rounded"
-                                    >
-                                        <Trash2 size={12} />
-                                    </button>
-                                }
-                            />
-                        ))}
-                    </TreeItem>
+                            >
+                                {slashCommandFiles.map(file => (
+                                    <TreeItem
+                                        key={file}
+                                        label={file.replace('.railgun', '')}
+                                        icon={Terminal}
+                                        active={activeTab === 'workspace' && selectedFile === `src/slash_commands/${file}`}
+                                        onClick={() => onFileClick(`src/slash_commands/${file}`)}
+                                        action={
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onDeleteFile(`src/slash_commands/${file}`);
+                                                }}
+                                                className="text-zinc-500 hover:text-red-400 p-1 rounded"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        }
+                                    />
+                                ))}
+                            </TreeItem>
+                            <div className="mt-2" />
+                        </>
+                    )}
 
-                    <div className="mt-2" />
                     <TreeItem
                         label="Events"
                         icon={Zap}
@@ -216,13 +210,13 @@ export const ExplorerSidebar: React.FC<ExplorerSidebarProps> = ({
                                 key={file}
                                 label={file.replace('.railgun', '')}
                                 icon={FileCode}
-                                active={activeTab === 'workspace' && selectedFile === `events/${file}`}
-                                onClick={() => onFileClick(`events/${file}`)}
+                                active={activeTab === 'workspace' && selectedFile === `src/events/${file}`}
+                                onClick={() => onFileClick(`src/events/${file}`)}
                                 action={
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            onDeleteFile(`events/${file}`);
+                                            onDeleteFile(`src/events/${file}`);
                                         }}
                                         className="text-zinc-500 hover:text-red-400 p-1 rounded"
                                     >

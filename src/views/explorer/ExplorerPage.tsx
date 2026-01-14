@@ -159,7 +159,6 @@ const ExplorerPage: React.FC = () => {
                     }
                 }}
                 onOpenCreateCommand={(e) => { e.stopPropagation(); setIsCreateCommandModalOpen(true); }}
-                onOpenCreateSlashCommand={(e) => { e.stopPropagation(); setIsCreateSlashCommandModalOpen(true); }}
                 onOpenCreateEvent={(e) => { e.stopPropagation(); setIsCreateEventModalOpen(true); }}
                 onNavigateBack={() => navigate('/')}
                 activeTab={activeTab}

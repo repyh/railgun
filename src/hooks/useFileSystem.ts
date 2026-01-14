@@ -11,26 +11,29 @@ export function useFileSystem(projectPath: string | null) {
     const loadFiles = useCallback(async () => {
         if (!projectPath || !isElectron) return;
         try {
-            // Root project files
-            const rootFiles = await files.list(projectPath, '.');
-            if (rootFiles) {
-                const filtered = rootFiles.filter((f: string) => f.endsWith('.railgun'));
+            // Root project files (.railgun config)
+            const railgunFiles = await files.list(projectPath, '.railgun');
+            if (railgunFiles) {
+                const filtered = railgunFiles.filter((f: string) => f.endsWith('.railgun'));
                 setProjectFiles(filtered);
             }
 
-            const eFiles = await files.list(projectPath, 'events');
+            const eFiles = await files.list(projectPath, 'src/events');
             if (eFiles) {
                 const filtered = eFiles.filter((f: string) => f.endsWith('.railgun'));
                 setEventFiles(filtered);
             }
 
-            const cFiles = await files.list(projectPath, 'commands');
+            const cFiles = await files.list(projectPath, 'src/commands');
             if (cFiles) {
+                // We merge both legacy and slash commands into 'commands' technical group
                 const filtered = cFiles.filter((f: string) => f.endsWith('.railgun'));
                 setCommandFiles(filtered);
+                setSlashCommandFiles([]); // Clear slash commands list if we are merging, or handle separately if folder exists
             }
 
-            const sFiles = await files.list(projectPath, 'slash_commands');
+            // Check if slash_commands still exists for legacy projects
+            const sFiles = await files.list(projectPath, 'src/slash_commands');
             if (sFiles) {
                 const filtered = sFiles.filter((f: string) => f.endsWith('.railgun'));
                 setSlashCommandFiles(filtered);
@@ -68,7 +71,15 @@ export function useFileSystem(projectPath: string | null) {
         if (!projectPath || !isElectron) return null;
 
         const fileName = name.endsWith('.railgun') ? name : `${name}.railgun`;
-        const filePath = `${subDir}/${fileName}`;
+
+        // Map logical folder to physical path
+        let physicalDir = subDir;
+        if (subDir === 'events') physicalDir = 'src/events';
+        if (subDir === 'commands') physicalDir = 'src/commands';
+        if (subDir === 'slash_commands') physicalDir = 'src/commands'; // Merge into commands by default
+        if (subDir === 'project') physicalDir = '.railgun';
+
+        const filePath = `${physicalDir}/${fileName}`;
 
         try {
             await files.save(projectPath, filePath, JSON.stringify(content, null, 2));
