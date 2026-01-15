@@ -41,6 +41,7 @@ export class Compiler {
      * Compiles the graph into a JavaScript string.
      */
     public compile(): string {
+        const start = performance.now();
         console.log('[Railgun Compiler] Starting compilation...');
 
         // 1. Parsing: Graph -> AST
@@ -238,7 +239,8 @@ export class Compiler {
         // Append Source Map
         const mapComment = `\n//# railgun_source_map=${JSON.stringify(finalMap)}`;
 
-        console.log('[Railgun Compiler] Compilation successful with Source Map.');
+        const end = performance.now();
+        console.log(`[Railgun Compiler] Compilation successful in ${(end - start).toFixed(2)}ms.`);
         return finalCode + mapComment;
     }
 }

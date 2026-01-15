@@ -43,9 +43,10 @@ export class CodePrinter {
         const linesToAdd = text.split('\n');
 
         linesToAdd.forEach((line, idx) => {
-            // For multi-line text (like nested objects), we only map the first line to the node logic-wise,
-            // or we could map all. Let's map the first non-empty line.
-            this.lines.push(prefix + line);
+            const trimmedLine = line.trim();
+            // Don't add double prefixing if the line is already being processed recursively
+            const fullLine = trimmedLine.length > 0 ? prefix + line : line;
+            this.lines.push(fullLine);
 
             // Map the line number (1-based index)
             if (node?.sourceNodeId && idx === 0) {
@@ -54,14 +55,22 @@ export class CodePrinter {
         });
     }
 
+    private ensureSpacing() {
+        if (this.lines.length > 0 && this.lines[this.lines.length - 1] !== '') {
+            this.lines.push('');
+        }
+    }
+
     // --- Statement Printer (Emits Lines) ---
 
     private printStatement(node: AST.BaseNode, indent: number) {
         switch (node.type) {
             case 'Program':
-                (node as AST.Program).body.forEach(stmt => {
+                (node as AST.Program).body.forEach((stmt, idx) => {
                     this.printStatement(stmt, indent);
-                    this.lines.push(''); // Add spacing between global statements
+                    if (idx < (node as AST.Program).body.length - 1) {
+                        this.ensureSpacing();
+                    }
                 });
                 break;
 
@@ -71,50 +80,7 @@ export class CodePrinter {
                 const params = func.params.map(p => p.name).join(', ');
                 const header = `${asyncPrefix}function ${func.id?.name}(${params})`;
 
-                this.emit(header + ' {', indent, func);
-                this.printStatement(func.body, indent); // Body processes its own braces? No, body is BlockStatement.
-                // Wait, BlockStatement prints braces.
-                // If I print `header + {` and then `func.body` (BlockStatement), BlockStatement will print another pair of braces?
-                // Let's check BlockStatement.
-                // CodePrinter logic usually prints braces in BlockStatement.
-                // So I should print `header` then `printStatement(func.body)`.
-                // But `header` needs to be `header ` (space)?
-                // Let's refine.
-
-                // Retrying Function approach: 
-                // We shouldn't emit `{` manually if `BlockStatement` does it.
-                // But `BlockStatement` usually emits `{` on a new line or same line?
-                // In my logic below, BlockStatement emits `{`.
-                // So: `async function foo(p) ` -> then BlockStatement `{ ... }`.
-
-                // Fix:
-                // Actually, standard formatting is `function foo() { ... }` (same line).
-                // If BlockStatement emits `{` on its own line, we get:
-                // function foo()
-                // {
-                //   ...
-                // }
-                // That's acceptable but maybe not preferred.
-                // Let's manually handle the block for FunctionDeclaration to get K&R style if we want.
-                // For simplicity, let's treat Body as a special case here or change BlockStatement.
-
-                // Let's adjust BlockStatement to be flexible or just assume standard recursive behavior.
-                // Let's just print the header, then delegate to BlockStmt.
-                // NOTE: existing CodePrinter printed: `function ...(...) ${this.print(body)}`
-                // So it relied on BlockStatement returning `{ ... }`.
-
-                // So here:
                 this.emit(header + ' ' + this.printExpression(func.body), indent, func);
-                // Wait, printExpression for BlockStatement? BlockStatement is a Statement.
-                // Mixing Expression/Statement printers is tricky.
-                // Use a dedicated Helper for "Block Body but formatted nicely"?
-
-                // Correction: `printExpression` handles BlockStatement?
-                // `printExpression` SHOULD primarily handle Expressions.
-                // But `ArrowFunction` can have Block Body.
-                // Let's revert to a cleaner separation.
-                // FunctionDeclaration is a Statement.
-                // It calls `this.printBlock(func.body, indent)`?
                 break;
             }
 
@@ -141,17 +107,15 @@ export class CodePrinter {
                 const test = this.printExpression(ifStmt.test);
                 this.emit(`if (${test})`, indent, ifStmt);
 
-                // Handle Consequent
                 if (ifStmt.consequent.type === 'BlockStatement') {
-                    // We manually call Block logic to keep it tight? Or just recurse.
-                    // Recursing works.
                     this.printStatement(ifStmt.consequent, indent);
                 } else {
                     this.printStatement(ifStmt.consequent, indent + 1);
                 }
 
                 if (ifStmt.alternate) {
-                    this.emit(`else`, indent);
+                    // Force the "else" to be on its own line if it's following a block
+                    this.emit('else', indent);
                     if (ifStmt.alternate.type === 'BlockStatement' || ifStmt.alternate.type === 'IfStatement') {
                         this.printStatement(ifStmt.alternate, indent);
                     } else {
@@ -184,12 +148,8 @@ export class CodePrinter {
 
             case 'ForOfStatement':
                 const forOf = node as AST.ForOfStatement;
-                // left is VarDecl or Identifier. PrintExpression might fail on VarDecl?
-                // VarDecl is a Statement usually.
-                // We need to special handle 'left' here.
                 let leftStr = '';
                 if (forOf.left.type === 'VariableDeclaration') {
-                    // Custom print for inline var decl (no semicolon)
                     const v = forOf.left as AST.VariableDeclaration;
                     const ds = v.declarations.map(d => `${d.id.name}${d.init ? ' = ' + this.printExpression(d.init) : ''}`).join(', ');
                     leftStr = `${v.kind} ${ds}`;
@@ -205,7 +165,6 @@ export class CodePrinter {
 
             case 'ForStatement':
                 const forS = node as AST.ForStatement;
-                // Init
                 let initS = '';
                 if (forS.init) {
                     if (forS.init.type === 'VariableDeclaration') {
@@ -250,7 +209,6 @@ export class CodePrinter {
                 break;
 
             default:
-                // Fallback: If passed an expression as a statement, treat as ExprStmt
                 if (this.isExpression(node)) {
                     this.emit(this.printExpression(node as AST.Expression) + ';', indent, node);
                 } else {
@@ -274,18 +232,11 @@ export class CodePrinter {
 
     private printExpression(node: AST.BaseNode): string {
         switch (node.type) {
-            // Re-implement cases from original Logic 
-            // ...
             case 'BlockStatement':
-                // Special case: If an ArrowFunction has a Block body, this might be called.
-                // We need to simulate the multi-line block as a string.
-                // We can use a sub-printer!
                 const bParams = new CodePrinter();
                 return bParams.print(node);
 
             case 'FunctionDeclaration':
-                // Function Expression? JS has Function Expressions.
-                // Reuse sub-printer
                 const fParams = new CodePrinter();
                 return fParams.print(node);
 
@@ -345,9 +296,7 @@ export class CodePrinter {
                 const props = objExpr.properties.map(p => {
                     const key = (p.key.type === 'Identifier') ? p.key.name : this.printExpression(p.key);
                     return `${key}: ${this.printExpression(p.value)}`;
-                }).join(', '); // Minified style for inline. If you want pretty, use newlines.
-                // For Expressions, we generally prefer single line unless huge.
-                // Let's keep it simple.
+                }).join(', ');
                 return `{ ${props} }`;
 
             case 'ArrowFunctionExpression':
