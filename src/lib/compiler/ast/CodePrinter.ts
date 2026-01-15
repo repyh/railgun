@@ -61,8 +61,6 @@ export class CodePrinter {
         }
     }
 
-    // --- Statement Printer (Emits Lines) ---
-
     private printStatement(node: AST.BaseNode, indent: number) {
         switch (node.type) {
             case 'Program':
@@ -87,7 +85,17 @@ export class CodePrinter {
             case 'BlockStatement': {
                 const block = node as AST.BlockStatement;
                 this.emit('{', indent, block);
-                block.body.forEach(stmt => this.printStatement(stmt, indent + 1));
+                block.body.forEach((stmt, idx) => {
+                    this.printStatement(stmt, indent + 1);
+                    // Semantic spacing between major blocks inside functions
+                    if (idx < block.body.length - 1) {
+                        const nextStmt = block.body[idx + 1];
+                        if (['IfStatement', 'ForStatement', 'ForOfStatement', 'WhileStatement', 'TryStatement'].includes(stmt.type) ||
+                            ['IfStatement', 'ForStatement', 'ForOfStatement', 'WhileStatement', 'TryStatement'].includes(nextStmt.type)) {
+                            this.ensureSpacing();
+                        }
+                    }
+                });
                 this.emit('}', indent);
                 break;
             }
@@ -105,20 +113,24 @@ export class CodePrinter {
             case 'IfStatement':
                 const ifStmt = node as AST.IfStatement;
                 const test = this.printExpression(ifStmt.test);
-                this.emit(`if (${test})`, indent, ifStmt);
-
                 if (ifStmt.consequent.type === 'BlockStatement') {
-                    this.printStatement(ifStmt.consequent, indent);
+                    this.emit(`if (${test}) ` + this.printExpression(ifStmt.consequent), indent, ifStmt);
                 } else {
+                    this.emit(`if (${test})`, indent, ifStmt);
                     this.printStatement(ifStmt.consequent, indent + 1);
                 }
 
                 if (ifStmt.alternate) {
-                    // Force the "else" to be on its own line if it's following a block
-                    this.emit('else', indent);
-                    if (ifStmt.alternate.type === 'BlockStatement' || ifStmt.alternate.type === 'IfStatement') {
-                        this.printStatement(ifStmt.alternate, indent);
+                    if (ifStmt.alternate.type === 'BlockStatement') {
+                        // K&R style: "} else {"
+                        // We need to back up and append to the last line, OR just emit carefully.
+                        // Actually, our BlockStatement printer emits "}" on its own line.
+                        // So "else {" should follow.
+                        this.emit('else ' + this.printExpression(ifStmt.alternate), indent);
+                    } else if (ifStmt.alternate.type === 'IfStatement') {
+                        this.emit('else ' + this.printExpression(ifStmt.alternate), indent);
                     } else {
+                        this.emit('else', indent);
                         this.printStatement(ifStmt.alternate, indent + 1);
                     }
                 }
@@ -126,16 +138,25 @@ export class CodePrinter {
 
             case 'WhileStatement':
                 const whileStmt = node as AST.WhileStatement;
-                this.emit(`while (${this.printExpression(whileStmt.test)})`, indent, whileStmt);
-                this.printStatement(whileStmt.body, indent);
+                if (whileStmt.body.type === 'BlockStatement') {
+                    this.emit(`while (${this.printExpression(whileStmt.test)}) ` + this.printExpression(whileStmt.body), indent, whileStmt);
+                } else {
+                    this.emit(`while (${this.printExpression(whileStmt.test)})`, indent, whileStmt);
+                    this.printStatement(whileStmt.body, indent + 1);
+                }
                 break;
 
-            case 'DoWhileStatement':
+            case 'DoWhileStatement': {
                 const doWhile = node as AST.DoWhileStatement;
-                this.emit('do', indent, doWhile);
-                this.printStatement(doWhile.body, indent);
-                this.emit(`while (${this.printExpression(doWhile.test)});`, indent);
+                if (doWhile.body.type === 'BlockStatement') {
+                    this.emit('do ' + this.printExpression(doWhile.body) + ` while (${this.printExpression(doWhile.test)});`, indent, doWhile);
+                } else {
+                    this.emit('do', indent, doWhile);
+                    this.printStatement(doWhile.body, indent + 1);
+                    this.emit(`while (${this.printExpression(doWhile.test)});`, indent);
+                }
                 break;
+            }
 
             case 'VariableDeclaration':
                 const varDecl = node as AST.VariableDeclaration;
@@ -144,9 +165,9 @@ export class CodePrinter {
                     return `${d.id.name}${init}`;
                 }).join(', ');
                 this.emit(`${varDecl.kind} ${decls};`, indent, varDecl);
-                break; // Missing break fixed
+                break;
 
-            case 'ForOfStatement':
+            case 'ForOfStatement': {
                 const forOf = node as AST.ForOfStatement;
                 let leftStr = '';
                 if (forOf.left.type === 'VariableDeclaration') {
@@ -159,11 +180,18 @@ export class CodePrinter {
 
                 const right = this.printExpression(forOf.right);
                 const awaitStr = forOf.await ? 'await ' : '';
-                this.emit(`for ${awaitStr}(${leftStr} of ${right})`, indent, forOf);
-                this.printStatement(forOf.body, indent);
-                break;
+                const header = `for ${awaitStr}(${leftStr} of ${right})`;
 
-            case 'ForStatement':
+                if (forOf.body.type === 'BlockStatement') {
+                    this.emit(header + ' ' + this.printExpression(forOf.body), indent, forOf);
+                } else {
+                    this.emit(header, indent, forOf);
+                    this.printStatement(forOf.body, indent + 1);
+                }
+                break;
+            }
+
+            case 'ForStatement': {
                 const forS = node as AST.ForStatement;
                 let initS = '';
                 if (forS.init) {
@@ -177,10 +205,16 @@ export class CodePrinter {
                 }
                 const testS = forS.test ? this.printExpression(forS.test) : '';
                 const updateS = forS.update ? this.printExpression(forS.update) : '';
+                const header = `for (${initS}; ${testS}; ${updateS})`;
 
-                this.emit(`for (${initS}; ${testS}; ${updateS})`, indent, forS);
-                this.printStatement(forS.body, indent);
+                if (forS.body.type === 'BlockStatement') {
+                    this.emit(header + ' ' + this.printExpression(forS.body), indent, forS);
+                } else {
+                    this.emit(header, indent, forS);
+                    this.printStatement(forS.body, indent + 1);
+                }
                 break;
+            }
 
             case 'BreakStatement':
                 this.emit('break;', indent, node);
@@ -195,16 +229,13 @@ export class CodePrinter {
 
             case 'TryStatement':
                 const tryStmt = node as AST.TryStatement;
-                this.emit('try', indent, tryStmt);
-                this.printStatement(tryStmt.block, indent);
+                this.emit('try ' + this.printExpression(tryStmt.block), indent, tryStmt);
                 if (tryStmt.handler) {
                     const param = tryStmt.handler.param ? `(${tryStmt.handler.param.name})` : '';
-                    this.emit(`catch ${param}`, indent, tryStmt.handler);
-                    this.printStatement(tryStmt.handler.body, indent);
+                    this.emit(`catch ${param} ` + this.printExpression(tryStmt.handler.body), indent, tryStmt.handler);
                 }
                 if (tryStmt.finalizer) {
-                    this.emit('finally', indent);
-                    this.printStatement(tryStmt.finalizer, indent);
+                    this.emit('finally ' + this.printExpression(tryStmt.finalizer), indent);
                 }
                 break;
 
@@ -227,8 +258,6 @@ export class CodePrinter {
             'ArrowFunctionExpression', 'NewExpression'
         ].includes(node.type);
     }
-
-    // --- Expression Printer (Returns Strings) ---
 
     private printExpression(node: AST.BaseNode): string {
         switch (node.type) {
@@ -291,13 +320,24 @@ export class CodePrinter {
                 const array = node as AST.ArrayExpression;
                 return `[${array.elements.map(e => this.printExpression(e)).join(', ')}]`;
 
-            case 'ObjectExpression':
+            case 'ObjectExpression': {
                 const objExpr = node as AST.ObjectExpression;
-                const props = objExpr.properties.map(p => {
-                    const key = (p.key.type === 'Identifier') ? p.key.name : this.printExpression(p.key);
-                    return `${key}: ${this.printExpression(p.value)}`;
-                }).join(', ');
-                return `{ ${props} }`;
+                if (objExpr.properties.length === 0) return '{}';
+
+                // If single property, keep it inline for brevity?
+                // No, "ruthlessly deterministic" means we pick one mode.
+                // Let's go multiline for all objects with props for "Premium" feel.
+                const subPrinter = new CodePrinter();
+                subPrinter.emit('{', 0);
+                objExpr.properties.forEach((p, idx) => {
+                    const key = (p.key.type === 'Identifier') ? p.key.name : subPrinter.printExpression(p.key);
+                    const val = subPrinter.printExpression(p.value);
+                    const comma = idx < objExpr.properties.length - 1 ? ',' : '';
+                    subPrinter.emit(`${key}: ${val}${comma}`, 1);
+                });
+                subPrinter.emit('}', 0);
+                return subPrinter.lines.join('\n');
+            }
 
             case 'ArrowFunctionExpression':
                 const arrow = node as AST.ArrowFunctionExpression;
