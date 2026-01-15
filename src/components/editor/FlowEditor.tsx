@@ -32,8 +32,10 @@ import type { ValidationIssue } from '@/lib/validation/types';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { ShortcutHelper } from './ShortcutHelper';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, FileCode as FileCode16 } from 'lucide-react';
 
+
+import { CodeViewer } from '@/components/ui/CodeViewer';
 
 interface OnSelectionChangeParams {
     nodes: any[];
@@ -64,7 +66,13 @@ export default function FlowEditor({ projectPath, filePath, setStatus, onSelecti
     const { undo, redo, takeSnapshot, canUndo, canRedo, setInitialState } = useUndoRedo();
     const [clipboard, setClipboard] = useState<{ nodes: any[], edges: any[] } | null>(null);
     const { addNodes, addEdges, fitView } = useReactFlow();
+
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+
+    // JIT Compiler State
+    const [showCode, setShowCode] = useState(false);
+    const [generatedCode, setGeneratedCode] = useState('// Waiting for graph changes...');
+    const [lastCompiledHash, setLastCompiledHash] = useState('');
 
     const nodeTypes = useMemo(() => ({ universal: UniversalNode }), []);
 
@@ -147,6 +155,49 @@ export default function FlowEditor({ projectPath, filePath, setStatus, onSelecti
         }, 500); // 500ms debounce
         return () => clearTimeout(timer);
     }, [nodes, edges, validate, setNodes, onValidationChange]); // Validate when topology or data changes
+
+    // JIT Compilation Effect (Debounced)
+    useEffect(() => {
+        if (!showCode) return; // Don't compile if viewer is closed
+
+        const timer = setTimeout(() => {
+            try {
+                // 1. Adapter: React Flow -> Virtual Rete
+                const { nodes: reteNodes, connections: reteConnections } = ReactFlowAdapter.toCompilerData(nodes, edges);
+
+                // Robust Hash Check (Topology + Data)
+                // For 500+ nodes, stringify is still fast enough (<5ms)
+                const currentHash = JSON.stringify({
+                    nodes: reteNodes.map(n => ({ id: n.id, data: n.data, inputs: n.inputs })),
+                    connections: reteConnections
+                });
+
+                if (currentHash === lastCompiledHash) {
+                    return;
+                }
+                setLastCompiledHash(currentHash);
+
+                // 2. Compile
+                let fileType: any = 'command';
+                if (filePath?.includes('slash')) fileType = 'slash_command';
+                else if (filePath?.includes('events')) fileType = 'event';
+
+                const compiler = new Compiler({
+                    nodes: reteNodes,
+                    connections: reteConnections,
+                    fileType: fileType
+                });
+
+                const code = compiler.compile();
+                setGeneratedCode(code);
+            } catch (e: any) {
+                setGeneratedCode(`// Compilation Error:\n// ${e.message}`);
+                console.error("JIT Compilation failed", e);
+            }
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timer);
+    }, [nodes, edges, showCode, filePath]);
 
     // Context Menu Handlers
     const onPaneContextMenu = useCallback((event: React.MouseEvent | MouseEvent) => {
@@ -485,9 +536,9 @@ export default function FlowEditor({ projectPath, filePath, setStatus, onSelecti
 
 
     return (
-        <div className="flex flex-col h-full w-full bg-[#141416]">
+        <div className="flex flex-col h-full w-full bg-background">
             {/* Toolbar (Breadcrumb Style) */}
-            <div className="h-9 bg-[#171719] border-b border-zinc-800 flex items-center px-4 gap-4 justify-between shrink-0 z-20">
+            <div className="h-9 bg-background border-b border-zinc-800 flex items-center px-4 gap-4 justify-between shrink-0 z-20">
                 <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
                     <div className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-zinc-800/50 transition-colors cursor-pointer text-zinc-400">
                         <span>{projectPath?.split(/[\\/]/).pop() || 'Project'}</span>
@@ -544,71 +595,103 @@ export default function FlowEditor({ projectPath, filePath, setStatus, onSelecti
                     >
                         <HelpCircle size={14} />
                     </Button>
+
+                    <div className="h-4 w-[1px] bg-zinc-800 mx-1" />
+
+                    <Button
+                        onClick={() => setShowCode(!showCode)}
+                        size="sm"
+                        variant={showCode ? 'secondary' : 'ghost'}
+                        className={`h-6 text-[10px] uppercase tracking-wider font-semibold gap-2 ${showCode ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                        <FileCode16 size={12} />
+                        {showCode ? 'Hide Code' : 'View Code'}
+                    </Button>
                 </div>
             </div>
 
-            <div className="flex-1 relative">
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    onNodeDragStop={() => takeSnapshot()}
-                    onNodesDelete={() => takeSnapshot()}
-                    onEdgesDelete={() => takeSnapshot()}
-                    onConnect={onConnect}
+            {/* Main Content Area (Split View) */}
+            <div className="flex-1 flex flex-col overflow-hidden relative">
+                <div className="flex-1 relative h-full">
+                    <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
+                        onNodeDragStop={() => takeSnapshot()}
+                        onNodesDelete={() => takeSnapshot()}
+                        onEdgesDelete={() => takeSnapshot()}
+                        onConnect={onConnect}
+                        onReconnect={onReconnect}
+                        onReconnectStart={onReconnectStart}
+                        onReconnectEnd={onReconnectEnd}
+                        onEdgeContextMenu={onEdgeContextMenu}
+                        onNodeContextMenu={onPaneContextMenu}
+                        onSelectionChange={handleSelectionChange}
+                        nodeTypes={nodeTypes}
+                        edgeTypes={edgeTypes}
+                        isValidConnection={isValidConnection}
+                        onPaneContextMenu={onPaneContextMenu}
+                        snapToGrid={settings.editor.snapToGrid}
+                        snapGrid={[settings.editor.gridSize, settings.editor.gridSize]}
+                        selectionOnDrag
+                        panOnDrag={[1]}
+                        onlyRenderVisibleElements={true}
+                        proOptions={{ hideAttribution: true }}
+                        defaultEdgeOptions={{
+                            style: { strokeWidth: 2 },
+                            interactionWidth: 20,
+                            reconnectable: true
+                        }}
+                        fitView
+                        className="bg-background"
+                    >
+                        {settings.editor.showGrid && (
+                            <Background variant={BackgroundVariant.Dots} gap={settings.editor.gridSize} size={1} color="#3f3f46" />
+                        )}
+                        <Controls showInteractive={false} position="bottom-right" />
+                        {settings.editor.minimap && (
+                            <MiniMap
+                                nodeColor="#27272a"
+                                pannable
+                                zoomable
+                                position="bottom-left"
+                            />
+                        )}
 
+                        {menuPosition && (
+                            <FlowContextMenu
+                                position={menuPosition}
+                                onClose={() => setMenuPosition(null)}
+                                onAddNode={onAddNode}
+                            />
+                        )}
 
-                    onReconnect={onReconnect}
-                    onReconnectStart={onReconnectStart}
-                    onReconnectEnd={onReconnectEnd}
-                    onEdgeContextMenu={onEdgeContextMenu}
-                    onNodeContextMenu={onPaneContextMenu}
-                    onSelectionChange={handleSelectionChange}
-                    nodeTypes={nodeTypes}
-                    edgeTypes={edgeTypes}
-                    isValidConnection={isValidConnection}
-                    onPaneContextMenu={onPaneContextMenu}
-                    snapToGrid={settings.editor.snapToGrid}
-                    snapGrid={[settings.editor.gridSize, settings.editor.gridSize]}
-                    selectionOnDrag
-                    panOnDrag={[1]}
-                    onlyRenderVisibleElements={true}
-                    proOptions={{ hideAttribution: true }}
-                    defaultEdgeOptions={{
-                        style: { strokeWidth: 2 },
-                        interactionWidth: 20,
-                        reconnectable: true
-                    }}
-                    fitView
-                    className="bg-[#141416]"
-                >
-                    {settings.editor.showGrid && (
-                        <Background variant={BackgroundVariant.Dots} gap={settings.editor.gridSize} size={1} color="#3f3f46" />
-                    )}
-                    <Controls showInteractive={false} position="bottom-right" />
-                    {settings.editor.minimap && (
-                        <MiniMap
-                            nodeColor="#27272a"
-                            pannable
-                            zoomable
-                            position="bottom-left"
+                        <ShortcutHelper
+                            isOpen={isShortcutsOpen}
+                            onClose={() => setIsShortcutsOpen(false)}
                         />
-                    )}
+                    </ReactFlow>
+                </div>
 
-                    {menuPosition && (
-                        <FlowContextMenu
-                            position={menuPosition}
-                            onClose={() => setMenuPosition(null)}
-                            onAddNode={onAddNode}
-                        />
-                    )}
-
-                    <ShortcutHelper
-                        isOpen={isShortcutsOpen}
-                        onClose={() => setIsShortcutsOpen(false)}
-                    />
-                </ReactFlow>
+                {/* Split View: Code Panel */}
+                {showCode && (
+                    <div className="h-[350px] w-full border-t border-zinc-800 bg-background flex flex-col shrink-0 transition-all duration-300">
+                        <div className="px-4 py-2 border-b border-zinc-800 bg-background flex items-center justify-between shrink-0 h-9">
+                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+                                <FileCode16 size={12} />
+                                Code Preview
+                            </span>
+                        </div>
+                        <div className="flex-1 overflow-hidden relative">
+                            <CodeViewer
+                                code={generatedCode}
+                                language="javascript"
+                                className="h-full w-full"
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
