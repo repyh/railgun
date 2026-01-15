@@ -4,40 +4,34 @@ import type { ASTNodeParser } from '../NodeParser';
 import type { ParserContext } from '../ParserContext';
 
 export class ForLoopParser implements ASTNodeParser {
-    parse(node: CompilerNode, context: ParserContext, mode: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
-        const isNullLiteral = (expr: AST.Expression) => expr.type === 'Literal' && expr.value === null;
-
-        const startExpr = context.resolveInput(node, 'start'); // 'Start Index' -> 'start'
-        const endExpr = context.resolveInput(node, 'end');     // 'End Index' -> 'end'
-        const arrayExpr = context.resolveInput(node, 'array');
-
-        // Heuristic: If start or end are provided (not null), it's a Numeric Loop.
-        const isNumeric = !isNullLiteral(startExpr) || !isNullLiteral(endExpr);
-
-        // Deterministic variable names based on node ID
-        const indexVarName = `i_${node.id.replace(/-/g, '_')}`;
-        const itemVarName = `item_${node.id.replace(/-/g, '_')}`;
-
-        // 1. Handle Expression Mode (downstream node asks for "index" or "item")
-        if (mode === 'expression') {
-            // Depending on loop type, return the appropriate identifier
-            // Note: We don't know WHICH output socket was requested here easily unless we passed outputKey?
-            // But usually 'For Loop' exposes 'index' (numeric) or 'item' (foreach).
-            // A numeric loop might expose 'index'. A foreach might expose 'item' AND 'index'.
-            // For now, let's return the primary variable.
-            // TODO: If we want to support 'index' specifically from foreach, we need outputKey context.
-            // Assuming the requested value corresponds to the loop variable:
-            if (isNumeric) {
-                return { type: 'Identifier', name: indexVarName };
-            } else {
-                return { type: 'Identifier', name: itemVarName }; // The item
-            }
+    resolveOutput(node: CompilerNode, outputKey: string, _context: ParserContext): AST.Expression | null {
+        const shortId = node.id.replace(/-/g, '').substring(0, 8);
+        if (outputKey === 'index') {
+            return { type: 'Identifier', name: `i_${shortId}` };
         }
+        if (outputKey === 'item') {
+            return { type: 'Identifier', name: `item_${shortId}` };
+        }
+        return null;
+    }
 
-        // 2. Handle Statement Mode (Flow)
+    parse(node: CompilerNode, context: ParserContext, mode: 'statement' | 'expression'): AST.Statement | AST.Expression | null {
+        // Handle Statement Mode (Flow)
         if (mode !== 'statement') return null;
 
-        const bodyBlock = context.traverseBlock(node, 'loopBody');
+        const isNullLiteral = (expr: AST.Expression) => expr.type === 'Literal' && expr.value === null;
+
+        const startExpr = context.resolveInput(node, 'start');
+        const endExpr = context.resolveInput(node, 'end');
+        const arrayExpr = context.resolveInput(node, 'array');
+
+        const isNumeric = !isNullLiteral(startExpr) || !isNullLiteral(endExpr);
+
+        const shortId = node.id.replace(/-/g, '').substring(0, 8);
+        const indexVarName = `i_${shortId}`;
+        const itemVarName = `item_${shortId}`;
+
+        const bodyBlock = context.traverseBlock(node, 'body');
 
         if (isNumeric) {
             // Numeric Loop: for (let i = start; i < end; i++)

@@ -1,7 +1,7 @@
 import type { NodeSchema } from '@/lib/railgun-flow';
 
 export const LogicOpSchema: NodeSchema = {
-    id: 'logic/op',
+    id: 'logic/logic-op',
     label: 'Logic Op',
     category: 'Logic',
     inputs: [

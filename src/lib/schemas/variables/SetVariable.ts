@@ -1,7 +1,7 @@
 import type { NodeSchema } from '@/lib/railgun-flow';
 
 export const SetVariableSchema: NodeSchema = {
-    id: 'variables/set',
+    id: 'variables/set-variable',
     label: 'Set Variable',
     category: 'Variables',
     description: 'Writes a value to a local variable.',

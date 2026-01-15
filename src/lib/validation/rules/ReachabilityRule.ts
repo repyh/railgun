@@ -6,7 +6,7 @@ export class ReachabilityRule implements ValidationRule {
     public readonly id = 'reachability';
 
     private static readonly EXECUTION_PORT_NAMES = new Set([
-        'exec', 'act', 'true', 'false', 'loopBody', 'then', 'else', 'default', 'done', 'body', 'complete', 'exec_out'
+        'exec', 'act', 'true', 'false', 'loopBody', 'then', 'else', 'default', 'done', 'body', 'complete', 'completed', 'exec_out', 'out', 'next'
     ]);
 
     public validate(nodes: CompilerNode[], connections: CompilerConnection[]): ValidationIssue[] {

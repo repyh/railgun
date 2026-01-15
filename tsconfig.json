@@ -10,5 +10,16 @@
     {
       "path": "./tsconfig.electron.json"
     }
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
+  },
+  "exclude": [
+    "tests"
   ]
 }
