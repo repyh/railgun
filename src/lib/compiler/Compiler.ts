@@ -97,21 +97,16 @@ export class Compiler {
                     // We use `printer.build` to get the map.
                     // Note: func.body is a BlockStatement. build() will wrap it in { ... } lines.
                     // We usually strip the outer braces for the Wrapper.
+                    // Build Event Body Code
+                    // Note: func.body is a BlockStatement. build() will wrap it in { ... } lines.
+                    // We strip the outer braces to get just the inner logic for wrapping.
                     const bodyResult = printer.build(func.body);
-
-                    // Simple Strip: remove first and last line (braces)
-                    // The map keys need to be adjusted.
-                    // Lines 0 (Build output starts at index 0? No, usually line 1 if split)
-                    // printer.build returns code string. property lines array inside was internal.
-
                     const rawBodyLines = bodyResult.code.split('\n');
-                    // Strip first and last syntax lines ({ and })
-                    // We assume standard BlockStatement printing format:
-                    // {
-                    //    stmt...
-                    // }
+
                     const strippedLines = rawBodyLines.slice(1, -1);
-                    eventFunctionBody = strippedLines.map(l => l.replace(/^    /, '')).join('\n'); // Unindent once
+                    // Standardize to 0-level indentation by stripping exactly one level (4 spaces).
+                    // This creates a clean baseline for the strategies to apply their own indentation.
+                    eventFunctionBody = strippedLines.map(l => l.replace(/^ {4}/, '')).join('\n');
 
                     // Adjust map:
                     // Original Line 2 becomes New Line 1.
@@ -122,9 +117,6 @@ export class Compiler {
                     // If length is 3. { (1), stmt (2), } (3).
                     // We want Line 2. 
                     // loop limit: line < length. (line < 3 -> 2).
-                    // Wait, previous code was: endLine = rawBodyLines.length - 1; 
-                    // If length 3, endLine 2. line < 2. Excludes 2.
-                    // So we want line < rawBodyLines.length.
 
                     const limitLine = rawBodyLines.length;
 
@@ -137,7 +129,7 @@ export class Compiler {
                         }
                     });
 
-                    // C. Extract Metadata
+
                     if (eventNode) {
                         const getVal = (key: string) => (eventNode.data?.[key] || eventNode.controls?.[key]?.value);
 

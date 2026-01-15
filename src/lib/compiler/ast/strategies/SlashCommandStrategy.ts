@@ -1,4 +1,4 @@
-import type { WrapperStrategy, WrappingMetadata } from './WrappingStrategy';
+import { type WrapperStrategy, type WrappingMetadata, indentCode } from './WrappingStrategy';
 
 export class SlashCommandStrategy implements WrapperStrategy {
     wrap(bodyCode: string, metadata: WrappingMetadata): string {
@@ -55,7 +55,7 @@ module.exports = {
     data: ${builderCode},
     execute: async (interaction) => {
         const client = interaction.client;
-        ${bodyCode}
+${indentCode(bodyCode, 8)}
     }
 };`;
     }

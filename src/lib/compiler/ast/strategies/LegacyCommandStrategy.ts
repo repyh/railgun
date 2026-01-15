@@ -1,4 +1,4 @@
-import type { WrapperStrategy, WrappingMetadata } from './WrappingStrategy';
+import { type WrapperStrategy, type WrappingMetadata, indentCode } from './WrappingStrategy';
 
 export class LegacyCommandStrategy implements WrapperStrategy {
     wrap(bodyCode: string, metadata: WrappingMetadata): string {
@@ -9,12 +9,14 @@ export class LegacyCommandStrategy implements WrapperStrategy {
             ? `const client = message.client;`
             : '';
 
+        const indentedBody = indentCode(bodyCode, 8);
+        const indentedSetup = clientSetup ? '        ' + clientSetup + '\n' : '';
+
         return `module.exports = {
     name: '${eventName}',
     description: '${metadata.description || 'No description provided'}',
     execute: async (${eventParams.join(', ')}) => {
-        ${clientSetup}
-        ${bodyCode}
+${indentedSetup}${indentedBody}
     }
 };`;
     }
